@@ -1,0 +1,34 @@
+# Generated: Python bake outputs, CMake/vcpkg build tree
+/build/
+/code/build/
+__pycache__/
+
+# Binary assets stay out of the repository (maps, textures, models, fonts, sounds, art sources)
+*.png
+*.jpg
+*.jpeg
+*.dds
+*.bmp
+*.psd
+*.ttf
+*.otf
+*.glb
+*.gltf
+*.blend
+*.blend1
+*.npz
+*.npy
+*.mcmap
+*.ogg
+*.wav
+*.zip
+*.jar
+*.exe
+*.dll
+*.pdb
+*.lib
+
+# Local settings and logs
+.vscode/
+*.log
+*.ini
