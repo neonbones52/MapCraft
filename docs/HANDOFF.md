@@ -6,7 +6,8 @@
 ## Происхождение
 MapCraft выделен из **Tamriel Universalis** (TU, `D:\Dev\Projects\MinecraftUniversalis`, git
 github.com/neonbones52/TamrielUniversalis). TU — EU4-подобная стратегия по Тамриэлю: SKSE-плагин для Skyrim AE со
-входом через главное меню, плюс `tu_dev.exe` и `tu_editor.exe`. Истории git у MapCraft нет: репозиторий новый.
+входом через главное меню, плюс `tu_dev.exe` и `tu_editor.exe`. Истории TU в git MapCraft нет: репозиторий новый
+(github.com/neonbones52/MapCraft).
 
 Перенесено и переименовано (`tu` → `mc`, `tu_dev` → `mapcraft`, `tu_editor` → `mapcraft_editor`, `tamriel.tump` →
 `world.mcmap`, magic `TUMP` → `MCMP`):
@@ -51,7 +52,6 @@ github.com/neonbones52/TamrielUniversalis). TU — EU4-подобная стра
 - Шрифт названий на карте: Cinzel (как в TU) или шрифт Майнкрафта.
 - Какую версию Майнкрафта читать (формат ассетов меняется между версиями).
 - Спецификации POPs, товаров, RGO, заводов — и под них схема `data/`.
-- Remote репозитория на GitHub.
 
 ## Окружение: известная проблема
 При первой сборке MapCraft (2026-11-11) vcpkg не смог распаковать imgui: в `D:\Dev\vcpkg\buildtrees\imgui\src\`
