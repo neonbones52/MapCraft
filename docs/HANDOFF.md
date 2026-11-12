@@ -4,7 +4,7 @@
 решения пользователя и открытые вопросы. Закрытый вопрос отсюда убирается, а решение переносится в нужный документ.
 
 ## Происхождение
-MapCraft выделен из **Tamriel Universalis** (TU, `D:\Dev\Projects\MinecraftUniversalis`, git
+MapCraft выделен из **Tamriel Universalis** (TU, `C:\Dev\Projects\MinecraftUniversalis`, git
 github.com/neonbones52/TamrielUniversalis). TU — EU4-подобная стратегия по Тамриэлю: SKSE-плагин для Skyrim AE со
 входом через главное меню, плюс `tu_dev.exe` и `tu_editor.exe`. Истории TU в git MapCraft нет: репозиторий новый
 (github.com/neonbones52/MapCraft).
@@ -52,15 +52,3 @@ github.com/neonbones52/TamrielUniversalis). TU — EU4-подобная стра
 - Шрифт названий на карте: Cinzel (как в TU) или шрифт Майнкрафта.
 - Какую версию Майнкрафта читать (формат ассетов меняется между версиями).
 - Спецификации POPs, товаров, RGO, заводов — и под них схема `data/`.
-
-## Окружение: известная проблема
-При первой сборке MapCraft (2026-11-11) vcpkg не смог распаковать imgui: в `D:\Dev\vcpkg\buildtrees\imgui\src\`
-есть папка `v1.92.9b-6eb65f6775.clean`, которую Windows не может ни прочитать, ни удалить («The file or directory is
-corrupted and unreadable»). Это повреждение файловой системы диска D, проект тут ни при чём. Чинит пользователь:
-`chkdsk D: /f`. Пока диск не починен, сборка проверялась так (разово, buildtrees во временной папке; в проект это не
-вносится):
-```bash
-cmake --preset release -DVCPKG_INSTALL_OPTIONS=--x-buildtrees-root=<временная папка>
-cmake --build --preset release
-```
-После `chkdsk` обычный `code/build.cmd` должен работать; тогда этот раздел удалить.

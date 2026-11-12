@@ -95,16 +95,18 @@
 
 ## Окружение
 - **Сборка:** `code/build.cmd` → `code/build/release/`.
-  - Нужны MSVC Build Tools (`D:\Dev\BuildTools`) и переменная `VCPKG_ROOT` (`D:\Dev\vcpkg`), триплет
-    x64-windows-static.
+  - Нужны MSVC Build Tools (`C:\Dev\BuildTools`) и переменная `VCPKG_ROOT` (`C:\Dev\vcpkg`), триплет
+    x64-windows-static. `build.cmd` находит компилятор через vswhere (последняя установка VS или Build Tools с
+    MSVC x64), путь к Build Tools в нём не прописан. vcvars64 подменяет `VCPKG_ROOT` на vcpkg, встроенный в Build
+    Tools; `build.cmd` возвращает значение пользователя.
   - Если открыт `mapcraft.exe` или редактор, линковка падает (LNK1168). Переименуй запущенный exe, процесс
     пользователя не убивай.
 - **Python 3.14** + numpy/scipy/scikit-image/Pillow/numba/fontTools.
-  - `tools/labels` нужен `D:\Dev\Projects\eu4\archeologyEU4\Labels\LabelPython`.
+  - `tools/labels` нужен `C:\Dev\Projects\eu4\archeologyEU4\Labels\LabelPython`.
   - Правя файлы срезами между якорями, проверяй, что якорь уникален, а срез не пустой.
-- **EU4** (`C:\Games\EUIV`) и `D:\Dev\Projects\eu4\archeologyEU4\` (реверс eu4.exe с pdb: `Render`, `Labels`,
+- **EU4** (`C:\Games\EUIV`) и `C:\Dev\Projects\eu4\archeologyEU4\` (реверс eu4.exe с pdb: `Render`, `Labels`,
   `UtilityAI`) — только для изучения.
-- Старый проект Tamriel Universalis лежит в `D:\Dev\Projects\MinecraftUniversalis` — только как справка (там гладкий
+- Старый проект Tamriel Universalis лежит в `C:\Dev\Projects\MinecraftUniversalis` — только как справка (там гладкий
   рельеф, Blender-модели, хост SKSE). Код оттуда не переносить без решения пользователя.
 
 ## Известные долги

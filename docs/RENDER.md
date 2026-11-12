@@ -1,6 +1,6 @@
 # Рендер карты
 
-Устроен как в EU4. Источник по EU4: `D:\Dev\Projects\eu4\archeologyEU4\Render` (README, HEIGHTMAP, PROVINCES, FRAME,
+Устроен как в EU4. Источник по EU4: `C:\Dev\Projects\eu4\archeologyEU4\Render` (README, HEIGHTMAP, PROVINCES, FRAME,
 шейдеры в `evidence/shaders/`) и файлы `C:\Games\EUIV\map` — только референс. Код: `code/src/render/`, шейдеры в
 `shaders.cpp` (компилируются при запуске).
 

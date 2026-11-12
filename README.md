@@ -17,8 +17,8 @@
 - **Игровых данных нет**: в `data/` только заголовки CSV.
 
 ## Код (`code/`, C++23, MSVC + CMake/Ninja + vcpkg)
-Нужны MSVC Build Tools и переменная окружения `VCPKG_ROOT` (путь к vcpkg); триплет `x64-windows-static`, из
-зависимостей только `imgui`.
+Нужны MSVC Build Tools (`build.cmd` находит компилятор через vswhere) и переменная окружения `VCPKG_ROOT` (путь к
+vcpkg); триплет `x64-windows-static`, из зависимостей только `imgui`.
 ```bash
 code/build.cmd                                  # сборка всего в code/build/release
 code/build/release/mapcraft.exe                 # игра
@@ -108,7 +108,7 @@ python tools/labels/provinces.py                              # названия
 python tools/mapbake/positions.py                             # точки городов, армий, подписей, портов -> positions.csv
 python tools/mapbake/bake.py                                  # build/map/world.mcmap (docs/MAPFORMAT.md)
 ```
-`tools/labels/` нужен `D:\Dev\Projects\eu4\archeologyEU4\Labels\LabelPython` (путь в `tools/labels/reference.py`).
+`tools/labels/` нужен `C:\Dev\Projects\eu4\archeologyEU4\Labels\LabelPython` (путь в `tools/labels/reference.py`).
 
 **Порты.** Порт есть у каждой сухопутной провинции, граничащей с морской (озёра не считаются): точка в `PORT_OUT` px от
 берега над морем, напротив ближайшего к городу места берега.
