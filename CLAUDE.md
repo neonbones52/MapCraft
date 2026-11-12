@@ -106,8 +106,9 @@
   - Правя файлы срезами между якорями, проверяй, что якорь уникален, а срез не пустой.
 - **EU4** (`C:\Games\EUIV`) и `C:\Dev\Projects\eu4\archeologyEU4\` (реверс eu4.exe с pdb: `Render`, `Labels`,
   `UtilityAI`) — только для изучения.
-- Старый проект Tamriel Universalis лежит в `C:\Dev\Projects\MinecraftUniversalis` — только как справка (там гладкий
-  рельеф, Blender-модели, хост SKSE). Код оттуда не переносить без решения пользователя.
+- Старый проект Tamriel Universalis локально не хранится, он есть только на GitHub:
+  github.com/neonbones52/TamrielUniversalis. Это только справка (там гладкий рельеф, Blender-модели, хост SKSE). Код
+  оттуда не переносить без решения пользователя.
 
 ## Известные долги
 - `edit_provinces.py` при перенумерации не переписывает `data/setup/provinces.csv`, и данные съедут на чужие

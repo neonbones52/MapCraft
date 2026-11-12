@@ -4,8 +4,8 @@
 решения пользователя и открытые вопросы. Закрытый вопрос отсюда убирается, а решение переносится в нужный документ.
 
 ## Происхождение
-MapCraft выделен из **Tamriel Universalis** (TU, `C:\Dev\Projects\MinecraftUniversalis`, git
-github.com/neonbones52/TamrielUniversalis). TU — EU4-подобная стратегия по Тамриэлю: SKSE-плагин для Skyrim AE со
+MapCraft выделен из **Tamriel Universalis** (TU, github.com/neonbones52/TamrielUniversalis; локальной копии
+нет). TU — EU4-подобная стратегия по Тамриэлю: SKSE-плагин для Skyrim AE со
 входом через главное меню, плюс `tu_dev.exe` и `tu_editor.exe`. Истории TU в git MapCraft нет: репозиторий новый
 (github.com/neonbones52/MapCraft).
 
