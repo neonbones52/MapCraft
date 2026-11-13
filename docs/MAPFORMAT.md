@@ -75,9 +75,8 @@
 
 | Скрипт | Что делает |
 |---|---|
+| `mapgen/heightmap.py` | `heightmap.png` → `land.png`; классы и ступени блоков для остальных скриптов (`read_blocks`) |
 | `mapgen/validate_land.py` | проверка `land.png` |
-| `mapgen/import_lineart.py` | импорт контурной карты в `land.png` + `regions.png` |
-| `mapgen/clean_land.py` | чистка шума `land.png` |
 | `mapgen/generate_provinces.py` | нарезка провинций в `build/provinces/` |
 | `mapgen/edit_provinces.py` | правки замороженной карты |
 | `mapgen/sources.py` | общее чтение CSV и `provinces.png` |

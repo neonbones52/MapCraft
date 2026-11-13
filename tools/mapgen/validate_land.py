@@ -1,4 +1,4 @@
-"""Validate land.png: exact palette, sea margin, connectivity and thin features."""
+"""Validate land.png (one pixel per block, made by heightmap.py): exact palette, connectivity and thin features."""
 import argparse
 import sys
 from pathlib import Path
@@ -7,10 +7,9 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage
 
-WIDTH, HEIGHT = 4608, 3072
-MARGIN = 64
-MIN_ISLAND = 50
-MIN_LAKE = 2500
+WIDTH, HEIGHT = 1152, 576   # blocks; a block is 4x4 px of the map
+MIN_ISLAND = 4              # blocks
+MIN_LAKE = 156              # blocks; smaller lakes are decorative (2500 px of the map)
 MIN_THIN_CLUSTER = 5
 
 SEA, LAND, LAKE, WASTE = 0, 1, 2, 3
@@ -85,18 +84,12 @@ def check_summary(classes, report):
     total = classes.size
     for value, name in NAMES.items():
         count = int((classes == value).sum())
-        report.info(f'{name:10} {count:10} px  {100 * count / total:6.2f} %')
+        report.info(f'{name:10} {count:10} blocks  {100 * count / total:6.2f} %')
 
 
-def check_margin(classes, report):
-    report.section(f'Sea margin ({MARGIN} px)')
+def check_edges(classes, report):
+    report.section('Map edges (land may reach them, as in EU4)')
     solid = classes != SEA
-    frame = np.ones_like(solid)
-    frame[MARGIN:-MARGIN, MARGIN:-MARGIN] = False
-    bad = solid & frame
-    if bad.any():
-        ys, xs = np.nonzero(bad)
-        report.error(f'{bad.sum()} non-sea pixels inside the margin, e.g. ({xs[0]}, {ys[0]})', (xs[0], ys[0]))
     ys, xs = np.nonzero(solid)
     report.info(f'non-sea bounding box x {xs.min()}..{xs.max()}, y {ys.min()}..{ys.max()}')
     report.info(f'closest to edges: left {xs.min()}, right {WIDTH - 1 - xs.max()}, top {ys.min()}, bottom {HEIGHT - 1 - ys.max()}')
@@ -109,7 +102,7 @@ def check_sea(classes, report):
     report.info(f'{len(areas)} sea components, {len(edge)} touch the map edge')
     for index, area in enumerate(areas, 1):
         if index not in edge:
-            report.error(f'enclosed sea of {area} px at {center(boxes[index - 1])} (lake?)', center(boxes[index - 1]))
+            report.error(f'enclosed sea of {area} blocks at {center(boxes[index - 1])} (lake?)', center(boxes[index - 1]))
 
 
 def check_land(classes, report):
@@ -121,7 +114,7 @@ def check_land(classes, report):
     for rank, index in enumerate(order):
         area = int(areas[index])
         box = boxes[index]
-        text = f'#{rank + 1:3} {area:9} px  center {center(box)}  box x {box[1].start}..{box[1].stop - 1} y {box[0].start}..{box[0].stop - 1}'
+        text = f'#{rank + 1:3} {area:9} blocks  center {center(box)}  box x {box[1].start}..{box[1].stop - 1} y {box[0].start}..{box[0].stop - 1}'
         if area < MIN_ISLAND:
             report.warn('tiny island ' + text, center(box))
         elif rank < 40:
@@ -157,10 +150,10 @@ def check_thin(classes, report, mask, name):
     thin = mask & ~opened
     labels, areas, boxes = components(thin, EIGHT)
     big = [(int(areas[i]), boxes[i]) for i in range(len(areas)) if areas[i] >= MIN_THIN_CLUSTER]
-    report.section(f'Thin {name} (narrower than 3 px)')
-    report.info(f'{int(thin.sum())} px in {len(areas)} clusters, {len(big)} clusters of {MIN_THIN_CLUSTER}+ px')
+    report.section(f'Thin {name} (narrower than 3 blocks)')
+    report.info(f'{int(thin.sum())} blocks in {len(areas)} clusters, {len(big)} clusters of {MIN_THIN_CLUSTER}+ blocks')
     for area, box in sorted(big, key=lambda item: -item[0])[:30]:
-        report.warn(f'{area:5} px at {center(box)}', center(box))
+        report.warn(f'{area:5} blocks at {center(box)}', center(box))
 
 
 def check_lakes(classes, report):
@@ -172,11 +165,11 @@ def check_lakes(classes, report):
         box = boxes[index - 1]
         where = center(box)
         if near_sea[box][labels[box] == index].any():
-            report.warn(f'lake of {area} px at {where} touches the sea', where)
+            report.warn(f'lake of {area} blocks at {where} touches the sea', where)
         if area < MIN_LAKE:
-            report.info(f'decorative lake {area:6} px at {where}')
+            report.info(f'decorative lake {area:6} blocks at {where}')
         else:
-            report.info(f'lake province  {area:6} px at {where}')
+            report.info(f'lake province  {area:6} blocks at {where}')
 
 
 def check_waste(classes, report):
@@ -187,10 +180,10 @@ def check_waste(classes, report):
     for index, area in enumerate(areas, 1):
         box = boxes[index - 1]
         touches = near_sea[box][labels[box] == index].any()
-        report.info(f'{area:7} px at {center(box)}{"  touches water" if touches else ""}')
+        report.info(f'{area:7} blocks at {center(box)}{"  touches water" if touches else ""}')
 
 
-def preview(classes, report, path, scale=3):
+def preview(classes, report, path, scale=1):
     colors = np.array([[20, 40, 90], [225, 220, 200], [60, 140, 230], [120, 120, 120]], np.uint8)
     image = Image.fromarray(colors[np.minimum(classes, 3)]).resize((WIDTH // scale, HEIGHT // scale), Image.NEAREST)
     draw = ImageDraw.Draw(image)
@@ -209,7 +202,7 @@ def main():
     report = Report()
     classes = load(args.land, report)
     check_summary(classes, report)
-    check_margin(classes, report)
+    check_edges(classes, report)
     check_sea(classes, report)
     check_land(classes, report)
     check_diagonals(classes, report)
