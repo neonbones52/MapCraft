@@ -1,5 +1,6 @@
 """Cut regions and sea into provinces: noisy geodesic Voronoi cells relaxed with Lloyd iterations."""
 import argparse
+import colorsys
 import csv
 import heapq
 import math
@@ -11,7 +12,6 @@ from PIL import Image, ImageDraw
 from scipy import ndimage
 from scipy.cluster.vq import kmeans2
 
-from import_lineart import distinct_colors
 from validate_land import FOUR, LAKE, LAND, PALETTE, SEA
 
 MULTIPLIER = 3                # provinces per region = csv value x MULTIPLIER
@@ -29,6 +29,23 @@ SEED = 20260927
 WARP = ((110, 22.0), (40, 8.0), (12, 2.5))  # (noise scale px, displacement px): wiggles province borders
 
 SQRT2 = math.sqrt(2.0)
+
+
+def distinct_colors(count, seed=7):
+    """`count` distinct colours spread over the hue circle by the golden ratio, never black or white."""
+    rng = np.random.default_rng(seed)
+    colors, used = [], {(0, 0, 0), (255, 255, 255)}
+    golden = 0.618033988749895
+    hue = rng.random()
+    while len(colors) < count:
+        hue = (hue + golden) % 1.0
+        sat = 0.45 + 0.4 * rng.random()
+        val = 0.55 + 0.4 * rng.random()
+        color = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(hue, sat, val))
+        if color not in used:
+            used.add(color)
+            colors.append(color)
+    return colors
 
 
 def read_classes(path):
