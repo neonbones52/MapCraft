@@ -2,7 +2,8 @@
 
 Levels count blocks up from the sea floor: SEA_WATER is the top of the sea, a land block of height step s has its
 ground top at s + LAND_BASE (one block above the sea). A river's water stands one block below the lowest bank upstream
-(the running minimum of its banks), its bed one block lower; a brook is one block wide, a river two (the second block
+(the running minimum of the blocks it carves and the dry blocks beside them, so it never stands above a bank), its bed
+one block lower; a brook is one block wide, a river two (the second block
 beside the path, on its lower side), and a diagonal step of a path fills the lower corner block. A lake's water stands
 one block below its lowest shore. Under the sea nothing is drawn: its ground level is 0.
 
@@ -16,7 +17,7 @@ from scipy import ndimage
 
 from biomes import read_biomes
 from heightmap import ROOT, STEPS, read_blocks
-from river_paths import inside, read_lines, trace
+from river_paths import FOUR_STEPS, inside, read_lines, trace
 from sources import block_classes
 from validate_land import FOUR, LAKE, LAND, SEA, WASTE
 
@@ -39,8 +40,51 @@ def lake_levels(classes, steps, ground, water):
 
 
 def carve_rivers(classes, steps, paths, cls, ground, water):
-    """River blocks: path blocks, the lower corner of every diagonal step, the second block of a 2-wide river."""
+    """River blocks: path blocks, the lower corner of every diagonal step, the second block of a 2-wide river. The
+    water stands one block below the lowest bank upstream: the running minimum, along the path, of the steps of the
+    blocks carved at each point and of the dry blocks beside them (4 neighbours, not carved by any river), so it
+    never stands above a bank."""
     dry = (classes == LAND) | (classes == WASTE)
+
+    # Which blocks each point of each river carves (the side block of a 2-wide river is the lower one; a diagonal
+    # step fills the lower corner).
+    carved_by = []
+    for river in paths:
+        path, widths = [tuple(map(int, p)) for p in river['path']], river['width']
+        points = []
+        for i, (block, width) in enumerate(zip(path, widths)):
+            blocks, corner = [block], None
+            if i + 1 < len(path):
+                (y0, x0), (y1, x1) = block, path[i + 1]
+                if y0 != y1 and x0 != x1:
+                    a, b = (y0, x1), (y1, x0)
+                    corner = a if steps[a] <= steps[b] else b
+            if width == 2:
+                before, after = path[max(i - 1, 0)], path[min(i + 1, len(path) - 1)]
+                dy, dx = after[0] - before[0], after[1] - before[1]
+                y, x = block
+                across = ((0, -1), (0, 1)) if abs(dy) >= abs(dx) else ((-1, 0), (1, 0))
+                sides = [(y + oy, x + ox) for oy, ox in across]
+                sides = [s for s in sides if inside(*s) and dry[s] and s not in path]
+                if sides:
+                    blocks.append(min(sides, key=lambda s: steps[s]))
+            points.append((blocks, corner))
+        carved_by.append(points)
+    carved = np.zeros(classes.shape, bool)
+    for points in carved_by:
+        for blocks, corner in points:
+            for block in blocks + ([corner] if corner else []):
+                if dry[block]:
+                    carved[block] = True
+
+    def lowest_bank(blocks):
+        low = min(int(steps[b]) for b in blocks)
+        for y, x in blocks:
+            for oy, ox in FOUR_STEPS:
+                n = (y + oy, x + ox)
+                if inside(*n) and dry[n] and not carved[n]:
+                    low = min(low, int(steps[n]))
+        return low
 
     def set_block(block, level):
         if not dry[block]:
@@ -51,28 +95,16 @@ def carve_rivers(classes, steps, paths, cls, ground, water):
         water[block] = level
         ground[block] = level - 1
 
-    for river in paths:
-        path, widths = [tuple(map(int, p)) for p in river['path']], river['width']
+    for points in carved_by:
         low, levels = STEPS + 1, []
-        for block in path:
-            low = min(low, int(steps[block]))
+        for i, (blocks, corner) in enumerate(points):
+            low = min(low, lowest_bank(blocks + ([corner] if corner else [])))
             levels.append(low + LAND_BASE - 1)
-        for i, (block, width, level) in enumerate(zip(path, widths, levels)):
-            set_block(block, level)
-            if i + 1 < len(path):
-                (y0, x0), (y1, x1) = block, path[i + 1]
-                if y0 != y1 and x0 != x1:
-                    a, b = (y0, x1), (y1, x0)
-                    set_block(a if steps[a] <= steps[b] else b, min(level, levels[i + 1]))
-            if width == 2:
-                before, after = path[max(i - 1, 0)], path[min(i + 1, len(path) - 1)]
-                dy, dx = after[0] - before[0], after[1] - before[1]
-                y, x = block
-                across = ((0, -1), (0, 1)) if abs(dy) >= abs(dx) else ((-1, 0), (1, 0))
-                sides = [(y + oy, x + ox) for oy, ox in across]
-                sides = [s for s in sides if inside(*s) and dry[s] and cls[s] != RIVER]
-                if sides:
-                    set_block(min(sides, key=lambda s: steps[s]), level)
+        for i, (blocks, corner) in enumerate(points):
+            for block in blocks:
+                set_block(block, levels[i])
+            if corner:
+                set_block(corner, min(levels[i], levels[i + 1]))
 
 
 def surface():

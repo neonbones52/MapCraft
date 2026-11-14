@@ -42,4 +42,7 @@ namespace mc
     // not as tiny copies.
     std::vector<MapLabel> map_mode_labels(const MapData& map, const GameData* game, const LabelRaster& raster,
                                           const LabelFont& font, MapMode mode);
+    // The key (owner, region, culture, religion) a mode groups each province's name by, 0 = none: blocks of a
+    // name's own group never hide it (render/labels.h).
+    std::vector<std::uint32_t> map_mode_label_keys(const MapData& map, const GameData* game, MapMode mode);
 }

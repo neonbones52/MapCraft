@@ -5,8 +5,8 @@
 
 namespace mc::shaders
 {
-    // World space: x = map x, y = up, z = -map y; one unit = one map pixel. The map is the plane y = 0 (the voxel
-    // surface that replaces it is still to come, docs/RENDER.md).
+    // World space: x = map x, y = up, z = -map y; one unit = one map pixel. The sea's surface is y = 0; the blocks
+    // stand on the map's block grid (docs/RENDER.md).
     const char* const map_source = R"hlsl(
 cbuffer Frame : register(b0)
 {
@@ -22,16 +22,11 @@ cbuffer Frame : register(b0)
 
 Texture2D<uint>           province_ids  : register(t0);
 StructuredBuffer<float4>  fills         : register(t1);   // rgb, a = how much the map mode colours the province
-Texture2D<uint>           classes       : register(t2);   // pixel class: 0 sea, 1 land, 2 lake, 3 wasteland
 StructuredBuffer<uint>    selected      : register(t3);   // per province: 1 = selected (editor)
 SamplerState              s_linear      : register(s0);
 
 static const float3 GREYIFY = float3(0.212671, 0.715160, 0.072169);
 
-// Placeholder surface colours of the flat map, per pixel class.
-static const float3 CLASS_COLOR[4] = { float3(0.13, 0.25, 0.42), float3(0.47, 0.55, 0.36), float3(0.20, 0.38, 0.55),
-                                       float3(0.45, 0.43, 0.40) };
-static const float3 WATER_COLOR = float3(0.20, 0.38, 0.55);   // rivers, like lakes
 
 float hash(float2 p)
 {
@@ -47,25 +42,6 @@ float value_noise(float2 p)
     float2 u = f * f * (3.0 - 2.0 * f);
     float a = hash(i), b = hash(i + float2(1, 0)), c = hash(i + float2(0, 1)), d = hash(i + float2(1, 1));
     return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
-}
-
-int2 texel(float2 m) { return clamp(int2(floor(m)), int2(0, 0), int2(map_size) - 1); }
-
-// --------------------------------------------------------------------------------------------------------- map
-
-struct MapOut
-{
-    float4 pos : SV_Position;
-    float2 map : TEXCOORD0;
-};
-
-MapOut vs_map(uint vid : SV_VertexID)
-{
-    const float2 corners[6] = { float2(0, 0), float2(1, 0), float2(0, 1), float2(1, 0), float2(1, 1), float2(0, 1) };
-    MapOut o;
-    o.map = corners[vid] * map_size;
-    o.pos = mul(float4(o.map.x, 0.0, -o.map.y, 1.0), view_proj);
-    return o;
 }
 
 // Province colour sampled like EU4's GetProvinceColorSampled: four point lookups, the colours (never the ids)
@@ -94,76 +70,262 @@ float4 province_fill(float2 m, out float hover, out float pick)
     return float4(rgb, total > 0.0 ? 1.0 : 0.0);
 }
 
-float4 ps_map(MapOut input) : SV_Target
+// ----------------------------------------------------------------------------------------------------- terrain
+// The voxel surface (render/terrain.cpp): runs of block faces. Levels count blocks up from the sea floor, the sea's
+// top is level 1 at world height 0; a level is block_size world units (a block is a cube).
+
+Texture2D<uint4>          blocks         : register(t4);    // per block: ground top, water top (0 = none), material, class
+StructuredBuffer<uint2>   terrain_quads  : register(t7);
+Texture2DArray<float4>    block_layers   : register(t8);
+struct TextureInfo
 {
-    float2 m = input.map;
-    uint cls = min(classes.Load(int3(texel(m), 0)), 3u);
-    float dry = (cls == 1 || cls == 3) ? 1.0 : 0.0;
-    float3 material = CLASS_COLOR[cls];
-    float hover, pick;
-    float4 fill = province_fill(m, hover, pick);
-    fill.a *= dry;
-    float3 color = material;
-    if (map_mode != 0) {
-        // EU4 political shading: grey of the material under the province colour (FRAME.md), pulled halfway to a
-        // constant.
-        float grey = lerp(0.36, dot(material, GREYIFY), 0.5);
-        float3 political = 0.4 * grey + 0.45 * fill.rgb;
-        color = lerp(material, political * 1.35, fill.a);
+    uint  first_layer;
+    uint  frames;
+    float frame_time;
+    uint  tint;        // 0 none, 1 grass, 2 water
+};
+StructuredBuffer<TextureInfo> block_textures : register(t9);
+struct Material
+{
+    uint  top;
+    uint  side;
+    uint  overlay;     // NO_TEXTURE: none
+    uint  under;
+    uint  deep;
+    uint3 material_pad;
+};
+StructuredBuffer<Material> materials  : register(t10);
+Texture2D<float4>          grass_tint : register(t11);       // per block, blended between biomes
+Texture2D<float4>          water_tint : register(t12);
+SamplerState               s_point    : register(s1);        // crisp texels, blended mips, wrapping
+
+cbuffer Terrain : register(b2)
+{
+    uint2 block_grid;
+    float block_size;     // map px per block side, world units per level
+    uint  under_depth;    // blocks under the top one that show `under`
+    uint  water_still;
+    uint  water_flow;
+    uint2 terrain_pad;
+};
+
+static const uint  NO_TEXTURE = 0xFFFFFFFF;
+// FACE_SLOPE: a waterfall's top, water sloping from its source's level (the edge toward the source, a side Face) down
+// to its own.
+static const uint  FACE_TOP = 0, FACE_WEST = 1, FACE_EAST = 2, FACE_NORTH = 3, FACE_SOUTH = 4, FACE_SLOPE = 5;
+static const int2  FACE_NORMAL[6] = { int2(0, 0), int2(-1, 0), int2(1, 0), int2(0, -1), int2(0, 1), int2(0, 0) };
+// Minecraft's face shading: tops full, north and south faces 0.8, east and west 0.6.
+static const float FACE_SHADE[6] = { 1.0, 0.6, 0.6, 0.8, 0.8, 1.0 };
+// Smooth lighting: a face corner's light by how many of its three neighbours in front of the face are solid.
+static const float AO_LIGHT[4] = { 0.5, 0.65, 0.82, 1.0 };
+static const float3 FOG_COLOR = float3(0.70, 0.80, 0.94);   // also the clear colour (MapRenderer kClear)
+static const float  FOG_WIDTH = 48.0;                       // map px of fog inside every map edge
+
+float level_y(float level) { return (level - 1.0) * block_size; }
+
+uint4 block_at(int2 b)
+{
+    return any(b < 0) || any(b >= int2(block_grid)) ? uint4(0, 0, 0, 0) : blocks.Load(int3(b, 0));
+}
+
+// The highest top (ground or water) round a map point, world height: the border strips lie on it.
+float surface_y(float2 m)
+{
+    uint top = 1;
+    [unroll] for (int i = 0; i < 4; ++i) {
+        float2 p = m + float2((i & 1) ? 0.5 : -0.5, (i & 2) ? 0.5 : -0.5);
+        uint4 b = block_at(int2(floor(p / block_size)));
+        top = max(top, max(b.x, b.y));
     }
+    return level_y(top);
+}
+
+struct TerrainOut
+{
+    float4 pos   : SV_Position;
+    float2 map   : TEXCOORD0;    // map px
+    float  level : TEXCOORD1;    // blocks up from the sea floor
+    nointerpolation uint face : TEXCOORD2;
+};
+
+TerrainOut vs_terrain(uint vid : SV_VertexID)
+{
+    const float2 corners[6] = { float2(0, 0), float2(1, 0), float2(0, 1), float2(1, 0), float2(1, 1), float2(0, 1) };
+    uint2 q = terrain_quads[vid / 6];
+    float2 c = corners[vid % 6];
+    uint face = (q.x >> 21) & 7;
+    float2 b = float2(q.x & 0x7FF, (q.x >> 11) & 0x3FF);
+    float length = q.y & 0x7FF;
+    float low = (q.y >> 11) & 0xFF;
+    float high = (q.y >> 19) & 0xFF;
+    float2 m;
+    float level = lerp(low, high, c.y);
+    if (face == FACE_TOP) {
+        m = b + float2(c.x * length, c.y);
+        level = high;
+    } else if (face == FACE_SLOPE) {
+        m = b + c;
+        uint source = (q.y >> 27) & 7;
+        float toward = source == FACE_WEST ? 1.0 - c.x : source == FACE_EAST ? c.x
+                     : source == FACE_NORTH ? 1.0 - c.y : c.y;   // 1 at the edge toward the source
+        level = lerp(low, high, toward);
+    } else if (face == FACE_WEST || face == FACE_EAST) {
+        m = float2(b.x + (face == FACE_EAST ? 1.0 : 0.0), b.y + c.x * length);
+    } else {
+        m = float2(b.x + c.x * length, b.y + (face == FACE_SOUTH ? 1.0 : 0.0));
+    }
+    m *= block_size;
+    TerrainOut o;
+    o.pos = mul(float4(m.x, level_y(level), -m.y, 1.0), view_proj);
+    o.map = m;
+    o.level = level;
+    o.face = face;
+    return o;
+}
+
+float4 block_texture(uint index, float2 uv, float2 gx, float2 gy)
+{
+    TextureInfo t = block_textures[index];
+    uint frame = t.frames > 1 ? (uint)(time / t.frame_time) % t.frames : 0;
+    return block_layers.SampleGrad(s_point, float3(frac(uv), t.first_layer + frame), gx, gy);
+}
+
+float3 block_tint(uint index, float2 m)
+{
+    uint kind = block_textures[index].tint;
+    float2 at = m / (float2(block_grid) * block_size);
+    return kind == 1 ? grass_tint.SampleLevel(s_linear, at, 0).rgb
+         : kind == 2 ? water_tint.SampleLevel(s_linear, at, 0).rgb
+         : float3(1.0, 1.0, 1.0);
+}
+
+float corner_light(bool side1, bool side2, bool corner)
+{
+    return AO_LIGHT[(side1 && side2) ? 0 : 3 - (uint(side1) + uint(side2) + uint(corner))];
+}
+
+// Ambient occlusion of a top at `layer` (the layer of air above it) over the block `b`, f = place in the face.
+float top_light(int2 b, int layer, float2 f)
+{
+    bool s[3][3];
+    [unroll] for (int y = 0; y < 3; ++y) {
+        [unroll] for (int x = 0; x < 3; ++x) {
+            s[y][x] = (int)block_at(b + int2(x - 1, y - 1)).x > layer;
+        }
+    }
+    float l00 = corner_light(s[1][0], s[0][1], s[0][0]);
+    float l10 = corner_light(s[1][2], s[0][1], s[0][2]);
+    float l01 = corner_light(s[1][0], s[2][1], s[2][0]);
+    float l11 = corner_light(s[1][2], s[2][1], s[2][2]);
+    return lerp(lerp(l00, l10, f.x), lerp(l01, l11, f.x), f.y);
+}
+
+// Ambient occlusion of a side whose air is the column `front` at `layer`; `along` runs along the face (map px axis),
+// f.x = place along it, f.y = place up the block.
+float side_light(int2 front, int2 along, int layer, float2 f)
+{
+    int g0 = (int)block_at(front - along).x;
+    int g1 = (int)block_at(front).x;
+    int g2 = (int)block_at(front + along).x;
+    // Solid at a layer: the column's ground covers it.
+    float l00 = corner_light(g0 > layer, g1 > layer - 1, g0 > layer - 1);
+    float l10 = corner_light(g2 > layer, g1 > layer - 1, g2 > layer - 1);
+    float l01 = corner_light(g0 > layer, g1 > layer + 1, g0 > layer + 1);
+    float l11 = corner_light(g2 > layer, g1 > layer + 1, g2 > layer + 1);
+    return lerp(lerp(l00, l10, f.x), lerp(l01, l11, f.x), f.y);
+}
+
+float4 ps_terrain(TerrainOut input) : SV_Target
+{
+    uint face = input.face;
+    int2 n = FACE_NORMAL[face];
+    float2 m = input.map;
+    float2 inside = m - float2(n) * 0.5;   // half a map px into the column the face belongs to
+    int2 owner = int2(floor(inside / block_size));
+    uint4 blk = block_at(owner);
+    uint ground = blk.x;
+    uint water = blk.y;
+    uint top = max(ground, water);
+    uint fall = blk.w >> 4;   // a waterfall: the Face toward its source
+    if (fall != 0) {
+        uint4 src = block_at(owner + FACE_NORMAL[fall]);
+        uint source_top = max(src.x, src.y);
+        // Its sides reach up to the source's water; cut them off above the slope.
+        float2 f = saturate(m / block_size - float2(owner));
+        float toward = fall == FACE_WEST ? 1.0 - f.x : fall == FACE_EAST ? f.x : fall == FACE_NORTH ? 1.0 - f.y : f.y;
+        if (face != FACE_SLOPE) {
+            clip(lerp((float)top, (float)source_top, toward) - input.level + 0.001);
+        }
+        top = source_top;
+    }
+    bool flat = face == FACE_TOP || face == FACE_SLOPE;
+    int layer = flat ? (int)top - 1 : min((int)floor(input.level), (int)top - 1);
+    bool wet = face == FACE_SLOPE || (face == FACE_TOP ? water > ground : layer >= (int)ground);
+
+    // Texture coordinates in blocks (one texture per block), continuous across the run for the mip choice; sides
+    // read left to right seen from outside, the texture's top row at the top of each block.
+    float2 uv;
+    if (face == FACE_TOP) {
+        uv = m / block_size;
+    } else if (face == FACE_SLOPE) {
+        float2 down = -float2(FACE_NORMAL[fall]);   // the way the water flows, away from its source
+        uv = float2(dot(m, float2(-down.y, down.x)), dot(m, down)) / block_size;
+    } else {
+        float along = face == FACE_EAST ? -m.y : face == FACE_WEST ? m.y : face == FACE_NORTH ? -m.x : m.x;
+        uv = float2(along / block_size, -input.level);
+    }
+    float2 gx = ddx(uv);
+    float2 gy = ddy(uv);
+
+    float3 base;
+    float light = 1.0;
+    if (wet) {
+        uint tex = face == FACE_TOP ? water_still : water_flow;
+        base = block_texture(tex, uv, gx, gy).rgb * block_tint(tex, inside);
+    } else {
+        Material mat = materials[blk.z];
+        uint tex = mat.top;
+        uint overlay = NO_TEXTURE;
+        if (face != FACE_TOP) {
+            int depth = (int)ground - 1 - layer;
+            tex = depth == 0 ? mat.side : depth <= (int)under_depth ? mat.under : mat.deep;
+            overlay = depth == 0 ? mat.overlay : NO_TEXTURE;
+        }
+        base = block_texture(tex, uv, gx, gy).rgb * block_tint(tex, inside);
+        if (overlay != NO_TEXTURE) {
+            float4 o = block_texture(overlay, uv, gx, gy);
+            base = lerp(base, o.rgb * block_tint(overlay, inside), o.a);
+        }
+        float2 f = frac(inside / block_size);
+        if (face == FACE_TOP) {
+            light = top_light(owner, layer + 1, f);
+        } else {
+            int2 along = int2(abs(n.y), abs(n.x));
+            light = side_light(owner + n, along, layer, float2(dot(f, float2(along)), input.level - layer));
+        }
+    }
+
+    // Map mode: EU4's political shading over dry faces (FRAME.md), the grey of the surface under the province
+    // colour, pulled halfway to a constant.
+    float hover, pick;
+    float4 fill = province_fill(inside, hover, pick);
+    float dry = wet ? 0.0 : 1.0;
+    fill.a *= dry;
+    float3 color = base;
+    if (map_mode != 0) {
+        float grey = lerp(0.36, dot(base, GREYIFY), 0.5);
+        float3 political = 0.4 * grey + 0.45 * fill.rgb;
+        color = lerp(base, political * 1.35, fill.a);
+    }
+    color *= FACE_SHADE[face] * light;
     color = lerp(color, color * 1.2 + 0.06, hover * 0.6);
     // Selected (editor): brighter, with light diagonal hatching 12 map px apart, so it reads apart from the hover.
     float hatch = step(0.5, frac((m.x + m.y) / 12.0));
     color = lerp(color, color * 1.25 + float3(0.10, 0.09, 0.05) + hatch * 0.10, pick * dry * 0.8);
+
+    float edge = min(min(m.x, m.y), min(map_size.x - m.x, map_size.y - m.y));
+    color = lerp(color, FOG_COLOR, 1.0 - smoothstep(0.0, FOG_WIDTH, edge));
     return float4(color, 1.0);
-}
-
-// ----------------------------------------------------------------------------------------------------- rivers
-// EU4 draws rivers.bmp as strips; ours lie on the map plane in the water colour, never thinner than a screen pixel.
-
-struct RiverVertex
-{
-    float2 pos;         // map px on the river's line
-    float2 normal;      // to the left bank, looking downstream
-    float  along;       // map px from the source
-    float  side;        // -1 or +1
-    float  half_width;  // map px
-    float  pad;
-};
-StructuredBuffer<RiverVertex> river_vertices : register(t6);
-
-struct RiverOut
-{
-    float4 pos        : SV_Position;
-    float  across     : TEXCOORD0;   // map px from the centre line
-    float  half_width : TEXCOORD1;
-    float  pixel      : TEXCOORD2;   // map px per screen px here
-};
-
-RiverOut vs_river(uint vid : SV_VertexID)
-{
-    RiverVertex v = river_vertices[vid];
-    RiverOut o;
-    float3 centre = float3(v.pos.x, 0.0, -v.pos.y);
-    float ps = distance(eye, centre) * pixel_angle;
-    float hw = max(v.half_width, 0.6 * ps);   // never thinner than about a screen pixel
-    float extent = hw + ps;                   // one more screen pixel for antialiasing
-    float2 m = v.pos + v.normal * v.side * extent;
-    float3 world = float3(m.x, 0.0, -m.y);
-    world += normalize(eye - world) * (ps * 1.5 + 0.05);   // pulled a little toward the camera, above the map
-    o.pos = mul(float4(world, 1.0), view_proj);
-    o.across = v.side * extent;
-    o.half_width = hw;
-    o.pixel = ps;
-    return o;
-}
-
-float4 ps_river(RiverOut input) : SV_Target
-{
-    float d = abs(input.across);
-    float coverage = saturate((input.half_width - d) / input.pixel + 0.5);
-    clip(coverage - 0.01);
-    return float4(WATER_COLOR, 0.92 * coverage);
 }
 
 // ---------------------------------------------------------------------------------------------------- borders
@@ -226,12 +388,13 @@ BorderOut vs_border(uint vid : SV_VertexID)
         o.minus_color = o.plus_color = float3(0, 0, 0);
         return o;
     }
-    float3 centre = float3(v.pos.x, 0.0, -v.pos.y);
+    float y = surface_y(v.pos);   // on the blocks: the top of the higher side
+    float3 centre = float3(v.pos.x, y, -v.pos.y);
     float ps = distance(eye, centre) * pixel_angle;
     float hw = max(STYLE_HALF_WIDTH[o.style], STYLE_MIN_PX[o.style] * 0.5 * ps);
     float extent = hw + ps;   // one more screen pixel for antialiasing
     float2 m = v.pos + v.normal * v.side * extent;
-    float3 world = float3(m.x, 0.0, -m.y);
+    float3 world = float3(m.x, y, -m.y);
     world += normalize(eye - world) * (ps * 1.5 + 0.05);   // pulled a little toward the camera, above the map
     o.pos = mul(float4(world, 1.0), view_proj);
     o.across = v.side * extent;
@@ -296,10 +459,12 @@ struct LabelVertex
     float4 cell;            // the glyph's atlas cell x0, y0, x1, y1
     float  map_per_texel;
     float  sigma;           // halo Gaussian, map px
-    float2 pad;
+    uint   group;           // the name's key, 0 = none
+    float  pad;
 };
 StructuredBuffer<LabelVertex> label_vertices : register(t16);
 Texture2D<float>              label_atlas    : register(t17);
+StructuredBuffer<uint>        label_keys     : register(t18);   // per province: the key its names are grouped by
 
 cbuffer LabelDraw : register(b1)
 {
@@ -320,6 +485,8 @@ struct LabelOut
     nointerpolation float4 cell : TEXCOORD1;
     nointerpolation float map_per_texel : TEXCOORD2;
     nointerpolation float sigma : TEXCOORD3;
+    float3 world : TEXCOORD4;
+    nointerpolation uint group : TEXCOORD5;
 };
 
 LabelOut vs_label(uint vid : SV_VertexID)
@@ -331,7 +498,56 @@ LabelOut vs_label(uint vid : SV_VertexID)
     o.cell = v.cell;
     o.map_per_texel = v.map_per_texel;
     o.sigma = v.sigma;
+    o.world = v.world;
+    o.group = v.group;
     return o;
+}
+
+// Whether blocks hide a point of a name from the eye: a march along the ray from the point to the eye over the blocks
+// it crosses (2D DDA in blocks) until the ray is above every block. A block hides the point if its top (ground or
+// water) is above the ray where the ray enters it and more than LABEL_CLEARANCE levels above the name's plane, and
+// its province is not of the name's own group: the name's own land never cuts it (it is what the name is about),
+// other land standing in front of it does.
+static const float LABEL_CLEARANCE = 2.0;   // levels
+static const float LABEL_RAY_TOP = 40.0;    // level above every block
+
+bool label_hidden(float3 p, uint group)
+{
+    float plane = p.y / block_size + 1.0;                   // the name's level
+    float3 d = eye - p;
+    float rise = d.y / block_size;                          // levels over the whole ray
+    if (rise <= 0.0) {
+        return false;
+    }
+    float t_end = min(1.0, (LABEL_RAY_TOP - plane) / rise);
+    float2 m0 = float2(p.x, -p.z) / block_size;             // blocks
+    float2 dm = float2(d.x, -d.z) / block_size;
+    int2 cell = int2(floor(m0));
+    int2 step_dir = int2(dm.x >= 0.0 ? 1 : -1, dm.y >= 0.0 ? 1 : -1);
+    float2 inv = 1.0 / max(abs(dm), 1e-6);
+    float2 next = float2(dm.x >= 0.0 ? floor(m0.x) + 1.0 - m0.x : m0.x - floor(m0.x),
+                         dm.y >= 0.0 ? floor(m0.y) + 1.0 - m0.y : m0.y - floor(m0.y)) * inv;
+    float t = 0.0;
+    [loop] for (int i = 0; i < 128 && t < t_end; ++i) {
+        uint4 b = block_at(cell);
+        float top = (float)max(b.x, b.y);
+        if (top > plane + LABEL_CLEARANCE && top > plane + rise * t) {
+            uint province = province_ids.Load(int3(cell * (int)block_size + (int)(block_size * 0.5), 0));
+            if (group == 0 || label_keys[province] != group) {
+                return true;
+            }
+        }
+        if (next.x < next.y) {
+            t = next.x;
+            next.x += inv.x;
+            cell.x += step_dir.x;
+        } else {
+            t = next.y;
+            next.y += inv.y;
+            cell.y += step_dir.y;
+        }
+    }
+    return false;
 }
 
 // Signed distance to the ink in map px (positive outside). Beyond the glyph's cell the distance continues from its
@@ -348,6 +564,10 @@ float4 ps_label_halo(LabelOut input) : SV_Target
     // The Gaussian-blurred ink at distance d from its edge is the normal CDF of -d / sigma (logistic approximation).
     float d = label_distance(input);
     float blurred = 1.0 / (1.0 + exp(1.702 * d / input.sigma));
+    clip(blurred * LABEL_HALO_GAIN - 0.002);
+    if (label_hidden(input.world, input.group)) {
+        discard;
+    }
     return float4(LABEL_HALO, min(LABEL_HALO_GAIN * blurred, LABEL_HALO_MAX) * label_alpha);
 }
 
@@ -356,6 +576,9 @@ float4 ps_label_ink(LabelOut input) : SV_Target
     float d = label_distance(input);
     float coverage = saturate(0.5 - d / max(fwidth(d), 1e-4));
     clip(coverage - 0.002);
+    if (label_hidden(input.world, input.group)) {
+        discard;
+    }
     return float4(LABEL_INK, coverage * label_alpha);
 }
 )hlsl";

@@ -205,6 +205,28 @@ namespace mc
         }
     }
 
+    std::vector<std::uint32_t> map_mode_label_keys(const MapData& map, const GameData* game, MapMode mode)
+    {
+        std::vector<std::uint32_t> keys(map.count, 0);
+        const bool data = has_game(game);
+        for (std::uint32_t id = 1; id < map.count; ++id) {
+            if (map.kind[id] != ProvinceKind::land) {
+                continue;
+            }
+            switch (mode) {
+            case MapMode::terrain:
+            case MapMode::political:
+                keys[id] = data ? game->state.provinces.owner[id] : map.region[id];
+                break;
+            case MapMode::regions: keys[id] = map.region[id]; break;
+            case MapMode::culture: keys[id] = data ? game->state.provinces.culture[id] : 0; break;
+            case MapMode::religion: keys[id] = data ? game->state.provinces.religion[id] : 0; break;
+            default: break;
+            }
+        }
+        return keys;
+    }
+
     void map_mode_colors(const MapData& map, const GameData* game, MapMode mode, std::vector<ProvinceFill>* fills,
                          std::vector<BorderStyle>* styles)
     {

@@ -124,8 +124,10 @@ def main():
     names_file = ROOT / 'build' / 'labels' / 'province_names.npz'
     if not names_file.exists():
         sys.exit(f'{names_file} missing: run tools/labels/provinces.py')
-    sections.append((b'NGLY', np.load(names_file)['glyphs'].astype(np.float32).tobytes()))  # f32[g*7] x, y, dir x,
+    names = np.load(names_file)
+    sections.append((b'NGLY', names['glyphs'].astype(np.float32).tobytes()))  # f32[g*7] x, y, dir x,
     #   dir y, quad width, height (map px), cp1252 code
+    sections.append((b'NGLP', names['province'].astype(np.uint16).tobytes()))  # u16[g] the glyph's province
     # Rivers (tools/mapbake/rivers.py); both sections empty without rivers.png.
     river_points, river_chains = [np.zeros((0, 3), np.float32)], []
     for river in rivers.traced():

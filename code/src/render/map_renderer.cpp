@@ -38,20 +38,8 @@ namespace mc
         };
         static_assert(sizeof(BorderVertex) == 32);
 
-        // Two vertices per river point, one on each bank (HLSL RiverVertex).
-        struct RiverVertex
-        {
-            float pos[2];
-            float normal[2];     // to the left bank, looking downstream
-            float along;         // map px from the source
-            float side;          // -1 or +1
-            float half_width;    // map px
-            float pad;
-        };
-        static_assert(sizeof(RiverVertex) == 32);
-        constexpr float kRiverTaper = 10.0f;      // map px over which a river narrows to its source
         constexpr float kBorderStep = 4.0f;       // map px: border strips have a point at least this often
-        constexpr float kClear[4] = { 0.075f, 0.066f, 0.058f, 1.0f };
+        constexpr float kClear[4] = { 0.70f, 0.80f, 0.94f, 1.0f };   // the fog at the map edges (HLSL FOG_COLOR)
 
         bool check(HRESULT hr, const char* what, std::string* error)
         {
@@ -111,7 +99,7 @@ namespace mc
         }
     }
 
-    bool MapRenderer::init(ID3D11Device* device, const MapData& map, std::string* error)
+    bool MapRenderer::init(ID3D11Device* device, const MapData& map, const TerrainLook& look, std::string* error)
     {
         device_ = device;
         map_width_ = static_cast<float>(map.width);
@@ -129,12 +117,10 @@ namespace mc
 
         std::vector<ProvinceFill> no_fill(map.count);
         std::vector<std::uint32_t> no_selection(map.count, 0);
-        return create_shaders(error) && create_rivers(map, error) && create_borders(map, error) &&
-               create_states(error) &&
+        return create_shaders(error) && create_borders(map, error) && create_states(error) &&
+               terrain_.init(device, map, look, error) &&
                texture(device, map.width, map.height, DXGI_FORMAT_R16_UINT, map.pixel_province.data(), map.width * 2,
                        &province_ids_, "province ids", error) &&
-               texture(device, map.width, map.height, DXGI_FORMAT_R8_UINT, map.pixel_class.data(), map.width,
-                       &classes_, "pixel classes", error) &&
                structured(device, no_fill.size(), no_fill.data(), true, &fills_buffer_, &fills_, "fills", error) &&
                structured(device, no_selection.size(), no_selection.data(), true, &selection_buffer_, &selection_,
                           "selection", error) &&
@@ -155,70 +141,13 @@ namespace mc
                    check(device_->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, &out),
                          entry, error);
         };
-        return vs("vs_map", map_vs_) && ps("ps_map", map_ps_) && vs("vs_river", river_vs_) &&
-               ps("ps_river", river_ps_) && vs("vs_border", border_vs_) && ps("ps_border", border_ps_);
-    }
-
-    bool MapRenderer::create_rivers(const MapData& map, std::string* error)
-    {
-        // A strip along each river, like EU4's river meshes from rivers.bmp; rivers rising on land narrow to their
-        // source.
-        std::vector<RiverVertex> vertices;
-        std::vector<std::uint32_t> indices;
-        const std::size_t points = map.river_points.size() / 3;
-        for (std::size_t r = 0; r + 3 < map.river_chains.size(); r += 4) {
-            const std::uint32_t first = map.river_chains[r];
-            const std::uint32_t count = map.river_chains[r + 1];
-            const bool source = (map.river_chains[r + 2] & 1) != 0;
-            if (count < 2 || first + count > points) {
-                continue;
-            }
-            const float* p = &map.river_points[std::size_t{ first } * 3];
-            const auto base = static_cast<std::uint32_t>(vertices.size());
-            float along = 0.0f;
-            for (std::uint32_t i = 0; i < count; ++i) {
-                const std::uint32_t prev = i > 0 ? i - 1 : 0;
-                const std::uint32_t next = std::min(i + 1, count - 1);
-                float tx = p[next * 3] - p[prev * 3];
-                float ty = p[next * 3 + 1] - p[prev * 3 + 1];
-                const float len = std::hypot(tx, ty);
-                tx = len > 1e-6f ? tx / len : 1.0f;
-                ty = len > 1e-6f ? ty / len : 0.0f;
-                if (i > 0) {
-                    along += std::hypot(p[i * 3] - p[prev * 3], p[i * 3 + 1] - p[prev * 3 + 1]);
-                }
-                float half = p[i * 3 + 2] * 0.5f;
-                if (source) {
-                    const float t = std::clamp(along / kRiverTaper, 0.0f, 1.0f);
-                    half *= 0.35f + 0.65f * t * t * (3.0f - 2.0f * t);
-                }
-                for (const float side : { -1.0f, 1.0f }) {
-                    vertices.push_back({ { p[i * 3], p[i * 3 + 1] }, { -ty, tx }, along, side, half, 0.0f });
-                }
-                if (i + 1 < count) {
-                    const auto k = static_cast<std::uint32_t>(base + i * 2);
-                    indices.insert(indices.end(), { k, k + 1, k + 2, k + 1, k + 3, k + 2 });
-                }
-            }
-        }
-        river_index_count_ = static_cast<UINT>(indices.size());
-        if (vertices.empty()) {
-            return true;
-        }
-        D3D11_BUFFER_DESC ib{};
-        ib.ByteWidth = static_cast<UINT>(indices.size() * sizeof(std::uint32_t));
-        ib.Usage = D3D11_USAGE_IMMUTABLE;
-        ib.BindFlags = D3D11_BIND_INDEX_BUFFER;
-        const D3D11_SUBRESOURCE_DATA iinit{ indices.data(), 0, 0 };
-        return check(device_->CreateBuffer(&ib, &iinit, &river_indices_), "river indices", error) &&
-               structured(device_.Get(), vertices.size(), vertices.data(), false, nullptr, &river_vertices_,
-                          "river vertices", error);
+        return vs("vs_border", border_vs_) && ps("ps_border", border_ps_);
     }
 
     bool MapRenderer::create_borders(const MapData& map, std::string* error)
     {
-        // Two vertices per polyline point, one on each side; segments longer than kBorderStep are split (the voxel
-        // surface will need the strip to follow it).
+        // Two vertices per polyline point, one on each side; segments longer than kBorderStep are split, so the strip
+        // follows the blocks under it.
         std::vector<BorderVertex> vertices;
         std::vector<std::uint32_t> indices;
         chain_count_ = static_cast<std::uint32_t>(map.border_chains.size() / 4);
@@ -368,7 +297,6 @@ namespace mc
                check(device_->CreateBlendState(&opaque, &opaque_), "blend", error) &&
                check(device_->CreateBlendState(&alpha, &alpha_), "blend", error) &&
                check(device_->CreateDepthStencilState(&write, &depth_write_), "depth", error) &&
-               check(device_->CreateDepthStencilState(&read, &depth_read_), "depth", error) &&
                check(device_->CreateDepthStencilState(&border, &depth_border_), "depth", error);
     }
 
@@ -407,15 +335,16 @@ namespace mc
         return true;
     }
 
-    void MapRenderer::set_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels)
+    void MapRenderer::set_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
+                                 std::span<const std::uint32_t> keys)
     {
-        labels_.set_labels(device_.Get(), map, font, labels);
+        labels_.set_labels(device_.Get(), map, font, labels, keys);
     }
 
-    void MapRenderer::set_province_labels(const MapData& map, const LabelFont& font,
-                                          std::span<const MapLabel> labels)
+    void MapRenderer::set_province_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
+                                          std::span<const std::uint32_t> keys)
     {
-        province_labels_.set_labels(device_.Get(), map, font, labels);
+        province_labels_.set_labels(device_.Get(), map, font, labels, keys);
     }
 
     void MapRenderer::set_colors(ID3D11DeviceContext* context, std::span<const ProvinceFill> fills,
@@ -474,30 +403,17 @@ namespace mc
         ID3D11SamplerState* samplers[] = { linear_.Get() };
         context->VSSetSamplers(0, 1, samplers);
         context->PSSetSamplers(0, 1, samplers);
-        ID3D11ShaderResourceView* common[] = { province_ids_.Get(), fills_.Get(), classes_.Get(), selection_.Get() };
+        ID3D11ShaderResourceView* common[] = { province_ids_.Get(), fills_.Get(), nullptr, selection_.Get() };
         context->VSSetShaderResources(0, 4, common);
         context->PSSetShaderResources(0, 4, common);
 
-        // The map plane.
+        // The blocks (they also leave their data bound for the borders' vertex shader).
         context->OMSetBlendState(opaque_.Get(), nullptr, 0xFFFFFFFF);
         context->OMSetDepthStencilState(depth_write_.Get(), 0);
-        context->VSSetShader(map_vs_.Get(), nullptr, 0);
-        context->PSSetShader(map_ps_.Get(), nullptr, 0);
-        context->Draw(6, 0);
+        terrain_.draw(context);
 
-        // Rivers, blended over the land.
+        // Borders, blended over the blocks.
         context->OMSetBlendState(alpha_.Get(), nullptr, 0xFFFFFFFF);
-        context->OMSetDepthStencilState(depth_read_.Get(), 0);
-        if (river_index_count_ > 0) {
-            ID3D11ShaderResourceView* river_srv[] = { river_vertices_.Get() };
-            context->VSSetShaderResources(6, 1, river_srv);
-            context->IASetIndexBuffer(river_indices_.Get(), DXGI_FORMAT_R32_UINT, 0);
-            context->VSSetShader(river_vs_.Get(), nullptr, 0);
-            context->PSSetShader(river_ps_.Get(), nullptr, 0);
-            context->DrawIndexed(river_index_count_, 0, 0);
-        }
-
-        // Borders.
         if (border_index_count_ > 0) {
             ID3D11ShaderResourceView* border_srv[] = { border_styles_.Get(), border_vertices_.Get() };
             context->VSSetShaderResources(5, 2, border_srv);
@@ -516,9 +432,9 @@ namespace mc
         labels_.draw(context, view.mode_names_alpha);
         province_labels_.draw(context, view.province_names_alpha);
 
-        ID3D11ShaderResourceView* nulls[18] = {};
-        context->VSSetShaderResources(0, 18, nulls);
-        context->PSSetShaderResources(0, 18, nulls);
+        ID3D11ShaderResourceView* nulls[19] = {};
+        context->VSSetShaderResources(0, 19, nulls);
+        context->PSSetShaderResources(0, 19, nulls);
         ID3D11RenderTargetView* no_target = nullptr;
         context->OMSetRenderTargets(1, &no_target, nullptr);
     }

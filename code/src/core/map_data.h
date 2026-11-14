@@ -118,6 +118,7 @@ namespace mc
         // Province names, baked (tools/labels/provinces.py): 7 floats per glyph, x, y (map px), reading direction x, y,
         // quad width, height (map px), cp1252 code.
         std::span<const float> province_glyphs;
+        std::span<const std::uint16_t> province_glyph_owner;   // per glyph: the province it names
 
         [[nodiscard]] std::string_view province_name(std::uint32_t id) const;
         // Map px points of a province (positions): its city, and its name's anchor.

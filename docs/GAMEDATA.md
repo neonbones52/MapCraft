@@ -16,7 +16,7 @@ Tamriel Universalis и будет меняться вместе со специ�
 | Файл | Колонки | Что |
 |---|---|---|
 | `common/terrain.csv` | key, name, color | логический terrain провинций (не вид карты) |
-| `common/biomes.csv` | key, name, color, density | биомы вида карты: `color` — цвет в `biome.png`, `density` — плотность провинций при генерации карты (1 — обычная, меньше — провинции крупнее). Пока его читают только инструменты карты (`tools/mapgen/biomes.py`, `generate_provinces.py`); блоки поверхности и оттенки добавятся с рендером блоков |
+| `common/biomes.csv` | key, name, color, density, minecraft_biome, top, side, under, deep, shore, snow_top, snow_side, snow_line | биомы вида карты (см. ниже); не игровые данные, редактор его не правит |
 | `common/countries.csv` | tag, name, adjective, color | определения стран; `adjective` — для частей, отрезанных от столицы, по умолчанию = name |
 | `common/culture_groups.csv` | key, name | группы культур |
 | `common/cultures.csv` | key, name, color, group | культуры |
@@ -25,6 +25,18 @@ Tamriel Universalis и будет меняться вместе со специ�
 | `common/trade_goods.csv`, `trade_nodes.csv` | key, name, color | необязательны, пока нет торговли |
 | `setup/provinces.csv` | id, name, owner, controller, cores, terrain, tax, production, manpower, culture, religion, trade_good, trade_node, center_of_trade | провинции суши на старте |
 | `setup/countries.csv` | tag, capital, primary_culture, religion | страны на старте: столица (id провинции), основная культура, государственная религия |
+
+Подробности `common/biomes.csv` (читают инструменты карты и игра при запуске, docs/RENDER.md «Облик блоков»):
+- `color` — цвет биома в `biome.png`; `density` — плотность провинций при генерации карты (1 — обычная, меньше —
+  провинции крупнее);
+- `minecraft_biome` — ванильный биом (`data/minecraft/worldgen/biome/<имя>.json` в jar), чьи температура, осадки и
+  цвета дают оттенок травы и воды;
+- блоки — имена текстур `assets/minecraft/textures/block/<имя>.png` из jar: `top` — верх, `side` — бок верхнего блока,
+  `under` — бок следующих трёх, `deep` — глубже, `shore` — верх и бок берега (суша на блок выше моря или озера);
+- `snow_line` — высота ступени (0–32, как `height` в `provinces.csv`), с которой верх — `snow_top`, бок верхнего блока —
+  `snow_side`; пусто — снега нет, тогда `snow_top` и `snow_side` можно не заполнять;
+- биом, который есть в `world.mcmap`, обязан быть в таблице (ключ — `key`); правка блоков и оттенков видна после
+  перезапуска, без пересборки карты; новый биом или новый `color` — правка `biome.png` и `bake.py`.
 
 Подробности `setup/provinces.csv`:
 - `id` — номер провинции карты;

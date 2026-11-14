@@ -4,7 +4,9 @@
 #include <chrono>
 #include <cmath>
 
+#include "app/terrain_look.h"
 #include "core/log.h"
+#include "minecraft/assets.h"
 
 namespace mc
 {
@@ -15,11 +17,42 @@ namespace mc
         constexpr float kViewMargin = 32.0f;          // map px the farthest view shows round the map
     }
 
-    bool App::init(ID3D11Device* device, const std::filesystem::path& map_file, std::string* error)
+    bool App::init(ID3D11Device* device, const std::filesystem::path& map_file, const std::filesystem::path& biomes_csv,
+                   const std::filesystem::path& jar, std::string* error)
     {
         if (!map_.load(map_file, error)) {
             return false;
         }
+        if (jar.empty()) {
+            std::string where;
+            for (const std::filesystem::path& path : minecraft::jar_candidates()) {
+                where += "\n" + path.string();
+            }
+            *error = "Minecraft 26.2 not found. Looked for its client jar at:" + where;
+            return false;
+        }
+        minecraft::Assets assets;
+        TerrainLook look;
+        const auto look_started = std::chrono::steady_clock::now();
+        if (!assets.open(jar, error) || !build_terrain_look(map_, biomes_csv, assets, &look, error)) {
+            return false;
+        }
+        log::info("blocks: textures from {}, {} layers, {} materials, {:.0f} ms", jar.string(), look.layer_count,
+                  look.materials.size(),
+                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - look_started).count());
+        // The camera picks and zooms on the top of the blocks (water or ground).
+        camera_.set_ground([this](float map_x, float map_y) {
+            const float size = static_cast<float>(map_.block_size);
+            const float bx = std::floor(map_x / size);
+            const float by = std::floor(map_y / size);
+            if (!(bx >= 0.0f && by >= 0.0f && bx < static_cast<float>(map_.block_width) &&
+                  by < static_cast<float>(map_.block_height))) {
+                return 0.0f;
+            }
+            const std::size_t i = static_cast<std::size_t>(by) * map_.block_width + static_cast<std::size_t>(bx);
+            const int top = std::max(map_.block_ground[i], map_.block_water[i]);
+            return static_cast<float>(top - 1) * size;
+        });
         log::info("map {}: {}x{}, {} provinces, {} border chains, {} rivers", map_file.string(), map_.width,
                   map_.height, map_.count - 1, map_.border_chains.size() / 4, map_.river_chains.size() / 4);
         camera_.set_margin(kViewMargin);
@@ -28,17 +61,27 @@ namespace mc
         label_font_.build(map_);
         log::info("label raster: {} provinces with pixels, {:.0f} ms", label_raster_.used.size(),
                   std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
-        if (!renderer_.init(device, map_, error)) {
+        if (!renderer_.init(device, map_, look, error)) {
             return false;
         }
-        // Province names are baked (tools/labels/provinces.py), one label per glyph run of the file.
-        std::vector<MapLabel> provinces(1);
-        for (std::size_t i = 0; i + 7 <= map_.province_glyphs.size(); i += 7) {
-            const float* g = &map_.province_glyphs[i];
-            provinces[0].glyphs.push_back({ g[0], g[1], g[2], g[3], g[4], g[5], static_cast<std::uint8_t>(g[6]) });
+        log::info("blocks: {} face runs", renderer_.terrain_quads());
+        // Province names are baked (tools/labels/provinces.py): one label per province, so each lies on its own plane.
+        std::vector<MapLabel> provinces(map_.count);
+        for (std::size_t k = 0; k < map_.province_glyph_owner.size(); ++k) {
+            const float* g = &map_.province_glyphs[k * 7];
+            const std::uint16_t owner = map_.province_glyph_owner[k];
+            if (owner < provinces.size()) {
+                provinces[owner].glyphs.push_back(
+                    { g[0], g[1], g[2], g[3], g[4], g[5], static_cast<std::uint8_t>(g[6]) });
+            }
         }
-        renderer_.set_province_labels(map_, label_font_, provinces);
-        log::info("province names: {} glyphs", provinces[0].glyphs.size());
+        std::erase_if(provinces, [](const MapLabel& label) { return label.glyphs.empty(); });
+        std::vector<std::uint32_t> own(map_.count);   // a province's name is grouped by the province itself
+        for (std::uint32_t id = 0; id < map_.count; ++id) {
+            own[id] = id;
+        }
+        renderer_.set_province_labels(map_, label_font_, provinces, own);
+        log::info("province names: {} names, {} glyphs", provinces.size(), map_.province_glyph_owner.size());
         return true;
     }
 
@@ -100,7 +143,7 @@ namespace mc
             renderer_.set_colors(context, fills_, styles_);
             const auto started = std::chrono::steady_clock::now();
             labels_ = map_mode_labels(map_, game_, label_raster_, label_font_, map_mode_);
-            renderer_.set_labels(map_, label_font_, labels_);
+            renderer_.set_labels(map_, label_font_, labels_, map_mode_label_keys(map_, game_, map_mode_));
             log::info("map names: {} labels, {:.0f} ms", labels_.size(),
                       std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
             colors_dirty_ = false;

@@ -20,7 +20,8 @@ namespace mc
             float cell[4];      // the glyph's atlas cell: x0, y0, x1, y1 (texels)
             float map_per_texel;
             float sigma;        // halo Gaussian, map px
-            float pad[2];
+            std::uint32_t group;   // the name's key (set_labels `keys`), 0 = none
+            float pad;
         };
         static_assert(sizeof(LabelVertex) == 52);   // = the HLSL struct (structured buffer stride)
 
@@ -112,11 +113,30 @@ namespace mc
     }
 
     void LabelLayer::set_labels(ID3D11Device* device, const MapData& map, const LabelFont& font,
-                                std::span<const MapLabel> labels)
+                                std::span<const MapLabel> labels, std::span<const std::uint32_t> keys)
     {
+        // The keys per province, for the shader to tell a name's own blocks.
+        std::vector<std::uint32_t> key_buffer(std::max<std::size_t>(map.count, 1), 0);
+        std::copy_n(keys.begin(), std::min<std::size_t>(keys.size(), key_buffer.size()), key_buffer.begin());
+        keys_.Reset();
+        D3D11_BUFFER_DESC kd{};
+        kd.ByteWidth = static_cast<UINT>(key_buffer.size() * sizeof(std::uint32_t));
+        kd.Usage = D3D11_USAGE_IMMUTABLE;
+        kd.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        kd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+        kd.StructureByteStride = sizeof(std::uint32_t);
+        const D3D11_SUBRESOURCE_DATA kinit{ key_buffer.data(), 0, 0 };
+        ComPtr<ID3D11Buffer> key_resource;
+        if (FAILED(device->CreateBuffer(&kd, &kinit, &key_resource)) ||
+            FAILED(device->CreateShaderResourceView(key_resource.Get(), nullptr, &keys_))) {
+            keys_.Reset();
+        }
+
         std::vector<LabelVertex> vertices;
         const float s = static_cast<float>(map.font_atlas_scale);
         for (const MapLabel& label : labels) {
+            const float height = plane_height(map, label);
+            const std::uint32_t group = label_group(map, label, key_buffer);
             for (const LabelGlyph& g : label.glyphs) {
                 const LabelFont::Char& c = font.chars[g.code];
                 if (!c.present || c.height <= 0 || g.width <= 0.0f || g.height <= 0.0f) {
@@ -152,7 +172,7 @@ namespace mc
                     LabelVertex& vert = corner[k];
                     vert = {};
                     vert.world[0] = px;
-                    vert.world[1] = 0.0f;   // the map plane (glyphs lie flat on it)
+                    vert.world[1] = height;
                     vert.world[2] = -py;
                     // The layout quad sits at (quad_x, quad_y) in the cell, its top edge up (v = +hh).
                     vert.texel[0] = float(c.atlas_x) + qx + (u + hw) * texel_per_map;
@@ -160,6 +180,7 @@ namespace mc
                     std::copy(cell, cell + 4, vert.cell);
                     vert.map_per_texel = 1.0f / texel_per_map;
                     vert.sigma = sigma;
+                    vert.group = group;
                 }
                 for (const int k : { 0, 1, 2, 1, 3, 2 }) {
                     vertices.push_back(corner[k]);
@@ -186,6 +207,75 @@ namespace mc
         }
     }
 
+    std::uint32_t LabelLayer::label_group(const MapData& map, const MapLabel& label,
+                                          std::span<const std::uint32_t> keys)
+    {
+        // The most common key among the provinces under the glyph centres.
+        std::vector<std::uint32_t> found;
+        for (const LabelGlyph& g : label.glyphs) {
+            const float x = std::floor(g.x);
+            const float y = std::floor(g.y);
+            if (!(x >= 0.0f && y >= 0.0f && x < static_cast<float>(map.width) && y < static_cast<float>(map.height))) {
+                continue;
+            }
+            const std::uint16_t province =
+                map.pixel_province[static_cast<std::size_t>(y) * map.width + static_cast<std::size_t>(x)];
+            if (province < keys.size() && keys[province] != 0) {
+                found.push_back(keys[province]);
+            }
+        }
+        std::ranges::sort(found);
+        std::uint32_t best = 0;
+        std::size_t best_count = 0;
+        for (std::size_t i = 0; i < found.size();) {
+            std::size_t j = i;
+            while (j < found.size() && found[j] == found[i]) {
+                ++j;
+            }
+            if (j - i > best_count) {
+                best = found[i];
+                best_count = j - i;
+            }
+            i = j;
+        }
+        return best;
+    }
+
+    float LabelLayer::plane_height(const MapData& map, const MapLabel& label)
+    {
+        // The tops (ground or water) of the blocks under every glyph's layout quad, sampled every half block.
+        const float block = static_cast<float>(map.block_size);
+        const int bw = static_cast<int>(map.block_width);
+        const int bh = static_cast<int>(map.block_height);
+        const float step = block * 0.5f;
+        std::vector<std::uint8_t> tops;
+        for (const LabelGlyph& g : label.glyphs) {
+            const float ux = g.dir_y, uy = -g.dir_x;   // "up" in map px (y down)
+            const int nu = static_cast<int>(std::ceil(g.width / step));
+            const int nv = static_cast<int>(std::ceil(g.height / step));
+            for (int i = 0; i <= nu; ++i) {
+                for (int j = 0; j <= nv; ++j) {
+                    const float u = g.width * (static_cast<float>(i) / static_cast<float>(nu) - 0.5f);
+                    const float v = g.height * (static_cast<float>(j) / static_cast<float>(nv) - 0.5f);
+                    const int bx = static_cast<int>(std::floor((g.x + g.dir_x * u + ux * v) / block));
+                    const int by = static_cast<int>(std::floor((g.y + g.dir_y * u + uy * v) / block));
+                    if (bx < 0 || by < 0 || bx >= bw || by >= bh) {
+                        continue;
+                    }
+                    const std::size_t k = static_cast<std::size_t>(by) * bw + bx;
+                    tops.push_back(std::max(map.block_ground[k], map.block_water[k]));
+                }
+            }
+        }
+        if (tops.empty()) {
+            return 0.0f;
+        }
+        // The median: a lone peak or gorge under the name does not move it.
+        const auto middle = tops.begin() + static_cast<std::ptrdiff_t>(tops.size() / 2);
+        std::nth_element(tops.begin(), middle, tops.end());
+        return static_cast<float>(std::max<int>(*middle, 1) - 1) * block;   // level 1, the sea's top, is y = 0
+    }
+
     void LabelLayer::draw(ID3D11DeviceContext* context, float alpha)
     {
         if (!vertices_ || glyph_count_ == 0 || alpha <= 0.001f) {
@@ -199,8 +289,8 @@ namespace mc
         }
         ID3D11ShaderResourceView* vs_srv[] = { vertices_.Get() };
         context->VSSetShaderResources(16, 1, vs_srv);
-        ID3D11ShaderResourceView* ps_srv[] = { atlas_.Get() };
-        context->PSSetShaderResources(17, 1, ps_srv);
+        ID3D11ShaderResourceView* ps_srv[] = { atlas_.Get(), keys_.Get() };
+        context->PSSetShaderResources(17, 2, ps_srv);
         ID3D11Buffer* cbs[] = { constants_.Get() };
         context->PSSetConstantBuffers(1, 1, cbs);
         context->OMSetDepthStencilState(no_depth_.Get(), 0);

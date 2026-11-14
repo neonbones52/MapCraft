@@ -20,11 +20,14 @@ add_library(mc_game STATIC
     src/core/log.cpp
     src/core/map_data.cpp
     src/core/labels.cpp
+    src/minecraft/assets.cpp
     src/render/map_renderer.cpp
+    src/render/terrain.cpp
     src/render/labels.cpp
     src/render/shaders.cpp
     src/app/app.cpp
     src/app/map_modes.cpp
+    src/app/terrain_look.cpp
     src/app/shell.cpp
     src/app/bindings.cpp
     src/game/calendar.cpp
@@ -41,8 +44,13 @@ add_library(mc_game STATIC
     src/ui/screens/time_bar.cpp
 )
 find_package(imgui CONFIG REQUIRED)
+find_package(miniz CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 target_include_directories(mc_game PUBLIC src)
+target_include_directories(mc_game PRIVATE ${Stb_INCLUDE_DIR})
 target_link_libraries(mc_game PUBLIC d3d11 dxgi d3dcompiler windowscodecs imgui::imgui)
+target_link_libraries(mc_game PRIVATE miniz::miniz nlohmann_json::nlohmann_json)
 
 # The game: a plain window with its own swap chain.
 add_executable(mapcraft WIN32 src/host/win32/main.cpp)

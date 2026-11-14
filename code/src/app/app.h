@@ -20,7 +20,10 @@ namespace mc
     class App
     {
     public:
-        bool init(ID3D11Device* device, const std::filesystem::path& map_file, std::string* error);
+        // The map file, the map's biome table (data/common/biomes.csv) and the Minecraft client jar whose textures
+        // the blocks wear (minecraft::find_jar).
+        bool init(ID3D11Device* device, const std::filesystem::path& map_file, const std::filesystem::path& biomes_csv,
+                  const std::filesystem::path& jar, std::string* error);
         // The game data the map modes show (owned elsewhere: World in the game, the editor's own copy), or null:
         // without it (or while it is not loaded) the regions stand in for countries. Must outlive the App's use of it.
         void set_game(const GameData* game);

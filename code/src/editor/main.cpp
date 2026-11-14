@@ -22,6 +22,7 @@
 #include "app/app.h"
 #include "app/bindings.h"
 #include "core/log.h"
+#include "minecraft/assets.h"
 #include "editor/editor.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
@@ -231,7 +232,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show)
     mc::GameData game;   // the start being edited; before the App that shows it
     mc::App app;
     std::string error;
-    if (!app.init(device.Get(), map_file, &error)) {
+    if (!app.init(device.Get(), map_file, data_dir / "common" / "biomes.csv", mc::minecraft::find_jar(), &error)) {
         mc::log::error("{}", error);
         MessageBoxA(g_window.hwnd, error.c_str(), "MapCraft editor", MB_ICONERROR);
         return 1;

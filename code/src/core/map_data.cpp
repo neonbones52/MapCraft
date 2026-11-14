@@ -142,6 +142,7 @@ namespace mc
         font_kerning = view<FontKerning>(section("FKRN"));
         font_atlas = view<std::uint8_t>(section("FATL"));
         province_glyphs = view<float>(section("NGLY"));
+        province_glyph_owner = view<std::uint16_t>(section("NGLP"));
         const auto region_names = section("RNAM");
         const std::size_t region_names_count = section("RPAR").size();   // u8 per region, [0] = none
         const std::size_t region_table = (region_names_count + 1) * sizeof(std::uint32_t);
@@ -178,7 +179,7 @@ namespace mc
             color.size() != count || positions.size() != std::size_t{ count } * 8 || name_offsets_.empty() ||
             border_chains.size() % 4 != 0 || river_points.size() % 3 != 0 || river_chains.size() % 4 != 0 ||
             font_chars.empty() || font_line_height <= 0 || region_name_offsets_.empty() || land_name_offsets_.empty() ||
-            province_glyphs.size() % 7 != 0 ||
+            province_glyphs.size() % 7 != 0 || province_glyph_owner.size() * 7 != province_glyphs.size() ||
             font_atlas.size() != std::size_t(font_atlas_width) * std::size_t(font_atlas_height)) {
             return fail("missing or malformed sections (rebuild with tools/mapbake/bake.py)");
         }

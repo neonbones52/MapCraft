@@ -12,6 +12,7 @@
 
 #include "app/shell.h"
 #include "core/log.h"
+#include "minecraft/assets.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -190,7 +191,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show)
 
     mc::Shell shell;
     std::string error;
-    if (!shell.app().init(device.Get(), MC_DEFAULT_MAP, &error)) {
+    if (!shell.app().init(device.Get(), MC_DEFAULT_MAP, std::filesystem::path(MC_DEFAULT_DATA) / "common" / "biomes.csv",
+                          mc::minecraft::find_jar(), &error)) {
         mc::log::error("{}", error);
         MessageBoxA(g_window.hwnd, error.c_str(), "MapCraft", MB_ICONERROR);
         return 1;
