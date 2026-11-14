@@ -76,7 +76,9 @@
 | Скрипт | Что делает |
 |---|---|
 | `mapgen/heightmap.py` | `heightmap.png` → `land.png`; классы и ступени блоков для остальных скриптов (`read_blocks`) |
-| `mapgen/validate_land.py` | проверка `land.png` |
+| `mapgen/validate_land.py` | проверка `land.png` (и `wasteland.png`: та же палитра плюс пустошь) |
+| `mapgen/borders.py` | чтение и проверка `borders.png`: земли, оборванные концы линий, отдельные провинции; превью `build/borders/lands.png` |
+| `mapgen/biomes.py` | чтение и проверка `biome.png` по цветам `data/common/biomes.csv`; превью `build/biomes/biomes.png` |
 | `mapgen/generate_provinces.py` | нарезка провинций в `build/provinces/` |
 | `mapgen/edit_provinces.py` | правки замороженной карты |
 | `mapgen/sources.py` | общее чтение CSV и `provinces.png` |
