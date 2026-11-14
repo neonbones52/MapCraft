@@ -1,4 +1,9 @@
-"""Reading the map sources every tool shares: CSV files (with # comment lines) and the province id per pixel."""
+"""Reading the map sources every tool shares: CSV files (with # comment lines), the province id per block or per map
+pixel, and the class of every block (sea, land, lake, wasteland).
+
+The map sources are on the block grid (validate_land.WIDTH x HEIGHT, one pixel per block); the map file and the tools
+that place names, cities and borders work in map pixels, heightmap.BLOCK per block side (to_pixels).
+"""
 import csv
 from pathlib import Path
 
@@ -13,8 +18,14 @@ def read_csv(path):
         return list(csv.DictReader(line for line in file if not line.startswith('#')))
 
 
-def province_map():
-    """-> (ids, rows): province id per pixel of provinces.png (0 = a colour not in provinces.csv) and the
+def to_pixels(blocks):
+    """A per-block array as a per-map-pixel one: every block BLOCK x BLOCK pixels."""
+    from heightmap import BLOCK
+    return blocks.repeat(BLOCK, axis=0).repeat(BLOCK, axis=1)
+
+
+def province_blocks():
+    """-> (ids, rows): province id per block of provinces.png (0 = a colour not in provinces.csv) and the
     provinces.csv rows by id."""
     rgb = np.asarray(Image.open(ROOT / 'provinces.png').convert('RGB')).astype(np.uint32)
     key = (rgb[..., 0] << 16) | (rgb[..., 1] << 8) | rgb[..., 2]
@@ -24,3 +35,21 @@ def province_map():
     index = np.searchsorted(colors, key.ravel()).clip(0, len(colors) - 1)
     ids = np.where(colors[index] == key.ravel(), np.array([lookup[c] for c in colors])[index], 0).reshape(key.shape)
     return ids.astype(np.int32), {int(row['id']): row for row in rows}
+
+
+def province_map():
+    """-> (ids, rows): province id per map pixel and the provinces.csv rows by id."""
+    ids, rows = province_blocks()
+    return to_pixels(ids), rows
+
+
+def block_classes():
+    """-> class per block: validate_land SEA, LAND, LAKE (land.png, from heightmap.png) or WASTE (wasteland.png)."""
+    from border_lines import passable_land
+    from heightmap import read_blocks
+    from validate_land import WASTE
+    classes, _, _ = read_blocks()
+    land, passable = passable_land()
+    classes = classes.copy()
+    classes[land & ~passable] = WASTE
+    return classes

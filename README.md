@@ -12,10 +12,10 @@
   карты, реки, границы провинций и стран как в EU4, названия по алгоритму EU4. Вокселей пока нет (docs/RENDER.md).
 - **Игра**: экран выбора страны → Play → камера летит к столице. Дневной тик с календарём-заглушкой, пятью скоростями и
   паузой; пока тик меняет только дату (docs/GAMEDATA.md). UI отладочный (Dear ImGui).
-- **Исходники карты переходят на сетку блоков.** Есть карта высот из Azgaar и из неё `land.png`; остальные
-  рисунки пользователь ещё не нарисовал, а инструменты после `land.png` ещё ждут старую пиксельную карту
-  (docs/HANDOFF.md, «Порядок работ над картой»). Пока нет `build/map/world.mcmap`, `mapcraft.exe` не запустится.
-- **Игровых данных нет**: в `data/` только заголовки CSV.
+- **Карта на сетке блоков**: все исходники нарисованы, провинции нарезаны и заморожены, `world.mcmap` версии 2
+  (с высотами, водой и биомами блоков) запекается; игра пока рисует её плоской (docs/RENDER.md). Где остановились и
+  что дальше — docs/HANDOFF.md, «Где остановились».
+- **Игровых данных нет**: в `data/` только заголовки CSV (кроме таблицы биомов карты `data/common/biomes.csv`).
 
 ## Код (`code/`, C++23, MSVC + CMake/Ninja + vcpkg)
 Нужны MSVC Build Tools (`build.cmd` находит компилятор через vswhere) и переменная окружения `VCPKG_ROOT` (путь к
@@ -90,7 +90,7 @@ code/build/release/mapcraft_editor.exe --check  # только проверит�
 | `rivers.png` | рисует пользователь, соглашение EU4 `rivers.bmp` на блоках: прозрачный фон, линии в 1 пиксель по суше; `#00FF00` исток, `#00E1FF` ручей (1 блок), `#0064FF` река (2 блока), `#FF0000` слияние (последний блок притока у реки), `#FFFC00` развилка (пока не поддерживается) |
 
 | `provinces.png/.csv`, `regions.png/.csv`, `adjacency.csv` | делает `generate_provinces.py` в `build/provinces/` (1 пиксель = 1 блок); переносятся в корень руками и **замораживаются**: правки только через `edit_provinces.py`. Названия сгенерированы, их можно править в CSV |
-| `Cinzel-VariableFont_wght.ttf` | шрифт названий на карте (`tools/fonts/mapfont.py`); замена шрифта — решение пользователя |
+| `blockyfont.otf` | шрифт названий на карте (`tools/fonts/mapfont.py`): блочный, в духе Майнкрафта; лицензия FontStruct Non-Commercial, в git не идёт |
 
 Сгенерированные таблицы:
 - `provinces.csv`: id, color, type (`land`, `wasteland`, `sea`, `lake`), region, region_name, parent (земля), name,
@@ -107,11 +107,11 @@ code/build/release/mapcraft_editor.exe --check  # только проверит�
 python tools/mapgen/heightmap.py                              # heightmap.png -> land.png + build/heightmap/steps.png (ступени)
 python tools/mapgen/validate_land.py land.png                 # проверка палитры, связности, тонких мест
 python tools/mapgen/validate_land.py wasteland.png --out build/validate_wasteland   # то же для пустошей
-python tools/mapgen/borders.py                                # проверка borders.png -> build/borders/lands.png
+python tools/mapgen/border_lines.py                           # проверка borders.png -> build/borders/lands.png
 python tools/mapgen/biomes.py                                 # проверка biome.png -> build/biomes/biomes.png
 python tools/mapgen/river_paths.py                            # проверка rivers.png -> build/rivers/rivers.png
 ```
-**Линии `borders.png`** (`borders.py`). Проходимая суша — суша `land.png` без пустоши `wasteland.png`;
+**Линии `borders.png`** (`border_lines.py`). Проходимая суша — суша `land.png` без пустоши `wasteland.png`;
 `wasteland.png` вне пустоши обязан совпадать с `land.png`. Земли — куски проходимой суши между красными линиями;
 блоки мазка отходят ближайшему куску, так что граница идёт по середине мазка. Кусок меньше 0.1 средней земли
 (обрезок) целиком уходит ближайшей земле. Остров (кусок суши с пустошью, где проходимой суши меньше средней земли)
@@ -141,8 +141,9 @@ python tools/mapgen/generate_provinces.py                     # -> build/provinc
 
 **Генератор провинций** (`generate_provinces.py`). Земли — из `borders.png`. Каждая земля режется на регионы примерно
 по `REGION_PROVINCES` = 8 провинций (жёлтые линии, где есть, режут раньше); кусок меньше половины региона (остров)
-уходит ближайшему региону своей земли. На проходимой суше ровно `LAND_PROVINCES` = 850 провинций: отрезанные
-голубыми линиями — по одной, остаток каждого региона получает провинции по взвешенной площади. Вес блока — плотность
+уходит ближайшему региону своей земли. На проходимой суше `LAND_PROVINCES` = 850 провинций: отрезанные голубыми
+линиями — по одной, остаток каждого региона получает провинции по взвешенной площади. Остров никогда не входит в
+провинцию на другом массиве суши: такой кусок становится своей провинцией (сверх 850). Вес блока — плотность
 провинций: `density` его биома в `data/common/biomes.csv` (тайга 0.6, пустыня 0.5, остальные 1), у берега
 провинции-озера до ×`LAKE_DENSITY` = 1.5, сходит на нет за `LAKE_REACH` = 40 блоков; где вес выше, провинции и
 регионы мельче. Резка — геодезический Вороной с итерациями Ллойда к взвешенному центру; шаг стоит 1 + шум, вход в блок
@@ -153,9 +154,10 @@ python tools/mapgen/generate_provinces.py                     # -> build/provinc
 Названия — `names.py`: английские, природа, блоки и мобы
 Майнкрафта без Энда и Незера, по биому, высоте и берегу; все уникальны, при том же `SEED` повторяются.
 
-Каждый раз, когда что-то изменилось (ещё на старой пиксельной карте; переводится на блоки по docs/HANDOFF.md):
+Каждый раз, когда что-то изменилось (провинции и исходники — по блокам, карта в файле — в пикселях карты, блок = 4×4):
 ```bash
-python tools/mapbake/rivers.py                                # проверка rivers.png (ничего не пишет)
+python tools/mapgen/surface.py                                # воксельная поверхность: сводка + build/surface/levels.png
+python tools/mapbake/rivers.py                                # реки как ленты в пикселях карты (ничего не пишет)
 python tools/fonts/mapfont.py                                 # шрифт названий: метрики Mapfont.fnt + SDF
 python tools/labels/provinces.py                              # названия провинций (до positions.py: города их обходят)
 python tools/mapbake/positions.py                             # точки городов, армий, подписей, портов -> positions.csv
@@ -168,8 +170,10 @@ python tools/mapbake/bake.py                                  # build/map/world.
 
 **Правка провинций:**
 ```bash
-python tools/mapgen/edit_provinces.py split-islands | give-island X Y NAME | sync-lakes
+python tools/mapgen/edit_provinces.py split-islands | give-island X Y NAME | islands-apart | sync-lakes
 ```
+`islands-apart`: остров, входящий в провинцию на другом массиве суши, становится своей провинцией (новый id после
+последнего, тот же регион, новое название и цвет); номера остальных не меняются.
 `sync-lakes`: озеро, у которого в `land.png` стало меньше воды, оставляет себе самый большой кусок; высохшее дно делят
 соседи; озеро без воды удаляется, номера после него сдвигаются. **Внимание:** `edit_provinces.py` пока не трогает
 `data/setup/provinces.csv`. После перенумерации старые id в нём указывают не на те провинции. Это долг: исправить до

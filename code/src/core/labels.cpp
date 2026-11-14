@@ -663,7 +663,7 @@ namespace mc
             if (moments[p][0] == 0) {
                 bbox[p] = { 0, 0, 0, 0 };
             }
-            land[p] = p > 0 && map.kind[p] == ProvinceKind::land;
+            land[p] = p > 0 && (map.kind[p] == ProvinceKind::land || map.kind[p] == ProvinceKind::wasteland);
             lake[p] = map.kind[p] == ProvinceKind::lake;
             if (p > 0 && moments[p][0] > 0) {
                 used.push_back(static_cast<std::uint16_t>(p));

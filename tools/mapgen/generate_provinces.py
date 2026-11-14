@@ -1,12 +1,13 @@
 """Cut the map into regions and provinces on the block grid (one pixel per block) and name everything.
 
 Reads the map sources in the repository root through the other mapgen modules: heightmap.png (heightmap.py),
-wasteland.png and borders.png (borders.py), biome.png (biomes.py), rivers.png (river_paths.py).
+wasteland.png and borders.png (border_lines.py), biome.png (biomes.py), rivers.png (river_paths.py).
 
-- Lands are the user's land lines (borders.py). A land is cut into regions of about REGION_PROVINCES provinces; region
+- Lands are the user's land lines (border_lines.py). A land is cut into regions of about REGION_PROVINCES provinces; region
   lines, where drawn, cut it first. A piece too small to be a region (an island) joins the nearest region of its land.
 - The passable land holds LAND_PROVINCES provinces, given to regions by area. A piece cut off by province lines is one
-  fixed province; the rest of every region is cut automatically.
+  fixed province; the rest of every region is cut automatically. An island is never part of a province elsewhere: a
+  piece of a province on another landmass becomes a province of its own (on top of LAND_PROVINCES).
 - Both cuts are geodesic Voronoi diagrams relaxed with Lloyd iterations. A step costs 1 + noise, RIVER_COST more into a
   river block and STEP_COST more per height step, so borders run along rivers and ridges. Cells never leave their zone.
 - Every connected piece of wasteland is one province; every lake of at least MIN_LAKE blocks is one; decorative lakes
@@ -29,7 +30,7 @@ from scipy import ndimage
 from scipy.cluster.vq import kmeans2
 
 from biomes import read_biomes
-from borders import assign_lands, fixed_cells, passable_land, read_borders
+from border_lines import assign_lands, fixed_cells, passable_land, read_borders
 from heightmap import ROOT, read_blocks
 from names import Namer
 from palette import distinct_colors
@@ -201,6 +202,30 @@ def cut(zone, counts, cost, height, weight, rng):
     join_whole(labels, zone)
     repair_fragments(labels, zone)
     return labels, np.array([0] + owner, np.int32)
+
+
+def separate_islands(labels, landmass, which=None):
+    """An island is never part of a province elsewhere: every piece of a cell lying on another landmass than the cell's
+    largest piece becomes a cell of its own, numbered after the last label. Blocks off any landmass (landmass 0: a
+    decorative lake) stay with their cell. `which` limits it to some labels. -> [(new label, label it came from)]."""
+    added = []
+    next_label = int(labels.max())
+    for label, box in enumerate(ndimage.find_objects(labels), 1):
+        if box is None or (which is not None and label not in which):
+            continue
+        own = labels[box] == label
+        masses = np.unique(landmass[box][own & (landmass[box] > 0)])
+        if len(masses) < 2:
+            continue
+        sizes = {m: int((landmass[box][own] == m).sum()) for m in masses}
+        keep = max(sizes, key=sizes.get)
+        for mass in sorted(masses):
+            if mass == keep:
+                continue
+            next_label += 1
+            labels[box][own & (landmass[box] == mass)] = next_label
+            added.append((next_label, label))
+    return added
 
 
 def join_whole(labels, zone):
@@ -425,15 +450,18 @@ def main():
     present = [r + 1 for r in range(region_count) if free_areas[r] > 0]
     numbers = allocate([free_areas[r - 1] for r in present], LAND_PROVINCES - len(fixed))
     provinces, owner = cut(free_zone, dict(zip(present, numbers)), cost, height, weight, rng)
-    free_count = int(provinces.max())
     province_region = list(owner[1:])
+    landmass, _ = ndimage.label(land, FOUR)
+    islands = separate_islands(provinces, landmass)
+    province_region += [province_region[source - 1] for _, source in islands]
+    free_count = int(provinces.max())
     for k, cell in enumerate(sorted(fixed), 1):
         mine = cells == cell
         provinces[mine] = free_count + k
         province_region.append(int(np.bincount(regions[mine]).argmax()))
     land_province_count = int(provinces.max())
     log.append(f'land: {land_count} lands, {region_count} regions, {land_province_count} provinces '
-               f'({len(fixed)} fixed)')
+               f'({len(fixed)} fixed, {len(islands)} islands cut off from provinces elsewhere)')
 
     # Wasteland, lakes, decorative lakes, sea.
     labels = provinces.copy()

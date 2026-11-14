@@ -14,7 +14,7 @@ runs down the middle of the stroke. A piece smaller than MIN_LAND_SHARE of a lan
 nearest land; an island belongs whole to one land. Within a region, the largest piece left by province lines is the
 remainder the generator cuts into provinces; every other piece is one fixed province.
 
-    python tools/mapgen/borders.py      # check borders.png against land.png and wasteland.png -> build/borders/
+    python tools/mapgen/border_lines.py      # check borders.png against land.png and wasteland.png -> build/borders/
 """
 import sys
 

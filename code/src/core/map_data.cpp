@@ -34,6 +34,20 @@ namespace mc
         {
             return { reinterpret_cast<const T*>(bytes.data()), bytes.size() / sizeof(T) };
         }
+
+        // String i of a table written by bake.py `strings`: u32 offsets (one more than strings) + UTF-8 blob.
+        std::string_view string_at(std::span<const std::uint32_t> offsets, std::span<const char> blob, std::size_t i)
+        {
+            if (i + 1 >= offsets.size()) {
+                return {};
+            }
+            const std::uint32_t begin = offsets[i];
+            const std::uint32_t end = offsets[i + 1];
+            if (begin > end || end > blob.size()) {
+                return {};
+            }
+            return { blob.data() + begin, end - begin };
+        }
     }
 
     bool MapData::load(const std::filesystem::path& path, std::string* error)
@@ -58,8 +72,8 @@ namespace mc
 
         Header header;
         std::memcpy(&header, file_.data(), sizeof(header));
-        if (std::memcmp(header.magic, "MCMP", 4) != 0 || header.version != 1) {
-            return fail("not an MCMP v1 file");
+        if (std::memcmp(header.magic, "MCMP", 4) != 0 || header.version != 2) {
+            return fail("not an MCMP v2 file (rebuild with tools/mapbake/bake.py)");
         }
         if (file_.size() < sizeof(Header) + std::size_t{ header.sections } * sizeof(Section)) {
             return fail("truncated section table");
@@ -88,6 +102,26 @@ namespace mc
         positions = view<float>(section("PPOS"));
         adjacency_offsets = view<std::uint32_t>(section("ADJO"));
         adjacency_ids = view<std::uint16_t>(section("ADJI"));
+
+        const auto block_dims = view<std::uint32_t>(section("BDIM"));
+        std::uint32_t biome_keys = 0;
+        if (block_dims.size() >= 4) {
+            block_width = block_dims[0];
+            block_height = block_dims[1];
+            block_size = block_dims[2];
+            biome_keys = block_dims[3];
+        }
+        block_class = view<BlockClass>(section("BCLS"));
+        block_ground = view<std::uint8_t>(section("BHGT"));
+        block_water = view<std::uint8_t>(section("BWTR"));
+        block_biome = view<std::uint8_t>(section("BBIO"));
+        const auto biome_table = section("BKEY");
+        const std::size_t biome_offsets = (std::size_t{ biome_keys } + 1) * sizeof(std::uint32_t);
+        if (biome_keys > 0 && biome_table.size() >= biome_offsets) {
+            biome_key_offsets_ = view<std::uint32_t>(biome_table.first(biome_offsets));
+            biome_key_blob_ = view<char>(biome_table.subspan(biome_offsets));
+            biome_count_ = biome_keys;
+        }
 
         border_points = view<float>(section("BVTX"));
         border_chains = view<std::uint32_t>(section("BSEG"));
@@ -133,6 +167,13 @@ namespace mc
             name_blob_ = view<char>(names.subspan(name_table));
         }
 
+        const std::size_t blocks = std::size_t{ block_width } * block_height;
+        if (block_size == 0 || std::size_t{ block_width } * block_size != width ||
+            std::size_t{ block_height } * block_size != height || block_class.size() != blocks ||
+            block_ground.size() != blocks || block_water.size() != blocks || block_biome.size() != blocks ||
+            biome_count_ == 0) {
+            return fail("missing or malformed block sections (rebuild with tools/mapbake/bake.py)");
+        }
         if (pixel_province.size() != pixels || pixel_class.size() != pixels || kind.size() != count ||
             color.size() != count || positions.size() != std::size_t{ count } * 8 || name_offsets_.empty() ||
             border_chains.size() % 4 != 0 || river_points.size() % 3 != 0 || river_chains.size() % 4 != 0 ||
@@ -149,40 +190,21 @@ namespace mc
 
     std::string_view MapData::region_name(std::uint32_t index) const
     {
-        if (index + 1 >= region_name_offsets_.size()) {
-            return {};
-        }
-        const std::uint32_t begin = region_name_offsets_[index];
-        const std::uint32_t end = region_name_offsets_[index + 1];
-        if (begin > end || end > region_name_blob_.size()) {
-            return {};
-        }
-        return { region_name_blob_.data() + begin, end - begin };
+        return string_at(region_name_offsets_, region_name_blob_, index);
     }
 
     std::string_view MapData::land_name(std::uint32_t index) const
     {
-        if (index + 1 >= land_name_offsets_.size()) {
-            return {};
-        }
-        const std::uint32_t begin = land_name_offsets_[index];
-        const std::uint32_t end = land_name_offsets_[index + 1];
-        if (begin > end || end > land_name_blob_.size()) {
-            return {};
-        }
-        return { land_name_blob_.data() + begin, end - begin };
+        return string_at(land_name_offsets_, land_name_blob_, index);
+    }
+
+    std::string_view MapData::biome_key(std::uint32_t index) const
+    {
+        return string_at(biome_key_offsets_, biome_key_blob_, index);
     }
 
     std::string_view MapData::province_name(std::uint32_t id) const
     {
-        if (id >= count) {
-            return {};
-        }
-        const std::uint32_t begin = name_offsets_[id];
-        const std::uint32_t end = name_offsets_[id + 1];
-        if (begin > end || end > name_blob_.size()) {
-            return {};
-        }
-        return { name_blob_.data() + begin, end - begin };
+        return id < count ? string_at(name_offsets_, name_blob_, id) : std::string_view{};
     }
 }

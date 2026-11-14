@@ -10,15 +10,16 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools' / 'mapgen'))
-from generate_provinces import read_classes  # noqa: E402
-from sources import province_map, read_csv  # noqa: E402
+from heightmap import BLOCK  # noqa: E402
+from sources import block_classes, province_map, read_csv, to_pixels  # noqa: E402
+from surface import surface  # noqa: E402
 sys.path.insert(0, str(ROOT / 'tools' / 'mapbake'))
 import borders  # noqa: E402
 import rivers  # noqa: E402
 
 MAGIC = b'MCMP'
-VERSION = 1
-TYPES = {'land': 1, 'sea': 2, 'lake': 3}
+VERSION = 2
+TYPES = {'land': 1, 'sea': 2, 'lake': 3, 'wasteland': 4}
 
 
 def strings(values):
@@ -37,7 +38,8 @@ def number(value, default=np.nan):
 def main():
     ids, provinces = province_map()
     count = max(provinces) + 1                      # index 0 = "no province"
-    classes = read_classes(ROOT / 'land.png')
+    classes = to_pixels(block_classes())
+    blocks = surface()
     regions = read_csv(ROOT / 'regions.csv')
     positions = {int(r['id']): r for r in read_csv(ROOT / 'positions.csv')}
     region_index = {int(r['id']): i + 1 for i, r in enumerate(regions)}
@@ -62,7 +64,7 @@ def main():
 
     neighbours = [[] for _ in range(count)]
     for r in read_csv(ROOT / 'adjacency.csv'):
-        a, b, length = int(r['a']), int(r['b']), int(r['border'])
+        a, b, length = int(r['a']), int(r['b']), int(r['border']) * BLOCK      # block edges -> map px
         neighbours[a].append((b, length))
         neighbours[b].append((a, length))
     offsets = np.zeros(count + 1, np.uint32)
@@ -74,14 +76,22 @@ def main():
     parents = sorted({r['parent'] for r in regions})
     region_parent = np.array([0] + [parents.index(r['parent']) + 1 for r in regions], np.uint8)
 
-    water = np.zeros(count, bool)
-    water[kind != 1] = True
+    water = (kind == TYPES['sea']) | (kind == TYPES['lake'])
+    water[0] = True
     border_points, border_chains = borders.build(ids, water)
 
+    block_h, block_w = blocks['cls'].shape
     sections = [
         (b'PIDM', ids.astype(np.uint16).tobytes()),               # u16[w*h] province id per pixel
         (b'CLAS', classes.astype(np.uint8).tobytes()),            # u8[w*h] 0 sea, 1 land, 2 lake, 3 wasteland
-        (b'PTYP', kind.tobytes()),                                # u8[n] 0 none, 1 land, 2 sea, 3 lake
+        (b'PTYP', kind.tobytes()),                                # u8[n] 0 none, 1 land, 2 sea, 3 lake, 4 wasteland
+        (b'BDIM', np.array([block_w, block_h, BLOCK, len(blocks['biome_keys'])], np.uint32).tobytes()),
+        #   u32[4] block grid w, h; px per block side; BKEY strings (with [0] = '')
+        (b'BCLS', blocks['cls'].astype(np.uint8).tobytes()),      # u8[bw*bh] 0 sea, 1 land, 2 lake, 3 wasteland, 4 river
+        (b'BHGT', blocks['ground'].tobytes()),                    # u8[bw*bh] ground top level, blocks above sea floor
+        (b'BWTR', blocks['water'].tobytes()),                     # u8[bw*bh] water top level (sea 1), 0 on dry land
+        (b'BBIO', blocks['biome'].astype(np.uint8).tobytes()),    # u8[bw*bh] biome index into BKEY, 0 on water
+        (b'BKEY', strings(blocks['biome_keys'])),                 # biome keys of data/common/biomes.csv, [0] = ''
         (b'PREG', region.tobytes()),                              # u16[n] region index (1-based, 0 none)
         (b'PCOL', color.tobytes()),                               # u32[n] debug colour RGBA8
         (b'PPOS', pos.tobytes()),                                 # f32[n*8] city, unit, text, port (map px, NaN = none)

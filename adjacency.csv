@@ -116,8 +116,6 @@ a,b,kind,border
 30,851,land-wasteland,1
 30,945,land-sea,40
 31,851,land-wasteland,52
-31,893,land-sea,29
-31,940,land-sea,1
 32,33,land-land,37
 33,63,land-land,2
 33,64,land-land,12
@@ -290,7 +288,7 @@ a,b,kind,border
 87,89,land-land,19
 87,90,land-land,26
 88,90,land-land,17
-88,874,land-sea,75
+88,874,land-sea,21
 88,919,land-sea,21
 88,927,land-sea,6
 89,90,land-land,1
@@ -348,7 +346,7 @@ a,b,kind,border
 105,108,land-land,7
 105,109,land-land,20
 106,124,land-land,11
-106,862,land-sea,47
+106,862,land-sea,21
 107,862,land-sea,26
 107,919,land-sea,2
 109,117,land-land,6
@@ -547,9 +545,8 @@ a,b,kind,border
 166,233,land-land,4
 167,168,land-land,7
 167,170,land-land,15
-167,895,land-sea,8
 167,950,land-sea,5
-167,968,land-sea,51
+167,968,land-sea,37
 168,170,land-land,17
 168,950,land-sea,24
 169,170,land-land,20
@@ -852,10 +849,8 @@ a,b,kind,border
 260,264,land-land,6
 260,265,land-land,21
 260,917,land-sea,18
-260,945,land-sea,15
 260,956,land-sea,5
-260,958,land-sea,39
-260,971,land-sea,4
+260,958,land-sea,28
 261,263,land-land,21
 261,264,land-land,4
 261,265,land-land,8
@@ -1298,7 +1293,7 @@ a,b,kind,border
 396,910,land-sea,55
 397,398,land-land,23
 397,420,land-land,19
-397,865,land-sea,52
+397,865,land-sea,20
 398,865,land-sea,18
 398,910,land-sea,11
 399,400,land-land,31
@@ -1452,7 +1447,6 @@ a,b,kind,border
 449,452,land-land,11
 449,871,land-sea,19
 449,933,land-sea,40
-449,951,land-sea,36
 450,452,land-land,4
 450,868,land-sea,5
 450,933,land-sea,2
@@ -1512,8 +1506,6 @@ a,b,kind,border
 467,471,land-land,10
 467,899,land-sea,49
 467,900,land-sea,5
-467,904,land-sea,15
-467,954,land-sea,7
 468,469,land-land,26
 468,470,land-land,5
 468,472,land-land,16
@@ -1837,7 +1829,7 @@ a,b,kind,border
 574,575,land-land,11
 574,576,land-land,13
 574,887,land-sea,23
-574,911,land-sea,46
+574,911,land-sea,18
 574,931,land-sea,39
 575,887,land-sea,26
 575,911,land-sea,24
@@ -2096,10 +2088,8 @@ a,b,kind,border
 655,660,land-land,18
 655,684,land-land,19
 656,659,land-land,13
-656,877,land-sea,23
+656,877,land-sea,14
 656,883,land-sea,15
-656,884,land-sea,30
-656,936,land-sea,23
 657,659,land-land,19
 657,664,land-land,10
 657,883,land-sea,33
@@ -2130,11 +2120,9 @@ a,b,kind,border
 668,883,land-sea,18
 668,894,land-sea,12
 669,870,land-sea,39
-669,883,land-sea,72
+669,883,land-sea,42
 669,894,land-sea,43
-670,866,land-sea,56
-670,870,land-sea,9
-670,894,land-sea,5
+670,866,land-sea,40
 671,674,land-land,33
 671,680,land-land,30
 671,877,land-sea,22
@@ -2149,8 +2137,6 @@ a,b,kind,border
 673,877,land-sea,22
 674,877,land-sea,20
 674,901,land-sea,33
-674,974,land-sea,19
-674,975,land-sea,15
 675,679,land-land,3
 675,681,land-land,18
 675,686,land-land,8
@@ -2467,7 +2453,7 @@ a,b,kind,border
 777,924,land-sea,20
 777,929,land-sea,10
 778,924,land-sea,21
-778,970,land-sea,39
+778,970,land-sea,17
 779,780,land-land,10
 779,861,land-sea,6
 779,904,land-sea,11
@@ -2533,8 +2519,7 @@ a,b,kind,border
 793,801,land-land,8
 793,939,land-sea,19
 794,797,land-land,13
-794,881,land-sea,34
-794,932,land-sea,20
+794,881,land-sea,16
 794,941,land-sea,20
 794,972,land-sea,21
 795,797,land-land,7
@@ -2552,7 +2537,7 @@ a,b,kind,border
 800,801,land-land,10
 800,804,land-land,3
 800,808,land-land,15
-802,887,land-sea,57
+802,887,land-sea,31
 802,941,land-sea,35
 802,972,land-sea,28
 803,805,land-land,20
@@ -2684,6 +2669,7 @@ a,b,kind,border
 862,934,sea-sea,40
 862,985,sea-sea,37
 862,1026,sea-sea,33
+862,1033,sea-land,26
 863,925,sea-sea,33
 863,969,sea-sea,36
 863,1014,sea-sea,76
@@ -2693,12 +2679,14 @@ a,b,kind,border
 865,910,sea-sea,57
 865,998,sea-sea,78
 865,1014,sea-sea,11
+865,1036,sea-land,32
 866,870,sea-sea,39
 866,894,sea-sea,19
 866,911,sea-sea,32
 866,931,sea-sea,42
 866,989,sea-sea,26
 866,1027,sea-sea,56
+866,1043,sea-land,16
 867,885,sea-sea,27
 867,928,sea-sea,30
 867,947,sea-sea,8
@@ -2713,6 +2701,7 @@ a,b,kind,border
 870,894,sea-sea,25
 870,936,sea-sea,15
 870,1027,sea-sea,33
+870,1043,sea-land,9
 871,903,sea-sea,5
 871,906,sea-sea,46
 871,913,sea-sea,33
@@ -2728,6 +2717,7 @@ a,b,kind,border
 874,952,sea-sea,45
 874,985,sea-sea,42
 874,991,sea-sea,11
+874,1032,sea-land,54
 875,915,sea-sea,36
 875,926,sea-sea,65
 875,1022,sea-sea,63
@@ -2738,6 +2728,7 @@ a,b,kind,border
 877,901,sea-sea,34
 877,936,sea-sea,57
 877,1005,sea-sea,21
+877,1040,sea-land,9
 878,913,sea-sea,41
 878,964,sea-sea,41
 878,993,sea-sea,74
@@ -2754,15 +2745,18 @@ a,b,kind,border
 881,932,sea-sea,34
 881,941,sea-sea,19
 881,1010,sea-sea,35
+881,1046,sea-land,18
 882,907,sea-sea,42
 882,961,sea-sea,19
 882,970,sea-sea,23
 882,992,sea-sea,50
 883,894,sea-sea,14
 883,936,sea-sea,54
+883,1042,sea-land,30
 884,936,sea-sea,44
 884,1005,sea-sea,46
 884,1027,sea-sea,54
+884,1041,sea-land,30
 885,914,sea-sea,36
 885,947,sea-sea,32
 885,982,sea-sea,45
@@ -2776,6 +2770,7 @@ a,b,kind,border
 887,957,sea-sea,10
 887,972,sea-sea,33
 887,1030,sea-sea,27
+887,1047,sea-land,26
 888,921,sea-sea,32
 889,949,sea-sea,36
 889,956,sea-sea,40
@@ -2789,9 +2784,12 @@ a,b,kind,border
 893,940,sea-sea,42
 893,979,sea-sea,64
 893,1000,sea-sea,43
+893,1031,sea-land,29
 894,931,sea-sea,41
+894,1043,sea-land,5
 895,918,sea-sea,26
 895,968,sea-sea,34
+895,1034,sea-land,8
 896,902,sea-sea,45
 896,960,sea-sea,28
 897,905,sea-sea,73
@@ -2814,6 +2812,7 @@ a,b,kind,border
 904,954,sea-sea,41
 904,999,sea-sea,41
 904,1023,sea-sea,29
+904,1038,sea-land,15
 905,934,sea-sea,27
 905,1013,sea-sea,41
 905,1016,sea-sea,35
@@ -2831,6 +2830,7 @@ a,b,kind,border
 911,931,sea-sea,54
 911,957,sea-sea,32
 911,989,sea-sea,56
+911,1039,sea-land,28
 912,923,sea-sea,36
 912,940,sea-sea,5
 912,979,sea-sea,51
@@ -2881,6 +2881,7 @@ a,b,kind,border
 932,957,sea-sea,8
 932,989,sea-sea,19
 932,1010,sea-sea,62
+932,1046,sea-land,20
 933,951,sea-sea,23
 933,963,sea-sea,38
 934,1013,sea-sea,52
@@ -2889,6 +2890,8 @@ a,b,kind,border
 935,962,sea-sea,55
 935,991,sea-sea,16
 936,1005,sea-sea,55
+936,1040,sea-land,21
+936,1041,sea-land,2
 937,1023,sea-sea,24
 938,1029,sea-sea,67
 939,953,sea-sea,30
@@ -2896,6 +2899,7 @@ a,b,kind,border
 939,1030,sea-sea,50
 940,959,sea-sea,44
 940,1000,sea-sea,40
+940,1031,sea-land,1
 941,957,sea-sea,41
 941,972,sea-sea,29
 942,990,sea-sea,45
@@ -2906,6 +2910,7 @@ a,b,kind,border
 945,958,sea-sea,33
 945,959,sea-sea,38
 945,971,sea-sea,50
+945,1035,sea-land,15
 948,953,sea-sea,32
 948,1030,sea-sea,63
 949,1029,sea-sea,47
@@ -2913,10 +2918,12 @@ a,b,kind,border
 950,980,sea-sea,43
 950,1020,sea-sea,21
 951,1029,sea-sea,33
+951,1037,sea-land,36
 952,991,sea-sea,81
 953,1030,sea-sea,33
 954,996,sea-sea,40
 954,999,sea-sea,17
+954,1038,sea-land,7
 955,966,sea-sea,33
 955,980,sea-sea,19
 955,993,sea-sea,69
@@ -2924,6 +2931,7 @@ a,b,kind,border
 957,989,sea-sea,58
 958,959,sea-sea,30
 958,971,sea-sea,7
+958,1035,sea-land,11
 961,970,sea-sea,32
 962,991,sea-sea,37
 964,993,sea-sea,26
@@ -2932,17 +2940,22 @@ a,b,kind,border
 966,993,sea-sea,16
 967,1020,sea-sea,53
 968,1020,sea-sea,59
+968,1034,sea-land,14
 969,1014,sea-sea,3
 970,992,sea-sea,47
+970,1045,sea-land,22
+971,1035,sea-land,4
 972,1030,sea-sea,55
 974,975,sea-sea,64
 974,992,sea-sea,93
 974,1005,sea-sea,36
+974,1044,sea-land,19
 975,978,sea-sea,11
 975,992,sea-sea,13
 975,996,sea-sea,41
 975,1005,sea-sea,43
 975,1007,sea-sea,31
+975,1044,sea-land,15
 976,986,sea-sea,55
 976,988,sea-sea,58
 976,995,sea-sea,69

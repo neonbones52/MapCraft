@@ -1,18 +1,19 @@
-"""Map label font: EU4's Mapfont.fnt layout metrics and an SDF glyph atlas, made from Cinzel (the font in the project
-root) instead of EU4's bitmap Trajan Pro Bold.
+"""Map label font: EU4's Mapfont.fnt layout metrics and an SDF glyph atlas, made from blockyfont.otf (a blocky font in
+the spirit of Minecraft's, in the project root; not in git) instead of EU4's bitmap Trajan Pro Bold.
 
 The label placement (code/src/core/labels.cpp, archeologyEU4/Labels) measures names with these metrics exactly as
 EU4 measures them with gfx/fonts/Mapfont.fnt: per byte (cp1252) xadvance, glyph quad xoffset/yoffset/width/height
 including an 8 px padding, kerning pairs, lineHeight 100. Mapfont is Trajan Pro Bold at size 100 with the capitals'
-ink from 18 to 78 px below the line top (A: yoffset 10 + padding 8, height 76 - 16). Cinzel is scaled so that its
+ink from 18 to 78 px below the line top (A: yoffset 10 + padding 8, height 76 - 16). The font is scaled so that its
 capitals take the same 60 px and sit on the same base line 78, so the placement's proportions (text height against
-the territory's thickness, glyph quads, cross-section points) stay those of EU4. Weight 700: Mapfont is bold=1.
+the territory's thickness, glyph quads, cross-section points) stay those of EU4. A variable font is instanced at
+WEIGHT; a static one is taken as it is.
 
-The placement centres every glyph's quad on its curve (EU4 CurveText). Cinzel's Q sweeps a long tail to the right and
-below, so its quad centre would pull the letter's body off its place; the same holds, less, for Ç and J under the
-base line. The metric quad is therefore the letter's LAYOUT box: Q takes O's box, Ç takes C's, and no box reaches
-below the base line further than O's (round letters' overshoot). The atlas cell holds the whole glyph, tail included,
-round the layout quad; FCHR gives the layout quad's place in the cell (quad_x, quad_y).
+The placement centres every glyph's quad on its curve (EU4 CurveText). A letter with a tail (a Q sweeping right and
+below, a Ç under the base line) would pull its body off its place, so the metric quad is the letter's LAYOUT box: Q
+takes O's box, Ç takes C's, and no box reaches below the base line further than O's. The atlas cell holds the whole
+glyph, tail included, round the layout quad; FCHR gives the layout quad's place in the cell (quad_x, quad_y).
+Characters the font lacks are left out (a missing glyph is skipped, as in EU4).
 
 The atlas holds a signed distance field per glyph at ATLAS_SCALE x the metric size: the glyph's ink and its layout
 quad, with the padding and EXTRA texels round them (the halo reaches beyond the quad). Only the bytes an upper-cased name can contain are kept:
@@ -32,8 +33,8 @@ from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[2]
-FONT = ROOT / 'Cinzel-VariableFont_wght.ttf'
-WEIGHT = 700
+FONT = ROOT / 'blockyfont.otf'
+WEIGHT = 700               # for a variable font: Mapfont is bold=1
 LINE_HEIGHT = 100          # Mapfont.fnt common lineHeight
 BASE = 78                  # Mapfont.fnt common base
 CAP_TOP = 18               # where Mapfont's capitals' ink begins below the line top
@@ -66,6 +67,8 @@ def upper_bytes():
 
 def kerning_pairs(font, glyph_of):
     """XAdvance adjustments of the GPOS 'kern' feature for the glyph pairs we use, font units."""
+    if 'GPOS' not in font:
+        return {}
     gpos = font['GPOS'].table
     lookups = {i for fr in gpos.FeatureList.FeatureRecord if fr.FeatureTag == 'kern'
                for i in fr.Feature.LookupListIndex}
@@ -109,7 +112,10 @@ def signed_distance(mask):
 
 
 def main():
-    font = instantiateVariableFont(TTFont(FONT), {'wght': WEIGHT})
+    font = TTFont(FONT)
+    variable = 'fvar' in font
+    if variable:
+        font = instantiateVariableFont(font, {'wght': WEIGHT})
     units = font['head'].unitsPerEm
     cap = font['OS/2'].sCapHeight
     k = (BASE - CAP_TOP) / cap                        # metric px per font unit
@@ -119,7 +125,8 @@ def main():
     glyph_of = {c: cmap[ord(bytes([c]).decode('cp1252'))] for c in codes}
 
     raster = ImageFont.truetype(str(FONT), round(units * k * ATLAS_SCALE * SUPER))
-    raster.set_variation_by_axes([WEIGHT])
+    if variable:
+        raster.set_variation_by_axes([WEIGHT])
 
     def ink_box(char):
         """left, top, right, bottom of a character's ink in metric px (top-down, base line at BASE), or None."""
@@ -195,14 +202,15 @@ def main():
              chars=np.array(chars, np.int32), kerning=np.array(kerning, np.int32).reshape(-1, 3), atlas=atlas)
     Image.fromarray(atlas).save(out / 'preview_mapfont.png')
     # The same metrics as a BMFont text file like EU4's gfx/fonts/Mapfont.fnt (for the reference Python port).
-    lines = [f'info face="Cinzel" size=100 bold=1 italic=0 padding={PADDING},{PADDING},{PADDING},{PADDING} spacing=1,1',
+    face = font['name'].getBestFamilyName()
+    lines = [f'info face="{face}" size=100 bold=1 italic=0 padding={PADDING},{PADDING},{PADDING},{PADDING} spacing=1,1',
              f'common lineHeight={LINE_HEIGHT} base={BASE} scaleW={ATLAS_WIDTH} scaleH={atlas_height} pages=1']
     lines += [f'char id={c} x={x} y={y} width={w} height={h} xoffset={xo} yoffset={yo} xadvance={adv} page=0'
               for c, x, y, _, _, xo, yo, w, h, adv, _, _ in chars]
     lines += [f'kerning first={a} second={b} amount={v}' for a, b, v in kerning]
     (out / 'mapfont.fnt').write_text('\n'.join(lines) + '\n', encoding='cp1252')
     print(f'{out / "mapfont.npz"}: {len(chars)} characters ({len(cells)} glyphs), {len(kerning)} kerning pairs, '
-          f'atlas {ATLAS_WIDTH}x{atlas_height}, Cinzel wght {WEIGHT} at {k * units:.1f} px/em')
+          f'atlas {ATLAS_WIDTH}x{atlas_height}, {face} at {k * units:.1f} px/em')
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 """Our map in the form of the verified Python port of EU4's map-name algorithm (archeologyEU4/Labels/LabelPython):
-the province raster bottom-up, the provinces' data, Cinzel's Mapfont-style metrics (build/fonts/mapfont.fnt,
+the province raster bottom-up, the provinces' data, the label font's Mapfont-style metrics (build/fonts/mapfont.fnt,
 tools/fonts/mapfont.py) and the glyphs of a placed label in map px. LabelPython's modules run unchanged; the only
 adaptation is the neighbour scan without EU4's x = W-1 -> 0 seam, as our map is flat, not a globe. Used by
 tools/labels/provinces.py (the baked province names).
@@ -70,7 +70,7 @@ def map_data():
     land = np.zeros(count, np.bool_)
     lake = np.zeros(count, np.bool_)
     for pid, row in provinces.items():
-        land[pid] = row['type'] == 'land'
+        land[pid] = row['type'] in ('land', 'wasteland')
         lake[pid] = row['type'] == 'lake'
     data = SimpleNamespace(pixels=pixels, moments=moments, bbox=bbox, neighbours=[list(n) for n in neighbours],
                            land=land, lake=lake, impassable=np.zeros(count, np.bool_), regions=[None] * count,
@@ -80,7 +80,7 @@ def map_data():
 
 
 def map_font():
-    return MapFont(ROOT / 'build' / 'fonts' / 'mapfont.fnt', ROOT / 'Cinzel-VariableFont_wght.ttf')
+    return MapFont(ROOT / 'build' / 'fonts' / 'mapfont.fnt', ROOT / 'blockyfont.otf')   # the ttf only draws previews
 
 
 def to_map(label, height):

@@ -29,7 +29,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 28,#36AB7C,land,4,Ice Valley,The Northern Hinterland,Frostbury,225,448,84,1,taiga,6
 29,#95593F,land,4,Ice Valley,The Northern Hinterland,Sleet Field,383,415,106,1,taiga,13
 30,#45448E,land,4,Ice Valley,The Northern Hinterland,Bog Bay,248,454,116,1,swamp,2
-31,#50BB28,land,4,Ice Valley,The Northern Hinterland,Pinepoint,314,469,86,2,taiga,4
+31,#50BB28,land,4,Ice Valley,The Northern Hinterland,Pinepoint,279,463,90,1,taiga,4
 32,#D76BA8,land,4,Ice Valley,The Northern Hinterland,Frostdale,279,440,111,1,taiga,7
 33,#458792,land,4,Ice Valley,The Northern Hinterland,Rime Fold,336,428,121,1,taiga,9
 34,#E7CF47,land,5,Powdershire,The Northern Hinterland,Pinebury,353,330,116,1,taiga,14
@@ -86,7 +86,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 85,#5255C4,land,11,Tulip Hundred,The Sunny Marches,Breadwatch,161,173,209,1,plains,7
 86,#6B9C54,land,12,The Lantern Marches,The Sunny Marches,Potatorest,173,187,133,1,plains,8
 87,#DC329A,land,12,The Lantern Marches,The Sunny Marches,Anvilfold,142,198,132,1,mountains,13
-88,#44D8E8,land,12,The Lantern Marches,The Sunny Marches,Wheatmill,301,179,111,2,plains,2
+88,#44D8E8,land,12,The Lantern Marches,The Sunny Marches,Wheatmill,196,181,118,1,plains,2
 89,#AA912A,land,12,The Lantern Marches,The Sunny Marches,Andesite Hearth,149,198,142,1,mountains,11
 90,#7233AE,land,12,The Lantern Marches,The Sunny Marches,Tulipmoor,190,200,124,1,plains,1
 91,#2CB34A,land,12,The Lantern Marches,The Sunny Marches,Tulipcross,200,175,137,1,plains,3
@@ -104,7 +104,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 103,#77209A,land,14,Wheat Valley,The Sunny Marches,Bellford,216,131,168,1,plains,2
 104,#37B66D,land,14,Wheat Valley,The Sunny Marches,Potato Mill,179,113,192,1,plains,3
 105,#BF5140,land,14,Wheat Valley,The Sunny Marches,Rabbitholm,223,125,183,1,plains,3
-106,#5F6EC0,land,14,Wheat Valley,The Sunny Marches,Lanternvale,164,105,178,2,plains,1
+106,#5F6EC0,land,14,Wheat Valley,The Sunny Marches,Lanternvale,133,107,181,1,plains,1
 107,#589D20,land,14,Wheat Valley,The Sunny Marches,Oakbarrow,182,128,156,1,plains,2
 108,#935081,land,14,Wheat Valley,The Sunny Marches,Cornflower Well,215,141,175,1,plains,4
 109,#57EFEA,land,14,Wheat Valley,The Sunny Marches,Sunflowercombe,225,125,198,1,plains,4
@@ -165,7 +165,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 164,#5EC7BE,land,22,The Dandelion Fields,The Green Marches,Cornflowermill,106,771,189,1,plains,8
 165,#B39562,land,22,The Dandelion Fields,The Green Marches,Fern Port,451,776,162,1,taiga,2
 166,#6E4CB3,land,22,The Dandelion Fields,The Green Marches,Pumpkinmill,171,776,182,1,plains,6
-167,#68C46C,land,22,The Dandelion Fields,The Green Marches,Oxeye Bury,119,804,187,2,plains,1
+167,#68C46C,land,22,The Dandelion Fields,The Green Marches,Oxeye Bury,100,803,185,1,plains,1
 168,#D84167,land,22,The Dandelion Fields,The Green Marches,Pinehollow,272,788,174,1,taiga,2
 169,#1D6DB0,land,22,The Dandelion Fields,The Green Marches,Chickenglen,244,779,200,1,plains,5
 170,#A3B935,land,22,The Dandelion Fields,The Green Marches,Cornflowerstrand,207,790,189,1,plains,4
@@ -258,7 +258,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 257,#C84361,land,32,Rabbit Weald,The Fair Lowlands,Azalearest,183,504,274,1,forest,10
 258,#3886D0,land,32,Rabbit Weald,The Fair Lowlands,Oakwood,195,507,261,1,plains,8
 259,#BACD6D,land,32,Rabbit Weald,The Fair Lowlands,Meadow Shire,201,475,271,1,plains,8
-260,#C025D0,land,33,The Cow Fields,The Fair Lowlands,Chillwood,269,493,164,2,taiga,1
+260,#C025D0,land,33,The Cow Fields,The Fair Lowlands,Chillwood,226,495,167,1,taiga,1
 261,#1EC081,land,33,The Cow Fields,The Fair Lowlands,Hayden,201,500,194,1,plains,2
 262,#9A4922,land,33,The Cow Fields,The Fair Lowlands,Bread Shore,140,467,187,1,plains,0
 263,#2723B8,land,33,The Cow Fields,The Fair Lowlands,Creepergate,189,488,198,1,forest,4
@@ -395,7 +395,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 394,#425ABA,land,51,Wool March,The Fair Reaches,Silverfishglen,198,961,358,1,mountains,15
 395,#8FC65C,land,51,Wool March,The Fair Reaches,Cobble Worth,204,974,360,1,plains,9
 396,#992B80,land,51,Wool March,The Fair Reaches,Cobblemouth,235,977,332,1,plains,1
-397,#3F928C,land,51,Wool March,The Fair Reaches,Bellwharf,258,995,354,2,plains,3
+397,#3F928C,land,51,Wool March,The Fair Reaches,Bellwharf,213,993,357,1,plains,3
 398,#946F2E,land,51,Wool March,The Fair Reaches,Sunflower Haven,193,987,347,1,plains,2
 399,#7755B9,land,51,Wool March,The Fair Reaches,Woolmarch,144,960,345,1,plains,7
 400,#358F39,land,51,Wool March,The Fair Reaches,Cornflowerstead,134,958,336,1,plains,3
@@ -447,7 +447,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 446,#7720AA,land,57,Pig Weald,The Sunny Shires,Thorn Bay,199,723,236,1,forest,4
 447,#21A74F,land,58,The Hay Fields,The Sunny Shires,Owlbarrow,202,718,267,1,forest,4
 448,#90403C,land,58,The Hay Fields,The Sunny Shires,Wool Mouth,123,733,264,1,plains,1
-449,#5F78C4,land,58,The Hay Fields,The Sunny Shires,Cowmouth,247,688,253,2,plains,2
+449,#5F78C4,land,58,The Hay Fields,The Sunny Shires,Cowmouth,200,694,259,1,plains,2
 450,#9AC369,land,58,The Hay Fields,The Sunny Shires,Cow Ridge,191,707,269,1,plains,1
 451,#D868C5,land,58,The Hay Fields,The Sunny Shires,Fox Fold,193,721,255,1,forest,6
 452,#50A197,land,58,The Hay Fields,The Sunny Shires,Saplinghead,193,710,251,1,forest,3
@@ -465,7 +465,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 464,#A3387B,land,60,Cow March,The Sunny Wilds,Bell Ley,116,136,291,1,plains,5
 465,#3ED7E6,land,60,Cow March,The Sunny Wilds,Chicken Watch,205,159,292,1,plains,6
 466,#8F7820,land,60,Cow March,The Sunny Wilds,Horsereach,187,169,310,1,plains,5
-467,#773EAF,land,61,The Poppy Fields,The Sunny Wilds,Horse Moor,108,186,349,2,plains,0
+467,#773EAF,land,61,The Poppy Fields,The Sunny Wilds,Horse Moor,89,182,332,1,plains,0
 468,#2F9445,land,61,The Poppy Fields,The Sunny Wilds,Sheep Fold,273,140,332,1,plains,1
 469,#B62F3A,land,61,The Poppy Fields,The Sunny Wilds,Leafgate,182,150,322,1,forest,3
 470,#18448E,land,61,The Poppy Fields,The Sunny Wilds,Meadowport,204,161,327,1,plains,0
@@ -572,7 +572,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 571,#9C4A3B,land,73,The Cocoa Marches,The Mossy Marches,Junglehaven,104,577,410,1,jungle,0
 572,#404FB2,land,73,The Cocoa Marches,The Mossy Marches,Canecove,273,590,405,1,swamp,0
 573,#90DE57,land,73,The Cocoa Marches,The Mossy Marches,Junglestrand,147,580,418,1,jungle,0
-574,#D13CA7,land,74,Liana Hills,The Mossy Marches,Templepoint,260,579,446,2,jungle,0
+574,#D13CA7,land,74,Liana Hills,The Mossy Marches,Templepoint,224,582,442,1,jungle,0
 575,#2C9A99,land,74,Liana Hills,The Mossy Marches,Melonstrand,284,600,463,1,jungle,0
 576,#B49A5F,land,74,Liana Hills,The Mossy Marches,Pandacross,103,587,430,1,jungle,0
 577,#6D2BCE,land,75,Goat Highlands,The Lofty Shires,Tuffton,239,352,312,1,mountains,23
@@ -654,7 +654,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 653,#604E9D,land,85,Villager Hills,The Fair Wilds,Hay Combe,194,497,348,1,plains,4
 654,#349D2D,land,86,Carrot Hills,The Fair Wilds,Coppershire,216,443,376,1,mountains,15
 655,#D14174,land,86,Carrot Hills,The Fair Wilds,Wheatvale,173,432,381,1,plains,11
-656,#6EB5DC,land,86,Carrot Hills,The Fair Wilds,Creeper Field,156,430,428,3,jungle,0
+656,#6EB5DC,land,86,Carrot Hills,The Fair Wilds,Creeper Field,67,426,406,1,jungle,0
 657,#E5EE5A,land,86,Carrot Hills,The Fair Wilds,Templebrook,240,442,394,1,jungle,7
 658,#845094,land,86,Carrot Hills,The Fair Wilds,Pigfield,111,437,363,1,plains,14
 659,#32A669,land,86,Carrot Hills,The Fair Wilds,Ocelotford,253,424,395,1,jungle,5
@@ -667,12 +667,12 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 666,#A36DE8,land,87,Emerald Valley,The Fair Wilds,Emeraldmarch,165,493,382,1,jungle,2
 667,#3A9848,land,87,Emerald Valley,The Fair Wilds,Beetrootholm,258,463,374,1,plains,9
 668,#BA374A,land,87,Emerald Valley,The Fair Wilds,Leaf Hold,181,483,389,1,jungle,2
-669,#81B2F0,land,87,Emerald Valley,The Fair Wilds,Lianahearth,298,479,423,2,jungle,0
-670,#81A71C,land,87,Emerald Valley,The Fair Wilds,Ocelotfold,110,514,455,2,jungle,0
+669,#81B2F0,land,87,Emerald Valley,The Fair Wilds,Lianahearth,259,481,423,1,jungle,0
+670,#81A71C,land,87,Emerald Valley,The Fair Wilds,Ocelotfold,72,519,460,1,jungle,0
 671,#B728BA,land,88,Cow Hills,The Sunny Reaches,Potatostrand,262,376,388,1,plains,3
 672,#3ACE9F,land,88,Cow Hills,The Sunny Reaches,Pigmill,207,385,321,1,plains,12
 673,#B9652F,land,88,Cow Hills,The Sunny Reaches,Sunflower Wharf,237,383,367,1,plains,7
-674,#786DDE,land,88,Cow Hills,The Sunny Reaches,Ocelotreach,204,361,414,2,jungle,0
+674,#786DDE,land,88,Cow Hills,The Sunny Reaches,Ocelotreach,152,373,398,1,jungle,0
 675,#5BB945,land,88,Cow Hills,The Sunny Reaches,Woolfold,118,396,360,1,plains,9
 676,#D23380,land,88,Cow Hills,The Sunny Reaches,Dandelionbarrow,201,387,334,1,plains,9
 677,#1B91B3,land,88,Cow Hills,The Sunny Reaches,Meadowmoor,213,372,357,1,plains,12
@@ -776,7 +776,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 775,#9B793E,land,100,The Cactus Marches,The Golden Lands,Deadbushoasis,305,890,392,1,desert,12
 776,#502F91,land,101,The Meadow Marches,The Burning Shires,Pumpkinwharf,188,242,401,1,plains,1
 777,#20B026,land,101,The Meadow Marches,The Burning Shires,Poppyford,176,231,391,1,plains,1
-778,#BA516B,land,101,The Meadow Marches,The Burning Shires,Carrotmoor,174,247,388,2,plains,0
+778,#BA516B,land,101,The Meadow Marches,The Burning Shires,Carrotmoor,155,245,388,1,plains,0
 779,#75B2E6,land,101,The Meadow Marches,The Burning Shires,Mossmouth,204,217,412,1,jungle,0
 780,#C0E023,land,101,The Meadow Marches,The Burning Shires,Mosshollow,141,230,404,1,jungle,0
 781,#D84BEC,land,102,Creeper Vale,The Wild Lowlands,Vineton,239,759,427,1,jungle,9
@@ -792,7 +792,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 791,#A04F52,land,104,Creeper Downs,The Wild Lowlands,Temple Haven,202,687,459,1,jungle,1
 792,#214998,land,104,Creeper Downs,The Wild Lowlands,Bloomton,190,703,486,1,jungle,0
 793,#B6E964,land,104,Creeper Downs,The Wild Lowlands,Emeraldmouth,139,706,440,1,jungle,2
-794,#DF56D3,land,104,Creeper Downs,The Wild Lowlands,Bamboo Wood,240,671,478,2,jungle,0
+794,#DF56D3,land,104,Creeper Downs,The Wild Lowlands,Bamboo Wood,178,674,472,1,jungle,0
 795,#228E78,land,104,Creeper Downs,The Wild Lowlands,Canopyheath,156,705,475,1,jungle,1
 796,#E9AA6B,land,104,Creeper Downs,The Wild Lowlands,Bamboostone,136,715,445,1,jungle,3
 797,#624CB5,land,104,Creeper Downs,The Wild Lowlands,Orchid Head,193,688,474,1,jungle,0
@@ -800,7 +800,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 799,#CE2161,land,104,Creeper Downs,The Wild Lowlands,Catcombe,192,700,466,1,jungle,2
 800,#296B8C,land,104,Creeper Downs,The Wild Lowlands,Spore Rest,188,717,458,1,jungle,4
 801,#D9E042,land,104,Creeper Downs,The Wild Lowlands,Junglecross,192,703,454,1,jungle,2
-802,#7D3993,land,104,Creeper Downs,The Wild Lowlands,Fernport,217,636,442,2,jungle,0
+802,#7D3993,land,104,Creeper Downs,The Wild Lowlands,Fernport,186,639,444,1,jungle,0
 803,#49946B,land,105,Melon Valley,The Wild Lowlands,Ferncombe,196,764,478,1,jungle,5
 804,#DF6C55,land,105,Melon Valley,The Wild Lowlands,Sporegate,189,734,466,1,jungle,3
 805,#5F6AB5,land,105,Melon Valley,The Wild Lowlands,Parrotheath,251,750,478,1,jungle,4
@@ -1029,3 +1029,20 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 1028,#61BBA9,sea,,,,Sea Lantern Ocean,4610,121,420,1,,
 1029,#D28E46,sea,,,,Gull Abyss,2718,592,216,1,,
 1030,#5037AB,sea,,,,Salmon Ocean,2724,661,392,1,,
+1031,#5BAE54,land,4,Ice Valley,The Northern Hinterland,Berryridge,35,523,52,1,taiga,0
+1032,#9F395E,land,12,The Lantern Marches,The Sunny Marches,Foxpoint,105,174,96,1,taiga,0
+1033,#63B9E6,land,14,Wheat Valley,The Sunny Marches,Cobblecove,31,100,168,1,plains,0
+1034,#93993A,land,22,The Dandelion Fields,The Green Marches,Bellpoint,19,813,197,1,plains,0
+1035,#9232B0,land,33,The Cow Fields,The Fair Lowlands,Fern Heath,43,483,150,1,taiga,0
+1036,#3EB475,land,51,Wool March,The Fair Reaches,Horsehold,45,1005,339,1,plains,0
+1037,#D77F6C,land,58,The Hay Fields,The Sunny Shires,Horsefold,47,662,227,1,plains,1
+1038,#4D60F1,land,61,The Poppy Fields,The Sunny Wilds,Orchid Strand,19,207,427,1,jungle,0
+1039,#91C76D,land,74,Liana Hills,The Mossy Marches,Parrot Run,36,561,469,1,jungle,0
+1040,#B84695,land,86,Carrot Hills,The Fair Wilds,Cocoahaven,39,417,427,1,jungle,0
+1041,#2BA3A4,land,86,Carrot Hills,The Fair Wilds,Creeper Dale,50,446,459,1,jungle,0
+1042,#997F3C,land,87,Emerald Valley,The Fair Wilds,Sporewick,39,465,420,1,jungle,0
+1043,#713BB8,land,87,Emerald Valley,The Fair Wilds,Templeshore,38,506,445,1,jungle,0
+1044,#57A361,land,88,Cow Hills,The Sunny Reaches,Fernbury,52,327,462,1,jungle,0
+1045,#C24C5E,land,101,The Meadow Marches,The Burning Shires,Meadow Head,19,263,392,1,plains,0
+1046,#6894CB,land,104,Creeper Downs,The Wild Lowlands,Moss Watch,62,663,493,1,jungle,0
+1047,#8AAE26,land,104,Creeper Downs,The Wild Lowlands,Ocelot Wharf,31,622,429,1,jungle,0

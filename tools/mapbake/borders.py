@@ -3,9 +3,9 @@
 Boundaries run along pixel edges. Every run between two junctions (lattice corners where three or more provinces
 meet) or around a closed loop becomes one chain for one pair of provinces. A chain's points are its edge midpoints
 (a pixel staircase along a diagonal has collinear midpoints), junction corners stay fixed at the ends so chains meet
-exactly. Then, like EU4's SmoothBorders, the points are box-averaged (EU4: one 3-point pass for ordinary borders,
-two radius-6 passes between two water provinces; here two passes each, radius 2 and 6, the window shrinking toward
-the ends) and finally simplified (Douglas-Peucker).
+exactly. Then, like EU4's SmoothBorders, the points between two water provinces are box-averaged (EU4: two radius-6
+passes; here too, the window shrinking toward the ends); a border touching land is not smoothed, it runs along the
+block edges (provinces are cut on the block grid). Finally the chains are simplified (Douglas-Peucker).
 
     python tools/mapbake/borders.py      # preview: build/map/borders_preview.png
 """
@@ -16,7 +16,7 @@ import numpy as np
 from numba import njit
 
 ROOT = Path(__file__).resolve().parents[2]
-LAND_RADIUS = 2          # box-average radius (points) for borders touching land
+LAND_RADIUS = 0          # box-average radius (points) for borders touching land: none, they follow block edges
 WATER_RADIUS = 6         # between two water provinces (EU4's value)
 PASSES = 2
 TOLERANCE = 0.08         # px: Douglas-Peucker tolerance
@@ -234,7 +234,7 @@ def main():
     ids, provinces = province_map()
     water = np.zeros(ids.max() + 1, bool)
     for pid, row in provinces.items():
-        water[pid] = row['type'] != 'land'
+        water[pid] = row['type'] in ('sea', 'lake')
     points, chains = build(ids, water)
     print(f'{len(chains)} chains, {len(points)} points in {time.time() - started:.1f}s')
     # Preview: a patch of the map ×6 with the pixel boundaries and the smoothed lines.

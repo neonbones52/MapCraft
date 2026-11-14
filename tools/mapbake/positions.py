@@ -21,8 +21,7 @@ from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools' / 'mapgen'))
-from generate_provinces import read_classes  # noqa: E402
-from sources import province_map, read_csv  # noqa: E402
+from sources import block_classes, province_map, read_csv, to_pixels  # noqa: E402
 from validate_land import LAND  # noqa: E402
 sys.path.insert(0, str(ROOT / 'tools' / 'mapbake'))
 import rivers as river_lines  # noqa: E402
@@ -87,7 +86,7 @@ def port(local, own, sea, cx, cy):
 
 def main():
     ids, provinces = province_map()
-    dry = read_classes(ROOT / 'land.png') == LAND
+    dry = to_pixels(block_classes()) == LAND
     pairs = [(int(r['a']), int(r['b'])) for r in read_csv(ROOT / 'adjacency.csv')]
     coastal = {a if provinces[b]['type'] == 'sea' else b for a, b in pairs
                if {provinces[a]['type'], provinces[b]['type']} == {'land', 'sea'}}

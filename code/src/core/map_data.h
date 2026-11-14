@@ -16,6 +16,7 @@ namespace mc
         land = 1,
         sea = 2,
         lake = 3,
+        wasteland = 4,   // land no one owns or crosses (EU4's wasteland)
     };
 
     enum class PixelClass : std::uint8_t
@@ -23,6 +24,17 @@ namespace mc
         sea = 0,
         land = 1,
         lake = 2,
+        wasteland = 3,
+    };
+
+    // The voxel surface per block (BCLS): as PixelClass, plus river water carved into the land.
+    enum class BlockClass : std::uint8_t
+    {
+        sea = 0,
+        land = 1,
+        lake = 2,
+        wasteland = 3,
+        river = 4,
     };
 
     // Read-only view of build/map/world.mcmap (docs/MAPFORMAT.md). Arrays indexed by province id have
@@ -49,6 +61,19 @@ namespace mc
         // Borders: polylines in map px; chain = first point, point count, a | b << 16 (a < b), flags (1 = closed).
         std::span<const float> border_points;       // x, y pairs
         std::span<const std::uint32_t> border_chains;  // 4 per chain
+
+        // Voxel surface on the block grid (tools/mapgen/surface.py): a block is block_size x block_size map px.
+        // Levels count blocks up from the sea floor: the sea's top is 1, land of height step s has its ground at
+        // s + 2. Water top 0 means no water (dry land); a river's or lake's bed is one block under its water.
+        std::uint32_t block_width = 0;
+        std::uint32_t block_height = 0;
+        std::uint32_t block_size = 0;
+        std::span<const BlockClass> block_class;          // block_width * block_height
+        std::span<const std::uint8_t> block_ground;       // ground top level
+        std::span<const std::uint8_t> block_water;        // water top level, 0 = none
+        std::span<const std::uint8_t> block_biome;        // index into biome_key, 0 on water
+        [[nodiscard]] std::uint32_t biome_count() const { return biome_count_; }
+        [[nodiscard]] std::string_view biome_key(std::uint32_t index) const;   // data/common/biomes.csv key, [0] = ""
 
         // Rivers (tools/mapbake/rivers.py): polylines from source to mouth, a point every map px. Point = x, y, width
         // (map px); river = first point, count, flags (1 = rises at a source on land, 2 = flows into another river,
@@ -124,5 +149,8 @@ namespace mc
         std::span<const std::uint32_t> land_name_offsets_;
         std::span<const char> land_name_blob_;
         std::uint32_t land_count_ = 0;
+        std::span<const std::uint32_t> biome_key_offsets_;
+        std::span<const char> biome_key_blob_;
+        std::uint32_t biome_count_ = 0;
     };
 }

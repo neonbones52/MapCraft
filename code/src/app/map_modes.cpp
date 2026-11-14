@@ -69,12 +69,23 @@ namespace mc
                    (p.religion[id] == 0) + (p.tax[id] + p.production[id] + p.manpower[id] <= 0.0f);
         }
 
+        // EU4's impassable provinces: the wastelands, land that no realm takes and names do not cross.
+        std::vector<std::uint8_t> impassable(const MapData& map)
+        {
+            std::vector<std::uint8_t> out(map.count, 0);
+            for (std::uint32_t id = 1; id < map.count; ++id) {
+                out[id] = map.kind[id] == ProvinceKind::wasteland;
+            }
+            return out;
+        }
+
         // Names of province groups without capitals (regions, cultures, religions): each key a "country" of EU4's
         // realm names, so every mode joins its pieces across straits and lakes the same way as the countries.
         std::vector<MapLabel> group_names(const MapData& map, const LabelRaster& raster, const LabelFont& font,
                                           std::vector<std::int32_t> owner, std::vector<std::string> names)
         {
             RealmNames realms;
+            realms.impassable = impassable(map);
             realms.owner = std::move(owner);
             realms.owner.resize(map.count, -1);
             realms.tribal_owner.assign(map.count, -1);
@@ -112,6 +123,7 @@ namespace mc
             const CountryDefinitions& countries = game.content.countries;
             const Provinces& provinces = game.state.provinces;
             RealmNames realms;
+            realms.impassable = impassable(map);
             realms.owner.assign(map.count, -1);
             realms.tribal_owner.assign(map.count, -1);
             realms.region.assign(map.count, -1);
@@ -256,9 +268,12 @@ namespace mc
             }
             const ProvinceKind ka = map.kind[a];
             const ProvinceKind kb = map.kind[b];
-            if (ka == ProvinceKind::land && kb == ProvinceKind::land) {
+            auto dry = [](ProvinceKind k) { return k == ProvinceKind::land || k == ProvinceKind::wasteland; };
+            if (dry(ka) && dry(kb)) {
+                // A wasteland has no region and no owner: next to it every land province shows its realm's edge.
                 const bool apart = by_region ? map.region[a] != map.region[b]
-                                             : game->state.provinces.owner[a] != game->state.provinces.owner[b];
+                                             : game->state.provinces.owner[a] != game->state.provinces.owner[b] ||
+                                                   ka != kb;
                 (*styles)[c] = apart ? BorderStyle::country : BorderStyle::province;
             } else if (ka == ProvinceKind::sea && kb == ProvinceKind::sea) {
                 (*styles)[c] = BorderStyle::sea;
