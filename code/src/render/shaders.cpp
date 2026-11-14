@@ -45,9 +45,11 @@ float value_noise(float2 p)
 }
 
 // Province colour sampled like EU4's GetProvinceColorSampled: four point lookups, the colours (never the ids)
-// blended bilinearly, so fills have soft edges between provinces. Only filled taps give colour (a water tap next
-// to land must not wash it out); where land ends is left to the caller. `hover` gets the hovered province's share,
-// `pick` the selected provinces'.
+// blended bilinearly, so fills have soft edges between provinces. Only filled taps give colour (an unfilled tap
+// must not wash it out), and the fill is as strong as their share: next to an unfilled province (wasteland, water)
+// it fades out over a pixel. (A full fill as soon as any tap is filled flickered along such edges: the share of the
+// neighbour's tap there is a rounding error.) `hover` gets the hovered province's share, `pick` the selected
+// provinces'.
 float4 province_fill(float2 m, out float hover, out float pick)
 {
     float2 p = m - 0.5;
@@ -67,7 +69,7 @@ float4 province_fill(float2 m, out float hover, out float pick)
     float4 h = float4(i00 == hovered, i10 == hovered, i01 == hovered, i11 == hovered) * (hovered != 0);
     hover = dot(h, w);
     pick = dot(float4(selected[i00], selected[i10], selected[i01], selected[i11]), w);
-    return float4(rgb, total > 0.0 ? 1.0 : 0.0);
+    return float4(rgb, saturate(total));
 }
 
 // ----------------------------------------------------------------------------------------------------- terrain
@@ -307,8 +309,19 @@ float4 ps_terrain(TerrainOut input) : SV_Target
 
     // Map mode: EU4's political shading over dry faces (FRAME.md), the grey of the surface under the province
     // colour, pulled halfway to a constant.
+    // Tops take the soft-edged sample; a side takes its own column's province exactly: it stands on the province edge,
+    // where the blended sample would catch the neighbour's colour at a weight of nothing (any filled tap colours a
+    // pixel) and flicker with every rounding of the position.
     float hover, pick;
-    float4 fill = province_fill(inside, hover, pick);
+    float4 fill;
+    if (face == FACE_TOP || face == FACE_SLOPE) {
+        fill = province_fill(inside, hover, pick);
+    } else {
+        uint pid = province_ids.Load(int3(owner * (int)block_size + (int)(block_size * 0.5), 0));
+        fill = fills[pid];
+        hover = (hovered != 0 && pid == hovered) ? 1.0 : 0.0;
+        pick = (float)selected[pid];
+    }
     float dry = wet ? 0.0 : 1.0;
     fill.a *= dry;
     float3 color = base;
