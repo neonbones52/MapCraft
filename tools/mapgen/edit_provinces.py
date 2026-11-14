@@ -83,7 +83,7 @@ def write(ids, old_ids, provinces):
     before, after = adjacency(old_ids), adjacency(ids)
     with open(ROOT / 'adjacency.csv', 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        writer.writerow(['a', 'b', 'kind', 'border_px'])
+        writer.writerow(['a', 'b', 'kind', 'border'])
         for (a, b), length in sorted(after.items()):
             writer.writerow([a, b, provinces[a]['type'] + '-' + provinces[b]['type'], length])
     for a, b in sorted(set(before) ^ set(after)):

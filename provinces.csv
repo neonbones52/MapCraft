@@ -1,0 +1,1031 @@
+id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
+1,#8546C9,land,1,Wolf Vale,The Northern Hinterland,Leafshire,134,249,124,1,forest,1
+2,#539B61,land,1,Wolf Vale,The Northern Hinterland,Birch Ley,148,251,141,1,forest,1
+3,#931A26,land,1,Wolf Vale,The Northern Hinterland,Bramblehead,153,256,133,1,forest,2
+4,#76A5EC,land,1,Wolf Vale,The Northern Hinterland,Bearley,347,268,100,1,taiga,5
+5,#8BB135,land,1,Wolf Vale,The Northern Hinterland,Azaleaholm,203,245,113,1,forest,1
+6,#CF47CD,land,1,Wolf Vale,The Northern Hinterland,Foxfield,272,261,115,1,forest,4
+7,#439A82,land,1,Wolf Vale,The Northern Hinterland,Straywatch,284,246,99,1,taiga,3
+8,#D07630,land,2,The Rime Crags,The Northern Hinterland,Snow Vale,373,376,134,1,taiga,18
+9,#624DDF,land,2,The Rime Crags,The Northern Hinterland,Batpeak,172,376,161,1,mountains,26
+10,#66F04F,land,2,The Rime Crags,The Northern Hinterland,Snowholm,284,363,152,1,taiga,22
+11,#C45C89,land,2,The Rime Crags,The Northern Hinterland,Pineglen,235,346,147,1,taiga,22
+12,#3E91B0,land,2,The Rime Crags,The Northern Hinterland,Strayglen,155,368,123,1,taiga,15
+13,#A4A133,land,2,The Rime Crags,The Northern Hinterland,Amethyst Tor,225,390,163,1,mountains,22
+14,#AD34E4,land,2,The Rime Crags,The Northern Hinterland,Podzolstone,190,380,149,1,taiga,19
+15,#5DBB82,land,2,The Rime Crags,The Northern Hinterland,Lapisstone,318,346,162,1,mountains,27
+16,#944941,land,2,The Rime Crags,The Northern Hinterland,Fernwood,285,356,136,1,taiga,18
+17,#233FB8,land,3,Flint Range,The Northern Hinterland,Wolf Field,210,300,161,1,forest,18
+18,#99D066,land,3,Flint Range,The Northern Hinterland,Amethystford,263,331,150,1,mountains,26
+19,#E86CCC,land,3,Flint Range,The Northern Hinterland,Goldfall,91,323,138,1,mountains,22
+20,#428F8A,land,3,Flint Range,The Northern Hinterland,Coal Well,145,304,148,1,mountains,22
+21,#AF8E52,land,3,Flint Range,The Northern Hinterland,Snow Scar,205,314,153,1,mountains,28
+22,#8854E8,land,3,Flint Range,The Northern Hinterland,Bramblewick,199,311,138,1,forest,20
+23,#2FAE37,land,4,Ice Valley,The Northern Hinterland,Sprucemoor,137,434,134,1,taiga,5
+24,#9C5565,land,4,Ice Valley,The Northern Hinterland,Bearreach,312,417,89,1,taiga,11
+25,#1C6FBB,land,4,Ice Valley,The Northern Hinterland,Icerun,303,449,99,1,taiga,7
+26,#7E9127,land,4,Ice Valley,The Northern Hinterland,Froghaven,180,443,137,1,swamp,1
+27,#D779E2,land,4,Ice Valley,The Northern Hinterland,Rimevale,376,432,89,1,taiga,9
+28,#36AB7C,land,4,Ice Valley,The Northern Hinterland,Frostbury,225,448,84,1,taiga,6
+29,#95593F,land,4,Ice Valley,The Northern Hinterland,Sleet Field,383,415,106,1,taiga,13
+30,#45448E,land,4,Ice Valley,The Northern Hinterland,Bog Bay,248,454,116,1,swamp,2
+31,#50BB28,land,4,Ice Valley,The Northern Hinterland,Pinepoint,314,469,86,2,taiga,4
+32,#D76BA8,land,4,Ice Valley,The Northern Hinterland,Frostdale,279,440,111,1,taiga,7
+33,#458792,land,4,Ice Valley,The Northern Hinterland,Rime Fold,336,428,121,1,taiga,9
+34,#E7CF47,land,5,Powdershire,The Northern Hinterland,Pinebury,353,330,116,1,taiga,14
+35,#B177DE,land,5,Powdershire,The Northern Hinterland,Chillworth,271,336,86,1,taiga,9
+36,#46955B,land,5,Powdershire,The Northern Hinterland,Snow Gate,229,322,104,1,taiga,12
+37,#AA5C5E,land,5,Powdershire,The Northern Hinterland,Powderglen,278,334,132,1,taiga,19
+38,#315EBE,land,5,Powdershire,The Northern Hinterland,Berrycross,379,345,100,1,taiga,12
+39,#70A221,land,5,Powdershire,The Northern Hinterland,Tadpole Wash,254,317,94,1,swamp,8
+40,#A6469D,land,5,Powdershire,The Northern Hinterland,Pinewatch,366,349,119,1,taiga,14
+41,#25ECC6,land,5,Powdershire,The Northern Hinterland,Frost Dale,277,314,121,1,taiga,15
+42,#B8844C,land,6,Owl Hills,The Northern Hinterland,Bramblehold,109,288,150,1,forest,5
+43,#775BD8,land,6,Owl Hills,The Northern Hinterland,Berry Ridge,157,286,112,1,taiga,7
+44,#53934E,land,6,Owl Hills,The Northern Hinterland,Stray Dale,407,297,105,1,taiga,10
+45,#A54064,land,6,Owl Hills,The Northern Hinterland,Igloowatch,277,300,125,1,taiga,14
+46,#2D9CD7,land,6,Owl Hills,The Northern Hinterland,Foxmoor,241,293,140,1,forest,12
+47,#C7CF44,land,6,Owl Hills,The Northern Hinterland,Hollowhead,193,279,134,1,forest,4
+48,#B63CDB,land,6,Owl Hills,The Northern Hinterland,Acornbarrow,297,279,119,1,forest,7
+49,#1B9B58,land,7,Bearshire,The Northern Hinterland,Wolf Brook,437,381,112,1,taiga,13
+50,#9A422E,land,7,Bearshire,The Northern Hinterland,Spruce Dale,232,358,89,1,taiga,12
+51,#5261DC,land,7,Bearshire,The Northern Hinterland,Fernden,328,399,86,1,taiga,7
+52,#70D929,land,7,Bearshire,The Northern Hinterland,Icedale,291,377,95,1,taiga,10
+53,#B05E97,land,7,Bearshire,The Northern Hinterland,Boulder Wood,320,378,82,1,taiga,7
+54,#75F0F2,land,7,Bearshire,The Northern Hinterland,Orchidfield,256,364,105,1,swamp,12
+55,#A58D51,land,7,Bearshire,The Northern Hinterland,Rabbit Wick,312,357,75,1,taiga,9
+56,#613B92,land,7,Bearshire,The Northern Hinterland,Strayhearth,161,396,101,1,taiga,12
+57,#29CD40,land,8,Boulder Hundred,The Northern Hinterland,Boulderwharf,249,245,83,1,taiga,2
+58,#BF5C6B,land,8,Boulder Hundred,The Northern Hinterland,Rimebrook,281,248,64,1,taiga,0
+59,#6994CA,land,8,Boulder Hundred,The Northern Hinterland,Pinefold,378,232,62,1,taiga,0
+60,#7B9041,land,8,Boulder Hundred,The Northern Hinterland,Wolfcombe,262,263,86,1,taiga,4
+61,#C263C4,land,8,Boulder Hundred,The Northern Hinterland,Sleetley,200,259,72,1,taiga,2
+62,#33AD86,land,8,Boulder Hundred,The Northern Hinterland,Boulder Reach,396,202,73,1,taiga,0
+63,#B06333,land,9,Podzol Hundred,The Northern Hinterland,Pineton,253,405,116,1,taiga,13
+64,#5E55AC,land,9,Podzol Hundred,The Northern Hinterland,Sprucedale,238,410,132,1,taiga,12
+65,#77E95B,land,9,Podzol Hundred,The Northern Hinterland,Creepershire,402,405,162,1,forest,19
+66,#954B6F,land,9,Podzol Hundred,The Northern Hinterland,Sleet Ton,239,397,144,1,taiga,16
+67,#4DCAEE,land,9,Podzol Hundred,The Northern Hinterland,Coldgate,238,414,148,1,taiga,15
+68,#D3C727,land,9,Podzol Hundred,The Northern Hinterland,Rime Shire,340,393,128,1,taiga,14
+69,#B874DE,land,9,Podzol Hundred,The Northern Hinterland,Bramblecrest,166,424,158,1,forest,12
+70,#2A9A51,land,9,Podzol Hundred,The Northern Hinterland,Clayreed,343,428,142,1,swamp,7
+71,#913934,land,10,Rabbit March,The Sunny Marches,Cowfold,235,185,166,1,plains,8
+72,#3058D5,land,10,Rabbit March,The Sunny Marches,Honey Rest,206,202,168,1,plains,4
+73,#8AD931,land,10,Rabbit March,The Sunny Marches,Moss Point,189,212,142,1,swamp,3
+74,#DC61C6,land,10,Rabbit March,The Sunny Marches,Roothead,147,200,185,1,swamp,0
+75,#459A90,land,10,Rabbit March,The Sunny Marches,Beetrootdale,151,193,178,1,plains,4
+76,#BF904B,land,10,Rabbit March,The Sunny Marches,Horsecross,203,195,155,1,plains,8
+77,#7A58CA,land,10,Rabbit March,The Sunny Marches,Slimeden,193,209,155,1,swamp,2
+78,#32A434,land,11,Tulip Hundred,The Sunny Marches,Saddle Dale,207,187,208,1,plains,8
+79,#B03557,land,11,Tulip Hundred,The Sunny Marches,Potatoholm,221,162,185,1,plains,5
+80,#2B73A9,land,11,Tulip Hundred,The Sunny Marches,Breadbrook,238,177,179,1,plains,8
+81,#A3B62A,land,11,Tulip Hundred,The Sunny Marches,Wheatpoint,128,189,191,1,plains,4
+82,#BB44D0,land,11,Tulip Hundred,The Sunny Marches,Haymoor,177,158,199,1,plains,5
+83,#39A675,land,11,Tulip Hundred,The Sunny Marches,Mushroomley,113,166,212,1,forest,7
+84,#963817,land,11,Tulip Hundred,The Sunny Marches,Poppy Den,283,175,194,1,plains,8
+85,#5255C4,land,11,Tulip Hundred,The Sunny Marches,Breadwatch,161,173,209,1,plains,7
+86,#6B9C54,land,12,The Lantern Marches,The Sunny Marches,Potatorest,173,187,133,1,plains,8
+87,#DC329A,land,12,The Lantern Marches,The Sunny Marches,Anvilfold,142,198,132,1,mountains,13
+88,#44D8E8,land,12,The Lantern Marches,The Sunny Marches,Wheatmill,301,179,111,2,plains,2
+89,#AA912A,land,12,The Lantern Marches,The Sunny Marches,Andesite Hearth,149,198,142,1,mountains,11
+90,#7233AE,land,12,The Lantern Marches,The Sunny Marches,Tulipmoor,190,200,124,1,plains,1
+91,#2CB34A,land,12,The Lantern Marches,The Sunny Marches,Tulipcross,200,175,137,1,plains,3
+92,#E57078,land,12,The Lantern Marches,The Sunny Marches,Horseheath,158,183,149,1,plains,8
+93,#3B74D8,land,13,Sunflower Hundred,The Sunny Marches,Breadhearth,188,163,169,1,plains,5
+94,#A9DC47,land,13,Sunflower Hundred,The Sunny Marches,Beeridge,158,172,161,1,plains,5
+95,#C549BF,land,13,Sunflower Hundred,The Sunny Marches,Honeycross,164,163,140,1,plains,1
+96,#67C4AE,land,13,Sunflower Hundred,The Sunny Marches,Chicken Bay,227,142,154,1,plains,1
+97,#D47C2F,land,13,Sunflower Hundred,The Sunny Marches,Oakpoint,224,155,156,1,plains,2
+98,#452BBE,land,13,Sunflower Hundred,The Sunny Marches,Pighollow,156,168,150,1,plains,4
+99,#2C971D,land,13,Sunflower Hundred,The Sunny Marches,Chickenholm,166,152,173,1,plains,3
+100,#B2235D,land,14,Wheat Valley,The Sunny Marches,Oxeye Moor,161,147,188,1,plains,4
+101,#68ADCB,land,14,Wheat Valley,The Sunny Marches,Villagerhead,227,115,169,1,plains,1
+102,#B6B743,land,14,Wheat Valley,The Sunny Marches,Bark Ridge,170,138,194,1,forest,6
+103,#77209A,land,14,Wheat Valley,The Sunny Marches,Bellford,216,131,168,1,plains,2
+104,#37B66D,land,14,Wheat Valley,The Sunny Marches,Potato Mill,179,113,192,1,plains,3
+105,#BF5140,land,14,Wheat Valley,The Sunny Marches,Rabbitholm,223,125,183,1,plains,3
+106,#5F6EC0,land,14,Wheat Valley,The Sunny Marches,Lanternvale,164,105,178,2,plains,1
+107,#589D20,land,14,Wheat Valley,The Sunny Marches,Oakbarrow,182,128,156,1,plains,2
+108,#935081,land,14,Wheat Valley,The Sunny Marches,Cornflower Well,215,141,175,1,plains,4
+109,#57EFEA,land,14,Wheat Valley,The Sunny Marches,Sunflowercombe,225,125,198,1,plains,4
+110,#F1CC80,land,15,Sheep Hundred,The Sunny Marches,Paleshire,227,165,249,1,forest,10
+111,#593398,land,15,Sheep Hundred,The Sunny Marches,Lilystead,123,170,224,1,forest,10
+112,#3DA146,land,15,Sheep Hundred,The Sunny Marches,Bee Ford,210,192,238,1,plains,15
+113,#C33350,land,15,Sheep Hundred,The Sunny Marches,Breadheath,241,163,234,1,plains,10
+114,#4876A6,land,15,Sheep Hundred,The Sunny Marches,Woolvale,219,178,242,1,plains,13
+115,#B5DA2C,land,15,Sheep Hundred,The Sunny Marches,Cobblevale,152,190,221,1,plains,13
+116,#AC44B5,land,15,Sheep Hundred,The Sunny Marches,Hayton,220,181,226,1,plains,13
+117,#3DEFAD,land,16,Carrot Downs,The Sunny Marches,Tulip Hollow,158,112,208,1,plains,1
+118,#9C6A51,land,16,Carrot Downs,The Sunny Marches,Honeymill,171,95,225,1,plains,1
+119,#534DC0,land,16,Carrot Downs,The Sunny Marches,Wheatstone,197,86,230,1,plains,0
+120,#5C914B,land,16,Carrot Downs,The Sunny Marches,Honey Hollow,240,81,187,1,plains,0
+121,#B35386,land,16,Carrot Downs,The Sunny Marches,Meadowbay,176,103,217,1,plains,1
+122,#33B0CA,land,16,Carrot Downs,The Sunny Marches,Bee Mouth,148,64,192,1,plains,0
+123,#90884D,land,16,Carrot Downs,The Sunny Marches,Beebrook,204,86,202,1,plains,0
+124,#A954E5,land,16,Carrot Downs,The Sunny Marches,Bread Gate,207,98,190,1,plains,2
+125,#20B14B,land,16,Carrot Downs,The Sunny Marches,Tulipport,190,100,202,1,plains,1
+126,#EB2E2D,land,17,Potato Valley,The Sunny Marches,Cowrest,215,134,236,1,plains,5
+127,#5379D8,land,17,Potato Valley,The Sunny Marches,Leafcrest,155,152,208,1,forest,6
+128,#749B3E,land,17,Potato Valley,The Sunny Marches,Saplingshire,159,149,231,1,forest,8
+129,#952F87,land,17,Potato Valley,The Sunny Marches,Sheep Combe,222,120,239,1,plains,2
+130,#3FDEC4,land,17,Potato Valley,The Sunny Marches,Rabbitbury,187,126,212,1,plains,2
+131,#B97522,land,17,Potato Valley,The Sunny Marches,Sheep Stone,205,122,223,1,plains,2
+132,#9274E8,land,17,Potato Valley,The Sunny Marches,Dandelionheath,210,148,244,1,plains,7
+133,#37EE30,land,17,Potato Valley,The Sunny Marches,Logrun,182,155,220,1,forest,8
+134,#D04170,land,17,Potato Valley,The Sunny Marches,Foxton,193,138,222,1,forest,5
+135,#3F7A9E,land,17,Potato Valley,The Sunny Marches,Mossholm,220,140,207,1,forest,6
+136,#CBD55C,land,18,Frost Weald,The Golden Heartland,Snowbay,161,540,123,1,taiga,0
+137,#B958D2,land,18,Frost Weald,The Golden Heartland,Bee Reach,348,561,139,1,plains,1
+138,#40BA7D,land,18,Frost Weald,The Golden Heartland,Wheat Shire,344,543,146,1,plains,0
+139,#9D3519,land,18,Frost Weald,The Golden Heartland,Podzolmouth,209,530,128,1,taiga,0
+140,#373F9C,land,19,Poppyshire,The Golden Heartland,Tulipbay,174,596,140,1,plains,2
+141,#5BBE21,land,19,Poppyshire,The Golden Heartland,Villagerpoint,186,585,134,1,plains,1
+142,#9D417E,land,19,Poppyshire,The Golden Heartland,Cornflowerstone,144,573,175,1,plains,0
+143,#38AFB4,land,19,Poppyshire,The Golden Heartland,Barleyden,136,553,169,1,plains,0
+144,#8F7D47,land,19,Poppyshire,The Golden Heartland,Potatocove,209,568,155,1,plains,2
+145,#864EC7,land,19,Poppyshire,The Golden Heartland,Rabbithaven,185,594,153,1,plains,2
+146,#4FE869,land,19,Poppyshire,The Golden Heartland,Saddlefold,236,579,146,1,plains,3
+147,#EB2B43,land,19,Poppyshire,The Golden Heartland,Meadow Glen,216,582,162,1,plains,2
+148,#2B67BC,land,19,Poppyshire,The Golden Heartland,Cowbarrow,194,564,169,1,plains,2
+149,#91B43D,land,20,Lantern Downs,The Golden Heartland,Oxeyecove,176,641,155,1,plains,1
+150,#903890,land,20,Lantern Downs,The Golden Heartland,Cornflowershore,233,620,136,1,plains,1
+151,#26A580,land,20,Lantern Downs,The Golden Heartland,Hay Rest,164,635,138,1,plains,1
+152,#BB8965,land,20,Lantern Downs,The Golden Heartland,Haystrand,275,610,145,1,plains,2
+153,#4130B8,land,20,Lantern Downs,The Golden Heartland,Meadow Hearth,166,628,149,1,plains,1
+154,#68CF53,land,20,Lantern Downs,The Golden Heartland,Breaddale,169,651,158,1,plains,0
+155,#8D4465,land,20,Lantern Downs,The Golden Heartland,Oxeyestrand,118,612,166,1,plains,0
+156,#3CA0C2,land,20,Lantern Downs,The Golden Heartland,Woolstrand,261,648,139,1,plains,0
+157,#B6B025,land,20,Lantern Downs,The Golden Heartland,Sheepport,170,629,166,1,plains,0
+158,#69218E,land,21,Cow Valley,The Green Marches,Tulip Gate,233,788,304,1,plains,6
+159,#6CC98F,land,21,Cow Valley,The Green Marches,Sunflowerhaven,291,773,290,1,plains,5
+160,#934A43,land,21,Cow Valley,The Green Marches,Poppy Brook,175,788,292,1,plains,11
+161,#596BB2,land,21,Cow Valley,The Green Marches,Sheep Ton,95,771,275,1,plains,1
+162,#8BC552,land,21,Cow Valley,The Green Marches,Tuliphold,159,775,306,1,plains,4
+163,#B12293,land,21,Cow Valley,The Green Marches,Potatohollow,224,800,312,1,plains,9
+164,#5EC7BE,land,22,The Dandelion Fields,The Green Marches,Cornflowermill,106,771,189,1,plains,8
+165,#B39562,land,22,The Dandelion Fields,The Green Marches,Fern Port,451,776,162,1,taiga,2
+166,#6E4CB3,land,22,The Dandelion Fields,The Green Marches,Pumpkinmill,171,776,182,1,plains,6
+167,#68C46C,land,22,The Dandelion Fields,The Green Marches,Oxeye Bury,119,804,187,2,plains,1
+168,#D84167,land,22,The Dandelion Fields,The Green Marches,Pinehollow,272,788,174,1,taiga,2
+169,#1D6DB0,land,22,The Dandelion Fields,The Green Marches,Chickenglen,244,779,200,1,plains,5
+170,#A3B935,land,22,The Dandelion Fields,The Green Marches,Cornflowerstrand,207,790,189,1,plains,4
+171,#D76BE6,land,23,Emerald Range,The Green Marches,Dandelionworth,272,870,316,1,plains,17
+172,#3BECA2,land,23,Emerald Range,The Green Marches,Flint Brook,165,855,347,1,mountains,27
+173,#E96833,land,23,Emerald Range,The Green Marches,Dioritehold,127,885,339,1,mountains,24
+174,#46468D,land,23,Emerald Range,The Green Marches,Ironmarch,204,869,339,1,mountains,25
+175,#72B655,land,23,Emerald Range,The Green Marches,Redstonebrook,222,882,327,1,mountains,22
+176,#B83281,land,23,Emerald Range,The Green Marches,Coarsetop,197,854,334,1,savannah,20
+177,#4BC8D9,land,23,Emerald Range,The Green Marches,Meadowton,172,855,320,1,plains,15
+178,#D1C06D,land,23,Emerald Range,The Green Marches,Dripstonecrag,97,869,329,1,mountains,21
+179,#8157A5,land,24,Beetroot Vale,The Green Marches,Beedale,154,802,246,1,plains,3
+180,#36D15D,land,24,Beetroot Vale,The Green Marches,Fern Wharf,180,851,238,1,forest,1
+181,#AA4246,land,24,Beetroot Vale,The Green Marches,Horsestrand,169,822,260,1,plains,1
+182,#2450A8,land,24,Beetroot Vale,The Green Marches,Cornflower Head,223,822,237,1,plains,1
+183,#88A558,land,24,Beetroot Vale,The Green Marches,Fern Stone,235,834,246,1,forest,1
+184,#DE78D6,land,24,Beetroot Vale,The Green Marches,Oxeye Well,199,815,250,1,plains,2
+185,#78EFD6,land,25,Wheat Hundred,The Green Marches,Pigbury,186,854,296,1,plains,8
+186,#AB7D4F,land,25,Wheat Hundred,The Green Marches,Saddlewatch,182,850,310,1,plains,11
+187,#4E36AB,land,25,Wheat Hundred,The Green Marches,Birchcombe,239,866,303,1,forest,13
+188,#43963C,land,25,Wheat Hundred,The Green Marches,Meadowholm,204,842,275,1,plains,1
+189,#8E3859,land,25,Wheat Hundred,The Green Marches,Breadgate,171,857,282,1,plains,5
+190,#6BBFE9,land,25,Wheat Hundred,The Green Marches,Potatoshire,198,831,301,1,plains,6
+191,#A4A749,land,25,Wheat Hundred,The Green Marches,Sunflowerglen,145,840,305,1,plains,8
+192,#BC40E6,land,25,Wheat Hundred,The Green Marches,Oak Strand,211,855,268,1,plains,2
+193,#4DB27B,land,25,Wheat Hundred,The Green Marches,Carrotbay,174,844,288,1,plains,3
+194,#DD543A,land,25,Wheat Hundred,The Green Marches,Beewell,189,872,292,1,plains,12
+195,#303E9E,land,26,Cornflower March,The Green Marches,Wheatshore,159,790,262,1,plains,13
+196,#97D967,land,26,Cornflower March,The Green Marches,Barleywell,172,813,308,1,plains,6
+197,#E73DB6,land,26,Cornflower March,The Green Marches,Spidercombe,222,799,286,1,forest,10
+198,#2BB7B6,land,26,Cornflower March,The Green Marches,Dandelionshore,253,820,294,1,plains,3
+199,#E7C472,land,26,Cornflower March,The Green Marches,Wolfmarch,172,806,296,1,forest,9
+200,#7136C7,land,26,Cornflower March,The Green Marches,Barleypoint,135,814,270,1,plains,6
+201,#31B341,land,26,Cornflower March,The Green Marches,Lantern Hollow,240,801,258,1,plains,9
+202,#C65266,land,26,Cornflower March,The Green Marches,Bellheath,127,813,281,1,plains,7
+203,#4B8BD4,land,26,Cornflower March,The Green Marches,Potatohearth,152,802,272,1,plains,9
+204,#B4E227,land,26,Cornflower March,The Green Marches,Villagercove,214,788,275,1,plains,10
+205,#AD46B2,land,27,Tulip Vale,The Green Marches,Bell Vale,148,794,329,1,plains,13
+206,#20B482,land,27,Tulip Vale,The Green Marches,Goatglen,213,768,341,1,mountains,19
+207,#954D22,land,27,Tulip Vale,The Green Marches,Poppyworth,169,778,331,1,plains,9
+208,#5047C0,land,27,Tulip Vale,The Green Marches,Mosspool,285,766,326,1,swamp,3
+209,#5AE534,land,27,Tulip Vale,The Green Marches,Honeywatch,231,785,320,1,plains,9
+210,#CB6397,land,27,Tulip Vale,The Green Marches,Carrotden,132,785,340,1,plains,24
+211,#2E859B,land,28,The Meadow Peaks,The Green Marches,Cobblereach,210,828,348,1,mountains,29
+212,#C4B62A,land,28,The Meadow Peaks,The Green Marches,Barleyhollow,200,805,329,1,plains,14
+213,#6C1A9F,land,28,The Meadow Peaks,The Green Marches,Oxeyeridge,138,840,319,1,plains,13
+214,#3AAD60,land,28,The Meadow Peaks,The Green Marches,Donkeymarch,301,809,343,1,savannah,22
+215,#CA403B,land,28,The Meadow Peaks,The Green Marches,Llamawick,190,842,332,1,savannah,20
+216,#3B58AD,land,28,The Meadow Peaks,The Green Marches,Hay Gate,155,815,319,1,plains,11
+217,#7DB23E,land,28,The Meadow Peaks,The Green Marches,Bread Stead,152,829,316,1,plains,15
+218,#BB24A3,land,28,The Meadow Peaks,The Green Marches,Potatowatch,249,823,328,1,plains,18
+219,#3BA698,land,28,The Meadow Peaks,The Green Marches,Donkeysummit,104,828,335,1,savannah,22
+220,#EDB66A,land,28,The Meadow Peaks,The Green Marches,Tuffcliff,177,839,345,1,mountains,28
+221,#8661E4,land,29,Leaf Valley,The Green Marches,Azaleastone,150,763,227,1,forest,8
+222,#4CF04A,land,29,Leaf Valley,The Green Marches,Palepoint,241,773,244,1,forest,3
+223,#EC7296,land,29,Leaf Valley,The Green Marches,Cornflowerpoint,269,780,214,1,plains,6
+224,#2F88C6,land,29,Leaf Valley,The Green Marches,Hollowwharf,253,788,241,1,forest,5
+225,#C3D539,land,29,Leaf Valley,The Green Marches,Barkbarrow,150,783,229,1,forest,12
+226,#B64BCC,land,29,Leaf Valley,The Green Marches,Cowglen,163,764,214,1,plains,3
+227,#418E6A,land,29,Leaf Valley,The Green Marches,Rootbarrow,173,773,228,1,forest,12
+228,#BC5534,land,29,Leaf Valley,The Green Marches,Toad Bay,186,756,235,1,swamp,3
+229,#1F26A7,land,30,The Cornflower Marches,The Green Marches,Bee Shore,234,748,181,1,plains,6
+230,#75F035,land,30,The Cornflower Marches,The Green Marches,Hayley,174,746,200,1,plains,3
+231,#EE2DA7,land,30,The Cornflower Marches,The Green Marches,Saddlepoint,258,750,163,1,plains,1
+232,#4C979D,land,30,The Cornflower Marches,The Green Marches,Rabbitrest,130,737,176,1,plains,2
+233,#B19C51,land,30,The Cornflower Marches,The Green Marches,Pigwell,171,760,174,1,plains,5
+234,#744E9B,land,30,The Cornflower Marches,The Green Marches,Oakshire,101,743,215,1,plains,3
+235,#7FEB95,land,30,The Cornflower Marches,The Green Marches,Hayhead,229,733,149,1,plains,3
+236,#CC525D,land,30,The Cornflower Marches,The Green Marches,Wool Vale,275,761,191,1,plains,4
+237,#4F83D8,land,30,The Cornflower Marches,The Green Marches,Villager Heath,135,760,203,1,plains,1
+238,#86B328,land,30,The Cornflower Marches,The Green Marches,Beewood,206,708,174,1,plains,1
+239,#963292,land,31,The Villager Marches,The Fair Lowlands,Pigcross,218,524,286,1,plains,6
+240,#47A28B,land,31,The Villager Marches,The Fair Lowlands,Carrotcross,221,517,296,1,plains,4
+241,#AD7649,land,31,The Villager Marches,The Fair Lowlands,Sunflowerrest,162,510,307,1,plains,5
+242,#4A37AE,land,31,The Villager Marches,The Fair Lowlands,Creeper Brook,126,499,289,1,forest,8
+243,#6FE15E,land,31,The Villager Marches,The Fair Lowlands,Sheepvale,208,501,298,1,plains,5
+244,#8C4C68,land,31,The Villager Marches,The Fair Lowlands,Lilycross,129,510,281,1,forest,8
+245,#78C6E4,land,31,The Villager Marches,The Fair Lowlands,Pumpkin Shire,201,542,280,1,plains,7
+246,#D6D43F,land,31,The Villager Marches,The Fair Lowlands,Carrotton,105,525,264,1,plains,2
+247,#791BA2,land,31,The Villager Marches,The Fair Lowlands,Pigheath,220,504,316,1,plains,4
+248,#1EA454,land,31,The Villager Marches,The Fair Lowlands,Pigdale,100,517,271,1,plains,8
+249,#D15747,land,31,The Villager Marches,The Fair Lowlands,Cowhold,196,530,274,1,plains,5
+250,#263CA5,land,32,Rabbit Weald,The Fair Lowlands,Villagerreach,118,506,248,1,plains,6
+251,#5F9034,land,32,Rabbit Weald,The Fair Lowlands,Azaleahold,178,490,269,1,forest,9
+252,#F068CF,land,32,Rabbit Weald,The Fair Lowlands,Sunflowerstrand,106,520,255,1,plains,1
+253,#25C7BF,land,32,Rabbit Weald,The Fair Lowlands,Sheep Well,193,484,260,1,plains,10
+254,#E8AB36,land,32,Rabbit Weald,The Fair Lowlands,Saddlestead,184,478,248,1,plains,12
+255,#9764F0,land,32,Rabbit Weald,The Fair Lowlands,Fernreach,176,489,281,1,forest,8
+256,#399C41,land,32,Rabbit Weald,The Fair Lowlands,Beehearth,243,494,251,1,plains,10
+257,#C84361,land,32,Rabbit Weald,The Fair Lowlands,Azalearest,183,504,274,1,forest,10
+258,#3886D0,land,32,Rabbit Weald,The Fair Lowlands,Oakwood,195,507,261,1,plains,8
+259,#BACD6D,land,32,Rabbit Weald,The Fair Lowlands,Meadow Shire,201,475,271,1,plains,8
+260,#C025D0,land,33,The Cow Fields,The Fair Lowlands,Chillwood,269,493,164,2,taiga,1
+261,#1EC081,land,33,The Cow Fields,The Fair Lowlands,Hayden,201,500,194,1,plains,2
+262,#9A4922,land,33,The Cow Fields,The Fair Lowlands,Bread Shore,140,467,187,1,plains,0
+263,#2723B8,land,33,The Cow Fields,The Fair Lowlands,Creepergate,189,488,198,1,forest,4
+264,#46AC22,land,33,The Cow Fields,The Fair Lowlands,Wheatgate,213,485,182,1,plains,3
+265,#E2449B,land,33,The Cow Fields,The Fair Lowlands,Dandelionhaven,135,496,177,1,plains,2
+266,#36B4CB,land,33,The Cow Fields,The Fair Lowlands,Bellshire,212,475,192,1,plains,1
+267,#958318,land,34,Zombieshire,The Fair Lowlands,Lilyhollow,161,464,223,1,forest,7
+268,#9B64C4,land,34,Zombieshire,The Fair Lowlands,Mossden,204,483,224,1,forest,4
+269,#23D254,land,34,Zombieshire,The Fair Lowlands,Horse Wood,215,493,212,1,plains,3
+270,#974041,land,34,Zombieshire,The Fair Lowlands,Rabbit Hold,177,496,235,1,plains,2
+271,#466ABD,land,34,Zombieshire,The Fair Lowlands,Leafford,183,483,236,1,forest,6
+272,#97CB49,land,34,Zombieshire,The Fair Lowlands,Spiderford,275,477,212,1,forest,6
+273,#E665D7,land,34,Zombieshire,The Fair Lowlands,Thornvale,96,470,233,1,forest,9
+274,#419787,land,35,Pumpkin Vale,The Fair Lowlands,Woolmoor,168,444,262,1,plains,14
+275,#EBAA60,land,35,Pumpkin Vale,The Fair Lowlands,Mossrun,133,432,262,1,forest,20
+276,#6651A8,land,35,Pumpkin Vale,The Fair Lowlands,Wolfmill,143,446,241,1,forest,19
+277,#27AF1F,land,35,Pumpkin Vale,The Fair Lowlands,Cobble Dale,229,465,252,1,plains,12
+278,#901E46,land,35,Pumpkin Vale,The Fair Lowlands,Fox Den,123,432,270,1,forest,18
+279,#2074A4,land,35,Pumpkin Vale,The Fair Lowlands,Honeyrest,252,451,250,1,plains,14
+280,#D0D767,land,35,Pumpkin Vale,The Fair Lowlands,Rabbitfold,146,460,263,1,plains,10
+281,#C124EE,land,35,Pumpkin Vale,The Fair Lowlands,Pumpkinreach,196,462,236,1,plains,15
+282,#3AE98F,land,36,Thorn Hundred,The Leafy Hinterland,Beeton,195,444,227,1,forest,18
+283,#C43E1E,land,36,Thorn Hundred,The Leafy Hinterland,Lily Moor,283,402,242,1,forest,19
+284,#6F7BE2,land,36,Thorn Hundred,The Leafy Hinterland,Creeperden,271,415,235,1,forest,17
+285,#6CAC43,land,36,Thorn Hundred,The Leafy Hinterland,Sapling Watch,267,430,240,1,forest,17
+286,#8F3272,land,36,Thorn Hundred,The Leafy Hinterland,Cobwebbury,128,437,235,1,forest,20
+287,#5AA5A7,land,36,Thorn Hundred,The Leafy Hinterland,Paleheight,170,417,253,1,forest,21
+288,#D8B143,land,36,Thorn Hundred,The Leafy Hinterland,Potato Hold,242,404,258,1,plains,18
+289,#7725DF,land,36,Thorn Hundred,The Leafy Hinterland,Cobble Heath,126,409,224,1,plains,12
+290,#23CD3D,land,36,Thorn Hundred,The Leafy Hinterland,Oakcross,139,397,226,1,plains,14
+291,#C83348,land,36,Thorn Hundred,The Leafy Hinterland,Cobblewood,121,425,224,1,plains,14
+292,#4B6A92,land,36,Thorn Hundred,The Leafy Hinterland,Spiderspire,158,427,256,1,forest,20
+293,#7FA027,land,37,The Owl Crags,The Leafy Hinterland,Skeletontor,151,370,197,1,forest,26
+294,#B92BBB,land,37,The Owl Crags,The Leafy Hinterland,Diamondhollow,188,358,198,1,mountains,27
+295,#6CC5A9,land,37,The Owl Crags,The Leafy Hinterland,Creeperspire,238,357,215,1,forest,26
+296,#935C37,land,37,The Owl Crags,The Leafy Hinterland,Cornflowerwatch,144,386,218,1,plains,16
+297,#564CAB,land,37,The Owl Crags,The Leafy Hinterland,Oakcombe,208,380,206,1,forest,20
+298,#6ED457,land,37,The Owl Crags,The Leafy Hinterland,Mushroom Ridge,280,370,217,1,forest,22
+299,#B95987,land,38,The Oak Peaks,The Leafy Hinterland,Azalea Cliff,146,367,230,1,forest,23
+300,#48C6EC,land,38,The Oak Peaks,The Leafy Hinterland,Honeyley,182,391,257,1,plains,18
+301,#948F4A,land,38,The Oak Peaks,The Leafy Hinterland,Emerald Top,120,357,249,1,mountains,25
+302,#844DA2,land,38,The Oak Peaks,The Leafy Hinterland,Anvilscar,214,354,238,1,mountains,28
+303,#479462,land,38,The Oak Peaks,The Leafy Hinterland,Haydale,243,385,244,1,plains,18
+304,#A3514C,land,38,The Oak Peaks,The Leafy Hinterland,Beetop,193,372,255,1,forest,20
+305,#4967CE,land,38,The Oak Peaks,The Leafy Hinterland,Rabbitheight,224,368,242,1,forest,21
+306,#709D3F,land,38,The Oak Peaks,The Leafy Hinterland,Creeperworth,209,384,231,1,forest,18
+307,#A75597,land,39,The Bog Fields,The Leafy Hinterland,Miregate,129,420,172,1,swamp,6
+308,#5BBDB3,land,39,The Bog Fields,The Leafy Hinterland,Bogbay,136,445,189,1,swamp,5
+309,#D5922A,land,39,The Bog Fields,The Leafy Hinterland,Mangrovewash,203,442,172,1,swamp,7
+310,#5B438F,land,39,The Bog Fields,The Leafy Hinterland,Beetrootton,236,413,196,1,plains,12
+311,#60B862,land,39,The Bog Fields,The Leafy Hinterland,Horsestone,298,429,192,1,plains,12
+312,#D15476,land,39,The Bog Fields,The Leafy Hinterland,Canewharf,148,435,180,1,swamp,6
+313,#5582A6,land,39,The Bog Fields,The Leafy Hinterland,Bog Worth,109,417,183,1,swamp,8
+314,#B1C636,land,40,Spidershire,The Leafy Hinterland,Mossworth,99,387,196,1,forest,17
+315,#D24FE8,land,40,Spidershire,The Leafy Hinterland,Mossford,194,407,179,1,forest,14
+316,#50A07D,land,40,Spidershire,The Leafy Hinterland,Foxscar,146,391,177,1,forest,21
+317,#C56440,land,40,Spidershire,The Leafy Hinterland,Snowtop,142,381,187,1,mountains,24
+318,#2529EF,land,40,Spidershire,The Leafy Hinterland,Oakmoor,213,397,188,1,forest,16
+319,#73D944,land,40,Spidershire,The Leafy Hinterland,Lily Dale,310,398,204,1,forest,14
+320,#99296D,land,41,Tadpoleshire,The Leafy Hinterland,Bellworth,185,438,204,1,plains,10
+321,#349FAB,land,41,Tadpoleshire,The Leafy Hinterland,Mireholm,186,406,216,1,swamp,7
+322,#9C8A3F,land,41,Tadpoleshire,The Leafy Hinterland,Witch Hollow,248,432,215,1,swamp,8
+323,#B17CE3,land,41,Tadpoleshire,The Leafy Hinterland,Murk Mouth,197,450,209,1,swamp,2
+324,#39D85D,land,41,Tadpoleshire,The Leafy Hinterland,Cobweb Rest,56,453,223,1,forest,13
+325,#B64F55,land,41,Tadpoleshire,The Leafy Hinterland,Mud Wood,195,419,208,1,swamp,9
+326,#6085C9,land,41,Tadpoleshire,The Leafy Hinterland,Fireflymoor,177,461,213,1,swamp,2
+327,#9EDB2F,land,42,The Coal Fields,The Burning Shires,Emeraldcrag,255,302,338,1,mountains,20
+328,#A61D9E,land,42,The Coal Fields,The Burning Shires,Amethysttop,171,301,318,1,mountains,28
+329,#29997F,land,42,The Coal Fields,The Burning Shires,Andesitepeak,244,320,340,1,mountains,22
+330,#976332,land,42,The Coal Fields,The Burning Shires,Deepslatewell,240,290,325,1,mountains,17
+331,#5941C3,land,42,The Coal Fields,The Burning Shires,Poppy Worth,104,317,365,1,plains,5
+332,#53AF48,land,42,The Coal Fields,The Burning Shires,Carrotcove,240,295,351,1,plains,7
+333,#BD3269,land,42,The Coal Fields,The Burning Shires,Bread Bay,78,324,356,1,plains,12
+334,#3A7A97,land,43,Ember Hundred,The Burning Shires,Templedale,379,246,240,1,desert,15
+335,#E0E263,land,43,Ember Hundred,The Burning Shires,Dune Gate,307,254,278,1,desert,14
+336,#891CB2,land,43,Ember Hundred,The Burning Shires,Templedune,373,272,272,1,desert,13
+337,#2EE57E,land,43,Ember Hundred,The Burning Shires,Cactussands,519,265,233,1,desert,16
+338,#A85A4D,land,43,Ember Hundred,The Burning Shires,Terracottadune,457,255,258,1,desert,15
+339,#2E40AB,land,43,Ember Hundred,The Burning Shires,Deadbushdune,238,231,244,1,desert,17
+340,#5EB11D,land,43,Ember Hundred,The Burning Shires,Terracottareach,233,241,277,1,desert,16
+341,#D436AA,land,43,Ember Hundred,The Burning Shires,Amethyst Ton,229,236,263,1,mountains,19
+342,#6AE4E1,land,43,Ember Hundred,The Burning Shires,Scorchton,352,276,253,1,desert,16
+343,#977B3F,land,44,The Rabbit Marches,The Burning Shires,Rabbit Mill,476,292,196,1,desert,17
+344,#8562BA,land,44,The Rabbit Marches,The Burning Shires,Goldcross,225,291,176,1,desert,9
+345,#31A73D,land,44,The Rabbit Marches,The Burning Shires,Templecrest,473,275,212,1,desert,16
+346,#A7233C,land,44,The Rabbit Marches,The Burning Shires,Goldhold,227,306,176,1,mountains,21
+347,#1E548F,land,44,The Rabbit Marches,The Burning Shires,Bone Stead,180,279,189,1,desert,10
+348,#889C45,land,44,The Rabbit Marches,The Burning Shires,Coal Top,414,310,196,1,mountains,25
+349,#A841B0,land,44,The Rabbit Marches,The Burning Shires,Temple Head,218,267,197,1,desert,4
+350,#59E3B1,land,45,Andesite Range,The Burning Shires,Dune Run,319,296,265,1,desert,16
+351,#CA7040,land,45,Andesite Range,The Burning Shires,Snowton,296,295,303,1,mountains,19
+352,#5F57DE,land,45,Andesite Range,The Burning Shires,Coal Scar,213,308,290,1,mountains,20
+353,#6CD84B,land,45,Andesite Range,The Burning Shires,Copper Ridge,127,317,286,1,mountains,29
+354,#CA257C,land,45,Andesite Range,The Burning Shires,Ember Sands,201,303,277,1,desert,16
+355,#3E93A7,land,45,Andesite Range,The Burning Shires,Boneflat,321,284,283,1,desert,12
+356,#DAC728,land,45,Andesite Range,The Burning Shires,Tuffhold,174,309,306,1,mountains,27
+357,#7025A2,land,45,Andesite Range,The Burning Shires,Templeton,180,291,292,1,desert,16
+358,#56E682,land,45,Andesite Range,The Burning Shires,Copperrock,282,315,268,1,mountains,25
+359,#DF6664,land,46,Armadillo Hills,The Burning Shires,Rabbitwharf,283,253,209,1,desert,8
+360,#3654A2,land,46,Armadillo Hills,The Burning Shires,Horse Holm,305,219,233,1,plains,16
+361,#6D943B,land,46,Armadillo Hills,The Burning Shires,Wheatwick,217,206,220,1,plains,11
+362,#D63CC0,land,46,Armadillo Hills,The Burning Shires,Emberdune,329,239,225,1,desert,10
+363,#5CAA9F,land,46,Armadillo Hills,The Burning Shires,Woolford,326,217,214,1,plains,2
+364,#A06A26,land,46,Armadillo Hills,The Burning Shires,Rabbitfield,127,204,230,1,plains,14
+365,#714ADE,land,46,Armadillo Hills,The Burning Shires,Scorchpoint,291,239,209,1,desert,5
+366,#339831,land,47,Pyramidshire,The Burning Shires,Pyramidflat,320,272,295,1,desert,11
+367,#D82860,land,47,Pyramidshire,The Burning Shires,Miragedrift,522,254,299,1,desert,8
+368,#3880AE,land,47,Pyramidshire,The Burning Shires,Goldstead,517,275,319,1,desert,9
+369,#A8B439,land,47,Pyramidshire,The Burning Shires,Sandbasin,240,250,315,1,desert,1
+370,#8A4C98,land,48,The Lapis Crags,The Burning Shires,Dripstonepass,121,320,250,1,mountains,29
+371,#539D79,land,48,The Lapis Crags,The Burning Shires,Emeraldgate,168,317,235,1,mountains,27
+372,#CD755C,land,48,The Lapis Crags,The Burning Shires,Dust Stone,259,286,226,1,desert,20
+373,#3F49C8,land,48,The Lapis Crags,The Burning Shires,Cobblehold,218,295,252,1,mountains,19
+374,#4B9521,land,48,The Lapis Crags,The Burning Shires,Batmoor,339,303,216,1,mountains,23
+375,#943A75,land,48,The Lapis Crags,The Burning Shires,Golemhold,73,320,225,1,mountains,30
+376,#388F94,land,48,The Lapis Crags,The Burning Shires,Goldwatch,229,305,233,1,mountains,22
+377,#96854E,land,48,The Lapis Crags,The Burning Shires,Emeraldmoor,233,319,212,1,mountains,26
+378,#9455DA,land,48,The Lapis Crags,The Burning Shires,Goatwell,236,309,248,1,mountains,21
+379,#5ED774,land,48,The Lapis Crags,The Burning Shires,Husk Sands,292,288,239,1,desert,19
+380,#A94D57,land,49,Diorite Hundred,The Fair Reaches,Redstonedale,245,972,419,1,mountains,10
+381,#355B93,land,49,Diorite Hundred,The Fair Reaches,Batridge,130,970,404,1,mountains,12
+382,#A1C74A,land,49,Diorite Hundred,The Fair Reaches,Acacia Head,274,963,439,1,savannah,3
+383,#912090,land,49,Diorite Hundred,The Fair Reaches,Rabbitbay,252,980,436,1,plains,2
+384,#2DC69B,land,49,Diorite Hundred,The Fair Reaches,Cowwharf,223,986,413,1,plains,3
+385,#91582E,land,49,Diorite Hundred,The Fair Reaches,Oakhaven,130,986,426,1,plains,3
+386,#3421A8,land,50,The Mire Marches,The Fair Reaches,Moss Marsh,295,918,252,1,swamp,4
+387,#54C340,land,50,The Mire Marches,The Fair Reaches,Hollow Reach,166,925,280,1,forest,11
+388,#C9256E,land,50,The Mire Marches,The Fair Reaches,Cowmarch,185,910,269,1,plains,12
+389,#197FA3,land,50,The Mire Marches,The Fair Reaches,Rootport,85,916,229,1,forest,1
+390,#C7C238,land,50,The Mire Marches,The Fair Reaches,Mudmire,64,920,240,1,swamp,4
+391,#A146CC,land,50,The Mire Marches,The Fair Reaches,Sheepcross,220,897,256,1,plains,5
+392,#39AE66,land,50,The Mire Marches,The Fair Reaches,Mossmire,251,922,266,1,swamp,5
+393,#94352B,land,51,Wool March,The Fair Reaches,Bell Hearth,185,975,349,1,plains,3
+394,#425ABA,land,51,Wool March,The Fair Reaches,Silverfishglen,198,961,358,1,mountains,15
+395,#8FC65C,land,51,Wool March,The Fair Reaches,Cobble Worth,204,974,360,1,plains,9
+396,#992B80,land,51,Wool March,The Fair Reaches,Cobblemouth,235,977,332,1,plains,1
+397,#3F928C,land,51,Wool March,The Fair Reaches,Bellwharf,258,995,354,2,plains,3
+398,#946F2E,land,51,Wool March,The Fair Reaches,Sunflower Haven,193,987,347,1,plains,2
+399,#7755B9,land,51,Wool March,The Fair Reaches,Woolmarch,144,960,345,1,plains,7
+400,#358F39,land,51,Wool March,The Fair Reaches,Cornflowerstead,134,958,336,1,plains,3
+401,#A31C3C,land,52,Oak Vale,The Fair Reaches,Frostcross,162,949,353,1,mountains,13
+402,#316DA2,land,52,Oak Vale,The Fair Reaches,Hay Wick,246,915,337,1,plains,10
+403,#9AB036,land,52,Oak Vale,The Fair Reaches,Sandwaste,162,906,349,1,desert,13
+404,#B04FBC,land,52,Oak Vale,The Fair Reaches,Oxeye Mill,140,944,340,1,plains,11
+405,#3FC991,land,52,Oak Vale,The Fair Reaches,Sandstone Hold,180,896,339,1,desert,15
+406,#A7522E,land,52,Oak Vale,The Fair Reaches,Chicken Dale,220,927,326,1,plains,5
+407,#5655A6,land,52,Oak Vale,The Fair Reaches,Scorchhollow,289,919,353,1,desert,11
+408,#75CA54,land,52,Oak Vale,The Fair Reaches,Poppy Mouth,215,932,338,1,plains,7
+409,#AB427E,land,52,Oak Vale,The Fair Reaches,Terracottaspire,309,935,355,1,desert,10
+410,#66BBC9,land,52,Oak Vale,The Fair Reaches,Hay Wood,244,906,327,1,plains,9
+411,#C0B261,land,53,The Carrot Marches,The Fair Reaches,Lanternwell,271,901,308,1,plains,13
+412,#8937CB,land,53,The Carrot Marches,The Fair Reaches,Hay Crest,122,911,285,1,plains,13
+413,#55B06D,land,53,The Carrot Marches,The Fair Reaches,Pumpkinpoint,147,924,290,1,plains,8
+414,#95191D,land,53,The Carrot Marches,The Fair Reaches,Saddlevale,121,928,308,1,plains,1
+415,#335EB8,land,53,The Carrot Marches,The Fair Reaches,Lanternglen,240,885,306,1,plains,21
+416,#84B436,land,53,The Carrot Marches,The Fair Reaches,Poppyshore,199,913,298,1,plains,9
+417,#C562BC,land,53,The Carrot Marches,The Fair Reaches,Stonewood,302,895,292,1,mountains,21
+418,#7DE4CF,land,53,The Carrot Marches,The Fair Reaches,Potatostone,159,889,319,1,plains,19
+419,#B26E29,land,53,The Carrot Marches,The Fair Reaches,Cornflowerdale,223,913,313,1,plains,8
+420,#5D41C2,land,54,Saddleshire,The Fair Reaches,Poppy Rest,244,994,370,1,plains,3
+421,#1F9016,land,54,Saddleshire,The Fair Reaches,Stonegate,130,971,388,1,mountains,15
+422,#B54E74,land,54,Saddleshire,The Fair Reaches,Chickenhaven,184,988,402,1,plains,3
+423,#329ED6,land,54,Saddleshire,The Fair Reaches,Villagercrest,182,992,389,1,plains,2
+424,#898D35,land,54,Saddleshire,The Fair Reaches,Horserest,121,983,386,1,plains,6
+425,#9634B5,land,54,Saddleshire,The Fair Reaches,Woolbarrow,238,1003,382,1,plains,0
+426,#66CC96,land,54,Saddleshire,The Fair Reaches,Redstone Watch,264,976,375,1,mountains,11
+427,#AB523F,land,54,Saddleshire,The Fair Reaches,Ore Moor,132,973,397,1,mountains,12
+428,#5562C1,land,55,Cobble March,The Fair Reaches,Barleyholm,158,889,265,1,plains,13
+429,#79B451,land,55,Cobble March,The Fair Reaches,Dandelion Den,214,868,275,1,plains,4
+430,#BC208E,land,55,Cobble March,The Fair Reaches,Oxeyewick,144,881,287,1,plains,12
+431,#56C0C1,land,55,Cobble March,The Fair Reaches,Oakwell,137,884,252,1,plains,8
+432,#E4AF29,land,55,Cobble March,The Fair Reaches,Breadworth,226,900,276,1,plains,16
+433,#8740E7,land,55,Cobble March,The Fair Reaches,Tulip Reach,146,886,277,1,plains,11
+434,#33D148,land,55,Cobble March,The Fair Reaches,Woolbury,223,876,267,1,plains,5
+435,#9B3A4A,land,56,The Mushroom Marches,The Fair Reaches,Cobweb Gate,159,937,251,1,forest,9
+436,#3479CC,land,56,The Mushroom Marches,The Fair Reaches,Cobwebwharf,192,937,274,1,forest,12
+437,#87AC1C,land,56,The Mushroom Marches,The Fair Reaches,Pale Run,214,932,239,1,forest,7
+438,#9D20A2,land,56,The Mushroom Marches,The Fair Reaches,Thornley,122,924,228,1,forest,2
+439,#29F1B0,land,56,The Mushroom Marches,The Fair Reaches,Foxrest,116,935,260,1,forest,9
+440,#AD7B5C,land,56,The Mushroom Marches,The Fair Reaches,Rabbitcrest,272,948,267,1,forest,3
+441,#3624EF,land,56,The Mushroom Marches,The Fair Reaches,Creeperpoint,214,948,246,1,forest,3
+442,#41992B,land,56,The Mushroom Marches,The Fair Reaches,Azalea Port,172,937,229,1,forest,2
+443,#A55A7F,land,57,Pig Weald,The Sunny Shires,Creeperhold,139,730,247,1,forest,7
+444,#26B6DE,land,57,Pig Weald,The Sunny Shires,Lantern Shire,226,740,254,1,plains,2
+445,#D9CF52,land,57,Pig Weald,The Sunny Shires,Sheep Glen,197,737,236,1,plains,3
+446,#7720AA,land,57,Pig Weald,The Sunny Shires,Thorn Bay,199,723,236,1,forest,4
+447,#21A74F,land,58,The Hay Fields,The Sunny Shires,Owlbarrow,202,718,267,1,forest,4
+448,#90403C,land,58,The Hay Fields,The Sunny Shires,Wool Mouth,123,733,264,1,plains,1
+449,#5F78C4,land,58,The Hay Fields,The Sunny Shires,Cowmouth,247,688,253,2,plains,2
+450,#9AC369,land,58,The Hay Fields,The Sunny Shires,Cow Ridge,191,707,269,1,plains,1
+451,#D868C5,land,58,The Hay Fields,The Sunny Shires,Fox Fold,193,721,255,1,forest,6
+452,#50A197,land,58,The Hay Fields,The Sunny Shires,Saplinghead,193,710,251,1,forest,3
+453,#C79958,land,58,The Hay Fields,The Sunny Shires,Wheat Heath,75,730,285,1,plains,0
+454,#6231D9,land,58,The Hay Fields,The Sunny Shires,Cornflower Ton,281,715,297,1,plains,1
+455,#35D135,land,59,Bee Valley,The Sunny Wilds,Zombiehold,110,201,262,1,forest,17
+456,#AF3A5B,land,59,Bee Valley,The Sunny Wilds,Cobbleworth,221,190,255,1,plains,13
+457,#6DB2E4,land,59,Bee Valley,The Sunny Wilds,Leafrest,279,208,274,1,forest,17
+458,#BECE4F,land,59,Bee Valley,The Sunny Wilds,Cobweb Hearth,154,194,271,1,forest,12
+459,#A35CB1,land,59,Bee Valley,The Sunny Wilds,Sheephollow,228,203,245,1,plains,18
+460,#59B089,land,60,Cow March,The Sunny Wilds,Sunflowerreach,331,145,303,1,plains,3
+461,#AF4D2C,land,60,Cow March,The Sunny Wilds,Carrotshire,170,172,299,1,plains,6
+462,#2A2E98,land,60,Cow March,The Sunny Wilds,Barleycombe,156,144,285,1,plains,6
+463,#6CB648,land,60,Cow March,The Sunny Wilds,Wheatley,199,156,310,1,plains,4
+464,#A3387B,land,60,Cow March,The Sunny Wilds,Bell Ley,116,136,291,1,plains,5
+465,#3ED7E6,land,60,Cow March,The Sunny Wilds,Chicken Watch,205,159,292,1,plains,6
+466,#8F7820,land,60,Cow March,The Sunny Wilds,Horsereach,187,169,310,1,plains,5
+467,#773EAF,land,61,The Poppy Fields,The Sunny Wilds,Horse Moor,108,186,349,2,plains,0
+468,#2F9445,land,61,The Poppy Fields,The Sunny Wilds,Sheep Fold,273,140,332,1,plains,1
+469,#B62F3A,land,61,The Poppy Fields,The Sunny Wilds,Leafgate,182,150,322,1,forest,3
+470,#18448E,land,61,The Poppy Fields,The Sunny Wilds,Meadowport,204,161,327,1,plains,0
+471,#96BD48,land,61,The Poppy Fields,The Sunny Wilds,Pumpkinhold,194,177,319,1,plains,1
+472,#D92FD1,land,61,The Poppy Fields,The Sunny Wilds,Murk Worth,156,139,348,1,swamp,0
+473,#51AB95,land,61,The Poppy Fields,The Sunny Wilds,Meadowheath,135,130,344,1,plains,1
+474,#B76D2E,land,62,The Hollow Marches,The Sunny Wilds,Fernheath,164,172,287,1,forest,6
+475,#7E68EB,land,62,The Hollow Marches,The Sunny Wilds,Bramblebarrow,212,158,277,1,forest,8
+476,#36B025,land,62,The Hollow Marches,The Sunny Wilds,Woolwatch,175,148,257,1,plains,6
+477,#EB4D8E,land,62,The Hollow Marches,The Sunny Wilds,Sapling Glen,239,178,261,1,forest,10
+478,#6BC4E8,land,62,The Hollow Marches,The Sunny Wilds,Brambleglen,184,184,277,1,forest,9
+479,#D6D62A,land,62,The Hollow Marches,The Sunny Wilds,Saddle Holm,150,172,276,1,plains,8
+480,#A539D2,land,62,The Hollow Marches,The Sunny Wilds,Oxeyeshire,223,163,263,1,plains,9
+481,#42C779,land,62,The Hollow Marches,The Sunny Wilds,Barkcrest,204,147,272,1,forest,8
+482,#C56A5D,land,63,Sunflower March,The Sunny Wilds,Drownedcross,188,136,261,1,swamp,4
+483,#354BBD,land,63,Sunflower March,The Sunny Wilds,Oxeyebury,181,112,270,1,plains,2
+484,#71BA34,land,63,Sunflower March,The Sunny Wilds,Carrothollow,168,108,257,1,plains,1
+485,#D530AC,land,63,Sunflower March,The Sunny Wilds,Villagerhearth,147,134,274,1,plains,5
+486,#70DAD6,land,63,Sunflower March,The Sunny Wilds,Firefly Slough,154,132,250,1,swamp,3
+487,#947840,land,63,Sunflower March,The Sunny Wilds,Tulip Dale,186,123,274,1,plains,3
+488,#7756AD,land,63,Sunflower March,The Sunny Wilds,Rabbit Brook,230,120,255,1,plains,2
+489,#3BAD44,land,63,Sunflower March,The Sunny Wilds,Dandelionbrook,214,97,263,1,plains,0
+490,#DA667E,land,64,Cow Downs,The Sunny Wilds,Zombiehaven,179,104,302,1,forest,1
+491,#5BA0E5,land,64,Cow Downs,The Sunny Wilds,Honey Well,242,125,290,1,plains,4
+492,#BAD25F,land,64,Cow Downs,The Sunny Wilds,Beetroot Mouth,292,109,287,1,plains,2
+493,#D75CE2,land,64,Cow Downs,The Sunny Wilds,Potatobury,135,113,323,1,plains,0
+494,#3DD199,land,64,Cow Downs,The Sunny Wilds,Breadstrand,188,129,306,1,plains,2
+495,#D8926F,land,64,Cow Downs,The Sunny Wilds,Creeper Mill,167,95,297,1,forest,0
+496,#5D58D7,land,64,Cow Downs,The Sunny Wilds,Tulipden,219,118,308,1,plains,2
+497,#3E9820,land,65,The Sunflower Fields,The Sunny Wilds,Sheepbay,177,188,309,1,plains,2
+498,#D976AC,land,65,The Sunflower Fields,The Sunny Wilds,Ochrestrand,134,205,319,1,savannah,0
+499,#25C7E8,land,65,The Sunflower Fields,The Sunny Wilds,Horseglen,272,214,311,1,savannah,3
+500,#E1CF54,land,65,The Sunflower Fields,The Sunny Wilds,Coarsefold,207,225,297,1,savannah,8
+501,#764F92,land,65,The Sunflower Fields,The Sunny Wilds,Cornflowerfield,153,210,299,1,plains,5
+502,#3DC263,land,65,The Sunflower Fields,The Sunny Wilds,Sheep Field,183,186,295,1,plains,4
+503,#A42424,land,65,The Sunflower Fields,The Sunny Wilds,Stoneholm,160,218,286,1,mountains,15
+504,#5885F1,land,65,The Sunflower Fields,The Sunny Wilds,Cornflowerwood,277,199,287,1,plains,11
+505,#8AB54D,land,65,The Sunflower Fields,The Sunny Wilds,Pig Shire,185,197,301,1,plains,6
+506,#F14ADD,land,65,The Sunflower Fields,The Sunny Wilds,Donkeybarrow,114,233,304,1,savannah,5
+507,#64D2C0,land,66,Mud Hundred,The Mossy Marches,Lanternfield,212,538,312,1,plains,4
+508,#B58145,land,66,Mud Hundred,The Mossy Marches,Mirebrook,228,570,326,1,swamp,3
+509,#6D53BB,land,66,Mud Hundred,The Mossy Marches,Cauldronwatch,98,531,344,1,swamp,2
+510,#3FB439,land,66,Mud Hundred,The Mossy Marches,Chickenshire,212,555,317,1,plains,4
+511,#CD4774,land,66,Mud Hundred,The Mossy Marches,Orchid Dale,229,560,334,1,swamp,3
+512,#298BC5,land,66,Mud Hundred,The Mossy Marches,Canehaven,139,536,356,1,swamp,1
+513,#E2EE5E,land,66,Mud Hundred,The Mossy Marches,Mire Mere,176,554,345,1,swamp,2
+514,#804590,land,66,Mud Hundred,The Mossy Marches,Meadowdale,169,546,327,1,plains,4
+515,#1FA762,land,66,Mud Hundred,The Mossy Marches,Mirestrand,192,541,340,1,swamp,2
+516,#B36A57,land,67,Root Vale,The Mossy Marches,Mireshore,175,696,338,1,swamp,1
+517,#4851B0,land,67,Root Vale,The Mossy Marches,Canerun,144,676,308,1,swamp,1
+518,#56A923,land,67,Root Vale,The Mossy Marches,Mudbog,172,699,324,1,swamp,1
+519,#A25087,land,67,Root Vale,The Mossy Marches,Mosspoint,246,686,314,1,swamp,1
+520,#1FB2B7,land,67,Root Vale,The Mossy Marches,Fireflyholm,217,667,317,1,swamp,2
+521,#DBBA59,land,67,Root Vale,The Mossy Marches,Cauldroncove,136,672,298,1,swamp,1
+522,#6921C0,land,67,Root Vale,The Mossy Marches,Cauldronhead,226,683,330,1,swamp,2
+523,#25A73A,land,67,Root Vale,The Mossy Marches,Cauldronhaven,201,666,330,1,swamp,1
+524,#C75160,land,68,Cauldron Hills,The Mossy Marches,Mirestone,184,581,300,1,swamp,2
+525,#4C73A8,land,68,Cauldron Hills,The Mossy Marches,Cane Mere,196,583,317,1,swamp,4
+526,#8DA74F,land,68,Cauldron Hills,The Mossy Marches,Orchid Wash,204,607,286,1,swamp,1
+527,#DC2FDD,land,68,Cauldron Hills,The Mossy Marches,Frogfen,298,594,305,1,swamp,1
+528,#58AF95,land,68,Cauldron Hills,The Mossy Marches,Cauldronrun,103,615,308,1,swamp,1
+529,#E3803B,land,68,Cauldron Hills,The Mossy Marches,Slimewharf,210,587,285,1,swamp,0
+530,#5745D6,land,68,Cauldron Hills,The Mossy Marches,Witchmire,132,606,315,1,swamp,3
+531,#78DB64,land,68,Cauldron Hills,The Mossy Marches,Witchsink,147,596,322,1,swamp,3
+532,#B52869,land,68,Cauldron Hills,The Mossy Marches,Frogstone,236,608,299,1,swamp,2
+533,#417C8F,land,69,Cane Vale,The Mossy Marches,Moss Bay,248,640,325,1,swamp,1
+534,#CCC53D,land,69,Cane Vale,The Mossy Marches,Peatwood,164,609,344,1,swamp,1
+535,#A36AC1,land,69,Cane Vale,The Mossy Marches,Lilybury,154,620,344,1,swamp,1
+536,#198F44,land,69,Cane Vale,The Mossy Marches,Toadrun,222,623,319,1,swamp,1
+537,#924E48,land,69,Cane Vale,The Mossy Marches,Cauldronmarsh,186,625,332,1,swamp,2
+538,#435BB3,land,69,Cane Vale,The Mossy Marches,Claysink,197,640,340,1,swamp,2
+539,#59931D,land,69,Cane Vale,The Mossy Marches,Toad Holm,244,610,329,1,swamp,2
+540,#EB6ED2,land,69,Cane Vale,The Mossy Marches,Murkshore,109,631,345,1,swamp,2
+541,#5AA69F,land,70,Clay Hills,The Mossy Marches,Fireflypoint,178,552,273,1,swamp,3
+542,#8C6B37,land,70,Clay Hills,The Mossy Marches,Beebarrow,196,535,297,1,plains,6
+543,#7C57C9,land,70,Clay Hills,The Mossy Marches,Tadpolesink,245,569,308,1,swamp,4
+544,#3DCA42,land,70,Clay Hills,The Mossy Marches,Bogrun,169,558,302,1,swamp,5
+545,#CA3A5F,land,70,Clay Hills,The Mossy Marches,Murkfold,199,562,287,1,swamp,4
+546,#6FA3CF,land,70,Clay Hills,The Mossy Marches,Orchidglen,154,574,291,1,swamp,2
+547,#90A233,land,70,Clay Hills,The Mossy Marches,Tadpolebay,254,572,276,1,swamp,0
+548,#963EA4,land,70,Clay Hills,The Mossy Marches,Slime Fen,183,549,290,1,swamp,6
+549,#22A86F,land,70,Clay Hills,The Mossy Marches,Moss Head,225,560,261,1,swamp,0
+550,#DD8B6B,land,70,Clay Hills,The Mossy Marches,Peat Sink,158,547,303,1,swamp,6
+551,#3739E3,land,71,Lilyshire,The Mossy Marches,Orchidstrand,164,598,353,1,swamp,1
+552,#5AB633,land,71,Lilyshire,The Mossy Marches,Drownedreed,220,580,333,1,swamp,3
+553,#C44691,land,71,Lilyshire,The Mossy Marches,Tadpoleholm,178,575,367,1,swamp,1
+554,#49D9EC,land,71,Lilyshire,The Mossy Marches,Caneford,175,561,359,1,swamp,0
+555,#DAC561,land,71,Lilyshire,The Mossy Marches,Canesink,175,578,356,1,swamp,1
+556,#7D569F,land,71,Lilyshire,The Mossy Marches,Firefly Sink,199,587,348,1,swamp,2
+557,#1CA53D,land,71,Lilyshire,The Mossy Marches,Mudmouth,224,590,366,1,swamp,1
+558,#E95058,land,71,Lilyshire,The Mossy Marches,Tadpolewatch,231,595,336,1,swamp,2
+559,#3665BE,land,71,Lilyshire,The Mossy Marches,Witch Wood,179,569,347,1,swamp,2
+560,#AFF040,land,72,Bog Valley,The Mossy Marches,Cauldronmere,331,659,298,1,swamp,2
+561,#9E1B95,land,72,Bog Valley,The Mossy Marches,Lilyley,166,626,305,1,swamp,1
+562,#53A996,land,72,Bog Valley,The Mossy Marches,Root Reed,164,630,276,1,swamp,2
+563,#DAA16B,land,72,Bog Valley,The Mossy Marches,Canehollow,261,643,299,1,swamp,2
+564,#39219A,land,72,Bog Valley,The Mossy Marches,Mossport,197,651,277,1,swamp,1
+565,#61AD5A,land,72,Bog Valley,The Mossy Marches,Drownedpool,213,628,292,1,swamp,2
+566,#DA3C79,land,72,Bog Valley,The Mossy Marches,Mossglen,145,637,311,1,swamp,1
+567,#4BA3CD,land,72,Bog Valley,The Mossy Marches,Rootreed,212,651,314,1,swamp,1
+568,#E0E62A,land,72,Bog Valley,The Mossy Marches,Clay Shore,115,620,268,1,swamp,1
+569,#B96BD4,land,72,Bog Valley,The Mossy Marches,Claymouth,162,619,284,1,swamp,1
+570,#37E886,land,72,Bog Valley,The Mossy Marches,Cauldronholm,186,641,284,1,swamp,2
+571,#9C4A3B,land,73,The Cocoa Marches,The Mossy Marches,Junglehaven,104,577,410,1,jungle,0
+572,#404FB2,land,73,The Cocoa Marches,The Mossy Marches,Canecove,273,590,405,1,swamp,0
+573,#90DE57,land,73,The Cocoa Marches,The Mossy Marches,Junglestrand,147,580,418,1,jungle,0
+574,#D13CA7,land,74,Liana Hills,The Mossy Marches,Templepoint,260,579,446,2,jungle,0
+575,#2C9A99,land,74,Liana Hills,The Mossy Marches,Melonstrand,284,600,463,1,jungle,0
+576,#B49A5F,land,74,Liana Hills,The Mossy Marches,Pandacross,103,587,430,1,jungle,0
+577,#6D2BCE,land,75,Goat Highlands,The Lofty Shires,Tuffton,239,352,312,1,mountains,23
+578,#2FCB41,land,75,Goat Highlands,The Lofty Shires,Pickaxetor,182,368,305,1,mountains,29
+579,#F1395A,land,75,Goat Highlands,The Lofty Shires,Amethystglen,182,379,312,1,mountains,18
+580,#3C8BE4,land,75,Goat Highlands,The Lofty Shires,Dioritetop,163,336,307,1,mountains,25
+581,#ACD722,land,75,Goat Highlands,The Lofty Shires,Pickaxerest,201,339,296,1,mountains,30
+582,#8E2194,land,75,Goat Highlands,The Lofty Shires,Diamondfall,206,375,298,1,mountains,25
+583,#7DEAC4,land,75,Goat Highlands,The Lofty Shires,Snow Brook,171,356,302,1,mountains,28
+584,#AB6F4D,land,75,Goat Highlands,The Lofty Shires,Root Hold,165,389,296,1,forest,22
+585,#6C65CC,land,75,Goat Highlands,The Lofty Shires,Silverfishden,222,348,287,1,mountains,26
+586,#8DDD77,land,76,Saddle Valley,The Lofty Shires,Bramble Ton,183,404,295,1,forest,20
+587,#D85D9C,land,76,Saddle Valley,The Lofty Shires,Chickenden,139,419,275,1,plains,17
+588,#27B1D2,land,76,Saddle Valley,The Lofty Shires,Saplingstone,171,404,282,1,forest,17
+589,#CBBF4D,land,76,Saddle Valley,The Lofty Shires,Chicken Hold,198,417,288,1,plains,16
+590,#932CD4,land,76,Saddle Valley,The Lofty Shires,Pigshire,163,430,281,1,plains,15
+591,#3F8D58,land,76,Saddle Valley,The Lofty Shires,Villager Ton,178,410,270,1,plains,16
+592,#CB2C28,land,77,The Bat Marches,The Lofty Shires,Granite Gate,193,341,319,1,mountains,21
+593,#677FC4,land,77,The Bat Marches,The Lofty Shires,Spider Glen,169,355,326,1,forest,18
+594,#76AA35,land,77,The Bat Marches,The Lofty Shires,Birch Port,267,364,341,1,forest,17
+595,#A42090,land,77,The Bat Marches,The Lofty Shires,Anvil Watch,151,333,338,1,mountains,22
+596,#54AB9F,land,77,The Bat Marches,The Lofty Shires,Oxeyegate,94,351,354,1,plains,4
+597,#E6AC5F,land,77,The Bat Marches,The Lofty Shires,Pale Moor,213,350,342,1,forest,18
+598,#4A2B98,land,77,The Bat Marches,The Lofty Shires,Amethystvale,178,340,330,1,mountains,19
+599,#3C963B,land,77,The Bat Marches,The Lofty Shires,Tuffshore,242,336,350,1,mountains,17
+600,#E33C6F,land,77,The Bat Marches,The Lofty Shires,Moss Brook,163,367,323,1,forest,16
+601,#6299BF,land,77,The Bat Marches,The Lofty Shires,Silverfishpeak,139,328,322,1,mountains,23
+602,#9FA94C,land,78,Oak Highlands,The Lofty Shires,Deepslateheight,149,350,277,1,mountains,26
+603,#CF3CEF,land,78,Oak Highlands,The Lofty Shires,Rabbitheath,150,389,285,1,plains,19
+604,#55C38F,land,78,Oak Highlands,The Lofty Shires,Copperridge,203,353,261,1,mountains,30
+605,#92523E,land,78,Oak Highlands,The Lofty Shires,Birch Stone,237,365,268,1,forest,21
+606,#30369C,land,78,Oak Highlands,The Lofty Shires,Barkbury,241,363,283,1,forest,22
+607,#72D83B,land,78,Oak Highlands,The Lofty Shires,Palewell,210,380,265,1,forest,20
+608,#C963A4,land,78,Oak Highlands,The Lofty Shires,Creeperridge,200,393,273,1,forest,19
+609,#65D2DA,land,78,Oak Highlands,The Lofty Shires,Villagerhold,227,377,282,1,plains,19
+610,#D2B75B,land,79,Horseshire,The Green Dominion,Wooldale,119,445,287,1,plains,4
+611,#7E39C6,land,79,Horseshire,The Green Dominion,Cowcrest,89,431,305,1,plains,4
+612,#68E17F,land,79,Horseshire,The Green Dominion,Pigton,125,441,299,1,plains,2
+613,#DA5966,land,79,Horseshire,The Green Dominion,Bee Gate,116,418,300,1,plains,15
+614,#4271B9,land,79,Horseshire,The Green Dominion,Saddleglen,136,443,276,1,plains,11
+615,#86AF2E,land,79,Horseshire,The Green Dominion,Breadbarrow,204,432,293,1,plains,11
+616,#B92DB6,land,80,Bell Weald,The Green Dominion,Rabbit Shire,112,487,350,1,plains,5
+617,#35D3A9,land,80,Bell Weald,The Green Dominion,Barleyhearth,140,492,312,1,plains,2
+618,#B5611F,land,80,Bell Weald,The Green Dominion,Meadowmarch,148,483,326,1,plains,4
+619,#7863F1,land,80,Bell Weald,The Green Dominion,Sheep Hearth,146,487,337,1,plains,5
+620,#4FB63E,land,80,Bell Weald,The Green Dominion,Oak Worth,119,494,329,1,plains,4
+621,#A52C61,land,80,Bell Weald,The Green Dominion,Cobbleheath,225,477,348,1,plains,4
+622,#24A7D9,land,80,Bell Weald,The Green Dominion,Poppyfold,77,473,336,1,plains,2
+623,#AAA731,land,81,Cobble Vale,The Green Dominion,Sheep Stead,97,462,341,1,plains,1
+624,#B134EA,land,81,Cobble Vale,The Green Dominion,Pig Run,199,453,351,1,plains,4
+625,#36E97D,land,81,Cobble Vale,The Green Dominion,Cobble Ford,157,444,355,1,plains,9
+626,#D77A6E,land,81,Cobble Vale,The Green Dominion,Cow Ford,123,468,352,1,plains,3
+627,#2642BC,land,81,Cobble Vale,The Green Dominion,Pumpkinholm,159,463,359,1,plains,4
+628,#92C365,land,81,Cobble Vale,The Green Dominion,Honeyrun,189,433,351,1,plains,10
+629,#8F417D,land,82,Honey Vale,The Green Dominion,Poppyrest,220,396,307,1,plains,14
+630,#27E1D5,land,82,Honey Vale,The Green Dominion,Wheatfold,244,404,320,1,plains,6
+631,#D8A240,land,82,Honey Vale,The Green Dominion,Tulipfold,94,421,310,1,plains,8
+632,#6434BB,land,82,Honey Vale,The Green Dominion,Barleybury,131,410,308,1,plains,11
+633,#55A95A,land,82,Honey Vale,The Green Dominion,Cowgate,220,428,339,1,plains,6
+634,#C74562,land,82,Honey Vale,The Green Dominion,Rabbit Hearth,86,414,340,1,plains,6
+635,#416F99,land,82,Honey Vale,The Green Dominion,Beetrootwell,101,421,349,1,plains,9
+636,#8D9F41,land,83,Bread Valley,The Green Dominion,Meadowstone,198,471,286,1,plains,2
+637,#951CA2,land,83,Bread Valley,The Green Dominion,Cobble Watch,132,463,272,1,plains,5
+638,#4CC394,land,83,Bread Valley,The Green Dominion,Oakvale,172,484,292,1,plains,5
+639,#BE7655,land,83,Bread Valley,The Green Dominion,Oxeye Den,102,453,275,1,plains,6
+640,#312F91,land,83,Bread Valley,The Green Dominion,Oakglen,146,481,300,1,plains,1
+641,#4DC321,land,84,Meadow March,The Fair Wilds,Poppybrook,247,532,327,1,plains,3
+642,#F076BA,land,84,Meadow March,The Fair Wilds,Oxeye Stead,137,504,337,1,plains,4
+643,#67C6D6,land,84,Meadow March,The Fair Wilds,Beeheath,192,516,329,1,plains,3
+644,#A6963B,land,84,Meadow March,The Fair Wilds,Acornworth,108,501,326,1,forest,5
+645,#8B4BBD,land,84,Meadow March,The Fair Wilds,Meadowworth,162,520,341,1,plains,2
+646,#42A55D,land,84,Meadow March,The Fair Wilds,Rabbit Worth,280,523,313,1,plains,3
+647,#B84649,land,85,Villager Hills,The Fair Wilds,Calcitebarrow,214,502,373,1,mountains,10
+648,#2C50A0,land,85,Villager Hills,The Fair Wilds,Bell Bay,214,522,355,1,plains,1
+649,#B7E177,land,85,Villager Hills,The Fair Wilds,Fernbrook,141,516,374,1,jungle,2
+650,#CC6AC2,land,85,Villager Hills,The Fair Wilds,Wool Fold,171,510,350,1,plains,3
+651,#4FEFD1,land,85,Villager Hills,The Fair Wilds,Saddlehold,192,508,363,1,plains,4
+652,#E6AC6D,land,85,Villager Hills,The Fair Wilds,Skeleton Heath,172,492,361,1,forest,5
+653,#604E9D,land,85,Villager Hills,The Fair Wilds,Hay Combe,194,497,348,1,plains,4
+654,#349D2D,land,86,Carrot Hills,The Fair Wilds,Coppershire,216,443,376,1,mountains,15
+655,#D14174,land,86,Carrot Hills,The Fair Wilds,Wheatvale,173,432,381,1,plains,11
+656,#6EB5DC,land,86,Carrot Hills,The Fair Wilds,Creeper Field,156,430,428,3,jungle,0
+657,#E5EE5A,land,86,Carrot Hills,The Fair Wilds,Templebrook,240,442,394,1,jungle,7
+658,#845094,land,86,Carrot Hills,The Fair Wilds,Pigfield,111,437,363,1,plains,14
+659,#32A669,land,86,Carrot Hills,The Fair Wilds,Ocelotford,253,424,395,1,jungle,5
+660,#E8755A,land,86,Carrot Hills,The Fair Wilds,Beehold,159,420,385,1,plains,8
+661,#3C4591,land,87,Emerald Valley,The Fair Wilds,Beeley,185,472,385,1,plains,7
+662,#88C461,land,87,Emerald Valley,The Fair Wilds,Lapisbrook,142,485,373,1,mountains,11
+663,#D934A6,land,87,Emerald Valley,The Fair Wilds,Barley Holm,213,474,366,1,plains,6
+664,#3BA2A4,land,87,Emerald Valley,The Fair Wilds,Fernhearth,176,455,383,1,jungle,10
+665,#A38C51,land,87,Emerald Valley,The Fair Wilds,Chickenhollow,66,448,366,1,plains,9
+666,#A36DE8,land,87,Emerald Valley,The Fair Wilds,Emeraldmarch,165,493,382,1,jungle,2
+667,#3A9848,land,87,Emerald Valley,The Fair Wilds,Beetrootholm,258,463,374,1,plains,9
+668,#BA374A,land,87,Emerald Valley,The Fair Wilds,Leaf Hold,181,483,389,1,jungle,2
+669,#81B2F0,land,87,Emerald Valley,The Fair Wilds,Lianahearth,298,479,423,2,jungle,0
+670,#81A71C,land,87,Emerald Valley,The Fair Wilds,Ocelotfold,110,514,455,2,jungle,0
+671,#B728BA,land,88,Cow Hills,The Sunny Reaches,Potatostrand,262,376,388,1,plains,3
+672,#3ACE9F,land,88,Cow Hills,The Sunny Reaches,Pigmill,207,385,321,1,plains,12
+673,#B9652F,land,88,Cow Hills,The Sunny Reaches,Sunflower Wharf,237,383,367,1,plains,7
+674,#786DDE,land,88,Cow Hills,The Sunny Reaches,Ocelotreach,204,361,414,2,jungle,0
+675,#5BB945,land,88,Cow Hills,The Sunny Reaches,Woolfold,118,396,360,1,plains,9
+676,#D23380,land,88,Cow Hills,The Sunny Reaches,Dandelionbarrow,201,387,334,1,plains,9
+677,#1B91B3,land,88,Cow Hills,The Sunny Reaches,Meadowmoor,213,372,357,1,plains,12
+678,#948D2C,land,88,Cow Hills,The Sunny Reaches,Cowridge,141,378,343,1,plains,8
+679,#8853A6,land,88,Cow Hills,The Sunny Reaches,Pumpkin Stead,167,407,348,1,plains,9
+680,#51B975,land,88,Cow Hills,The Sunny Reaches,Bee Bury,215,375,377,1,plains,8
+681,#EB736C,land,88,Cow Hills,The Sunny Reaches,Hayridge,291,391,350,1,plains,4
+682,#435DB3,land,88,Cow Hills,The Sunny Reaches,Cowwood,156,399,334,1,plains,9
+683,#88DD29,land,88,Cow Hills,The Sunny Reaches,Wool Field,130,374,332,1,plains,9
+684,#E938C9,land,89,Dandelionshire,The Sunny Reaches,Cornflowerheath,208,422,372,1,plains,9
+685,#2BAB9D,land,89,Dandelionshire,The Sunny Reaches,Sheepcombe,244,400,382,1,plains,2
+686,#8F5F17,land,89,Dandelionshire,The Sunny Reaches,Horse Hold,181,414,358,1,plains,11
+687,#5022B7,land,89,Dandelionshire,The Sunny Reaches,Parrothead,168,406,394,1,jungle,1
+688,#4EBC50,land,89,Dandelionshire,The Sunny Reaches,Chickenvale,114,426,363,1,plains,12
+689,#E4587F,land,89,Dandelionshire,The Sunny Reaches,Meadowglen,112,410,375,1,plains,6
+690,#3190D8,land,90,Tallgrass Range,The Dry Uplands,Ochredune,174,811,365,1,savannah,20
+691,#ABB954,land,90,Tallgrass Range,The Dry Uplands,Llamarest,173,815,386,1,savannah,17
+692,#C870D7,land,90,Tallgrass Range,The Dry Uplands,Tallgrasscrest,174,799,362,1,savannah,20
+693,#60B48F,land,90,Tallgrass Range,The Dry Uplands,Armadillowood,159,791,373,1,savannah,17
+694,#E38D6F,land,90,Tallgrass Range,The Dry Uplands,Armadillo Hearth,197,819,374,1,savannah,18
+695,#1E22A9,land,90,Tallgrass Range,The Dry Uplands,Andesitescar,193,827,361,1,mountains,25
+696,#489E1F,land,90,Tallgrass Range,The Dry Uplands,Armadillomoor,221,802,379,1,savannah,17
+697,#A52C76,land,91,Scute Mountains,The Dry Uplands,Horsespire,248,767,359,1,savannah,21
+698,#4BBECA,land,91,Scute Mountains,The Dry Uplands,Ocelotcrest,189,748,357,1,jungle,7
+699,#A08E41,land,91,Scute Mountains,The Dry Uplands,Bloomdale,84,740,348,1,jungle,2
+700,#9345DD,land,91,Scute Mountains,The Dry Uplands,Dryreach,191,782,364,1,savannah,20
+701,#1AAD3A,land,91,Scute Mountains,The Dry Uplands,Tallgrasscliff,186,756,367,1,savannah,21
+702,#944247,land,91,Scute Mountains,The Dry Uplands,Acaciawaste,185,777,376,1,savannah,21
+703,#425E8E,land,91,Scute Mountains,The Dry Uplands,Fernglen,89,755,350,1,jungle,13
+704,#ADD660,land,91,Scute Mountains,The Dry Uplands,Gravelrock,258,765,379,1,mountains,27
+705,#CE67C8,land,92,Creeper Hundred,The Dry Uplands,Pandarun,318,733,382,1,jungle,5
+706,#46A38D,land,92,Creeper Hundred,The Dry Uplands,Canopyfold,137,747,416,1,jungle,10
+707,#B87941,land,92,Creeper Hundred,The Dry Uplands,Bamboorun,135,768,419,1,jungle,13
+708,#493898,land,92,Creeper Hundred,The Dry Uplands,Orchidgate,156,745,376,1,jungle,8
+709,#5CE84B,land,92,Creeper Hundred,The Dry Uplands,Bloommarch,120,761,392,1,jungle,17
+710,#94516C,land,92,Creeper Hundred,The Dry Uplands,Cocoabrook,337,747,399,1,jungle,11
+711,#3688AC,land,92,Creeper Hundred,The Dry Uplands,Pandaworth,154,765,402,1,jungle,16
+712,#EFF16C,land,92,Creeper Hundred,The Dry Uplands,Ocelotworth,126,752,384,1,jungle,16
+713,#C463EA,land,92,Creeper Hundred,The Dry Uplands,Ocelotbrook,159,758,412,1,jungle,12
+714,#2B8F56,land,93,Tallgrass Hills,The Dry Uplands,Ironbarrow,143,776,391,1,mountains,23
+715,#934C41,land,93,Tallgrass Hills,The Dry Uplands,Sun Ridge,221,805,408,1,savannah,10
+716,#4D65E8,land,93,Tallgrass Hills,The Dry Uplands,Mossfold,167,775,423,1,jungle,15
+717,#698F4B,land,93,Tallgrass Hills,The Dry Uplands,Tallgrass Watch,162,794,404,1,savannah,13
+718,#A85A93,land,93,Tallgrass Hills,The Dry Uplands,Lapisholm,194,777,404,1,mountains,20
+719,#73EFEB,land,93,Tallgrass Hills,The Dry Uplands,Haywaste,240,788,390,1,savannah,18
+720,#ECB238,land,93,Tallgrass Hills,The Dry Uplands,Ochrestead,204,806,395,1,savannah,14
+721,#8247DF,land,93,Tallgrass Hills,The Dry Uplands,Horsecrest,104,785,411,1,savannah,16
+722,#2DAA39,land,94,Skull March,The Golden Lands,Huskwell,370,878,410,1,desert,12
+723,#A93148,land,94,Skull March,The Golden Lands,Cactuscrest,419,885,443,1,desert,6
+724,#5197E0,land,94,Skull March,The Golden Lands,Sunbrook,457,861,422,1,desert,10
+725,#8B9E48,land,94,Skull March,The Golden Lands,Terracotta Run,297,897,407,1,desert,9
+726,#B027BB,land,94,Skull March,The Golden Lands,Sunbasin,485,893,427,1,desert,8
+727,#52AC8B,land,94,Skull March,The Golden Lands,Emberridge,414,863,439,1,desert,8
+728,#E79265,land,95,Sun Hundred,The Golden Lands,Pyramidgate,244,899,479,1,desert,0
+729,#5C54EA,land,95,Sun Hundred,The Golden Lands,Sunbakedshore,335,865,488,1,savannah,1
+730,#79EC55,land,95,Sun Hundred,The Golden Lands,Haydrift,184,889,494,1,savannah,0
+731,#C6247A,land,95,Sun Hundred,The Golden Lands,Rabbit Drift,193,871,455,1,desert,5
+732,#2792A9,land,95,Sun Hundred,The Golden Lands,Sandstone Cross,334,868,470,1,desert,3
+733,#C9BE65,land,95,Sun Hundred,The Golden Lands,Terracottarest,326,854,459,1,desert,4
+734,#9763BB,land,95,Sun Hundred,The Golden Lands,Sandstonefold,334,888,461,1,desert,3
+735,#41DA6F,land,95,Sun Hundred,The Golden Lands,Ochrepoint,358,846,475,1,savannah,1
+736,#A1201E,land,95,Sun Hundred,The Golden Lands,Emberdrift,282,884,478,1,desert,2
+737,#2651BE,land,96,The Dune Fields,The Golden Lands,Scutefield,289,823,396,1,savannah,17
+738,#83BB38,land,96,The Dune Fields,The Golden Lands,Deepslateglen,152,859,364,1,mountains,24
+739,#AA2498,land,96,The Dune Fields,The Golden Lands,Duneoasis,348,866,397,1,desert,15
+740,#7AE0D0,land,96,The Dune Fields,The Golden Lands,Acacia Wick,230,837,407,1,savannah,11
+741,#D5903C,land,96,The Dune Fields,The Golden Lands,Cobbleheight,176,831,372,1,mountains,24
+742,#6550A1,land,96,The Dune Fields,The Golden Lands,Cobblebarrow,154,844,367,1,mountains,23
+743,#45D840,land,96,The Dune Fields,The Golden Lands,Pyramid Spire,386,850,404,1,desert,14
+744,#C93968,land,96,The Dune Fields,The Golden Lands,Embercross,402,840,386,1,desert,16
+745,#2C709B,land,96,The Dune Fields,The Golden Lands,Bonecrest,395,859,379,1,desert,18
+746,#A3AD40,land,97,Sun March,The Golden Lands,Ochrebay,137,815,487,1,savannah,1
+747,#A431C1,land,97,Sun March,The Golden Lands,Ochrehead,165,813,469,1,savannah,3
+748,#37D386,land,97,Sun March,The Golden Lands,Acacia Reach,164,801,490,1,savannah,1
+749,#E3522A,land,97,Sun March,The Golden Lands,Dry Rest,200,791,483,1,savannah,1
+750,#6E75D0,land,97,Sun March,The Golden Lands,Donkeypoint,273,790,501,1,savannah,0
+751,#5D963C,land,97,Sun March,The Golden Lands,Armadillowaste,212,804,474,1,savannah,2
+752,#E251B0,land,98,Acacia Hundred,The Golden Lands,Scorchvale,173,844,448,1,desert,5
+753,#229197,land,98,Acacia Hundred,The Golden Lands,Dustflat,224,830,422,1,savannah,9
+754,#D3B763,land,98,Acacia Hundred,The Golden Lands,Deadbushheath,292,841,430,1,desert,11
+755,#511894,land,98,Acacia Hundred,The Golden Lands,Llamaford,283,820,455,1,savannah,4
+756,#6CD37E,land,98,Acacia Hundred,The Golden Lands,Acacia Spire,222,806,452,1,savannah,3
+757,#DE4356,land,98,Acacia Hundred,The Golden Lands,Tallgrasshearth,366,810,437,1,savannah,6
+758,#5983BE,land,98,Acacia Hundred,The Golden Lands,Armadillowell,264,831,442,1,desert,9
+759,#8AB329,land,98,Acacia Hundred,The Golden Lands,Muleridge,230,815,422,1,savannah,7
+760,#8F388F,land,98,Acacia Hundred,The Golden Lands,Glass Shire,240,834,460,1,desert,3
+761,#2AB991,land,98,Acacia Hundred,The Golden Lands,Coarse Den,165,823,411,1,savannah,10
+762,#CF8752,land,99,Skull Valley,The Golden Lands,Ochrehaven,328,948,459,1,savannah,1
+763,#472FE4,land,99,Skull Valley,The Golden Lands,Huskwharf,248,917,478,1,desert,0
+764,#66CA53,land,99,Skull Valley,The Golden Lands,Bone Ley,464,947,436,1,desert,4
+765,#E15997,land,99,Skull Valley,The Golden Lands,Scorchwick,323,921,429,1,desert,4
+766,#30A6CF,land,99,Skull Valley,The Golden Lands,Rabbit Ley,227,903,451,1,desert,4
+767,#C0BA2A,land,99,Skull Valley,The Golden Lands,Templerun,263,911,439,1,desert,4
+768,#79329C,land,99,Skull Valley,The Golden Lands,Cactus Bay,372,912,463,1,desert,2
+769,#2DA95C,land,99,Skull Valley,The Golden Lands,Pyramidcombe,395,929,448,1,desert,2
+770,#8C362D,land,100,The Cactus Marches,The Golden Lands,Terracottadrift,263,872,364,1,desert,20
+771,#4F68CB,land,100,The Cactus Marches,The Golden Lands,Dunecrest,320,904,384,1,desert,9
+772,#7FC53A,land,100,The Cactus Marches,The Golden Lands,Dunestone,379,885,353,1,desert,17
+773,#CE5CB6,land,100,The Cactus Marches,The Golden Lands,Armadillovale,329,879,380,1,desert,17
+774,#39C8BD,land,100,The Cactus Marches,The Golden Lands,Camelfold,498,899,366,1,desert,12
+775,#9B793E,land,100,The Cactus Marches,The Golden Lands,Deadbushoasis,305,890,392,1,desert,12
+776,#502F91,land,101,The Meadow Marches,The Burning Shires,Pumpkinwharf,188,242,401,1,plains,1
+777,#20B026,land,101,The Meadow Marches,The Burning Shires,Poppyford,176,231,391,1,plains,1
+778,#BA516B,land,101,The Meadow Marches,The Burning Shires,Carrotmoor,174,247,388,2,plains,0
+779,#75B2E6,land,101,The Meadow Marches,The Burning Shires,Mossmouth,204,217,412,1,jungle,0
+780,#C0E023,land,101,The Meadow Marches,The Burning Shires,Mosshollow,141,230,404,1,jungle,0
+781,#D84BEC,land,102,Creeper Vale,The Wild Lowlands,Vineton,239,759,427,1,jungle,9
+782,#4EBB8E,land,102,Creeper Vale,The Wild Lowlands,Melonbrook,155,738,418,1,jungle,8
+783,#B77458,land,102,Creeper Vale,The Wild Lowlands,Ocelothold,195,751,438,1,jungle,6
+784,#2525CF,land,102,Creeper Vale,The Wild Lowlands,Templemoor,126,733,443,1,jungle,5
+785,#66C240,land,102,Creeper Vale,The Wild Lowlands,Canopystead,229,723,435,1,jungle,4
+786,#CA3B8E,land,102,Creeper Vale,The Wild Lowlands,Melonshire,294,736,430,1,jungle,6
+787,#46B0C0,land,103,Bamboo Hills,The Wild Lowlands,Melon Glen,207,732,405,1,jungle,6
+788,#B9AA5E,land,103,Bamboo Hills,The Wild Lowlands,Bloommouth,195,720,421,1,jungle,3
+789,#6D2DA3,land,103,Bamboo Hills,The Wild Lowlands,Canopywatch,254,724,395,1,jungle,3
+790,#61DE81,land,104,Creeper Downs,The Wild Lowlands,Parrotshore,196,719,472,1,jungle,2
+791,#A04F52,land,104,Creeper Downs,The Wild Lowlands,Temple Haven,202,687,459,1,jungle,1
+792,#214998,land,104,Creeper Downs,The Wild Lowlands,Bloomton,190,703,486,1,jungle,0
+793,#B6E964,land,104,Creeper Downs,The Wild Lowlands,Emeraldmouth,139,706,440,1,jungle,2
+794,#DF56D3,land,104,Creeper Downs,The Wild Lowlands,Bamboo Wood,240,671,478,2,jungle,0
+795,#228E78,land,104,Creeper Downs,The Wild Lowlands,Canopyheath,156,705,475,1,jungle,1
+796,#E9AA6B,land,104,Creeper Downs,The Wild Lowlands,Bamboostone,136,715,445,1,jungle,3
+797,#624CB5,land,104,Creeper Downs,The Wild Lowlands,Orchid Head,193,688,474,1,jungle,0
+798,#24971A,land,104,Creeper Downs,The Wild Lowlands,Emerald Barrow,185,693,446,1,jungle,1
+799,#CE2161,land,104,Creeper Downs,The Wild Lowlands,Catcombe,192,700,466,1,jungle,2
+800,#296B8C,land,104,Creeper Downs,The Wild Lowlands,Spore Rest,188,717,458,1,jungle,4
+801,#D9E042,land,104,Creeper Downs,The Wild Lowlands,Junglecross,192,703,454,1,jungle,2
+802,#7D3993,land,104,Creeper Downs,The Wild Lowlands,Fernport,217,636,442,2,jungle,0
+803,#49946B,land,105,Melon Valley,The Wild Lowlands,Ferncombe,196,764,478,1,jungle,5
+804,#DF6C55,land,105,Melon Valley,The Wild Lowlands,Sporegate,189,734,466,1,jungle,3
+805,#5F6AB5,land,105,Melon Valley,The Wild Lowlands,Parrotheath,251,750,478,1,jungle,4
+806,#74B446,land,105,Melon Valley,The Wild Lowlands,Cocoaton,207,766,446,1,jungle,8
+807,#C2429D,land,105,Melon Valley,The Wild Lowlands,Moss Wood,210,765,461,1,jungle,7
+808,#67DDDD,land,105,Melon Valley,The Wild Lowlands,Creeper Stead,111,727,454,1,jungle,4
+809,#B08E3C,land,105,Melon Valley,The Wild Lowlands,Melon Mill,155,754,448,1,jungle,7
+810,#6C22D4,land,105,Melon Valley,The Wild Lowlands,Cocoawatch,262,750,463,1,jungle,6
+811,#73EF83,land,105,Melon Valley,The Wild Lowlands,Cocoa Bury,136,734,477,1,jungle,1
+812,#AE374B,land,105,Melon Valley,The Wild Lowlands,Melonreach,149,774,474,1,jungle,4
+813,#426793,land,105,Melon Valley,The Wild Lowlands,Vineholm,199,739,452,1,jungle,5
+814,#92A94C,land,106,Armadillo Weald,The Wild Lowlands,Armadillo Rest,239,777,437,1,savannah,9
+815,#EB63F1,land,106,Armadillo Weald,The Wild Lowlands,Llama Rest,176,795,463,1,savannah,0
+816,#329F7B,land,106,Armadillo Weald,The Wild Lowlands,Sunglen,171,789,419,1,savannah,11
+817,#B8734A,land,106,Armadillo Weald,The Wild Lowlands,Tallgrassglen,189,789,434,1,savannah,7
+818,#6861BC,land,106,Armadillo Weald,The Wild Lowlands,Vinebrook,168,779,454,1,jungle,5
+819,#70E950,land,106,Armadillo Weald,The Wild Lowlands,Armadillo Cross,200,792,449,1,savannah,5
+820,#D24F91,land,106,Armadillo Weald,The Wild Lowlands,Donkeybrook,194,801,425,1,savannah,9
+821,#2B869E,land,107,Canopy Vale,The Wild Lowlands,Junglebay,191,764,519,1,jungle,0
+822,#BAAF3C,land,107,Canopy Vale,The Wild Lowlands,Leafmill,160,747,504,1,jungle,1
+823,#73458E,land,107,Canopy Vale,The Wild Lowlands,Mossfield,144,767,490,1,jungle,3
+824,#169540,land,107,Canopy Vale,The Wild Lowlands,Fernmoor,174,761,505,1,jungle,1
+825,#B12822,land,107,Canopy Vale,The Wild Lowlands,Catbarrow,207,737,489,1,jungle,1
+826,#7B98EE,land,107,Canopy Vale,The Wild Lowlands,Cocoahead,176,740,518,1,jungle,0
+827,#7AB533,land,107,Canopy Vale,The Wild Lowlands,Junglemoor,206,752,493,1,jungle,3
+828,#D42DB9,land,1,Wolf Vale,The Northern Hinterland,Spider Ford,108,267,126,1,forest,2
+829,#51D5C4,land,20,Lantern Downs,The Golden Heartland,Wheatmouth,80,627,156,1,plains,1
+830,#9D6C28,land,17,Potato Valley,The Sunny Marches,Hayport,43,116,225,1,plains,1
+831,#6F3DE9,land,83,Bread Valley,The Green Dominion,Chickencrest,100,459,282,1,plains,1
+832,#3DDD3C,land,60,Cow March,The Sunny Wilds,Lanternreach,84,137,314,1,plains,1
+833,#DD2259,land,82,Honey Vale,The Green Dominion,Oakheath,140,421,318,1,plains,8
+834,#4791C5,land,82,Honey Vale,The Green Dominion,Villagerbury,31,430,315,1,plains,1
+835,#B9CC31,land,52,Oak Vale,The Fair Reaches,Barleycove,66,925,318,1,plains,3
+836,#864C92,land,82,Honey Vale,The Green Dominion,Potato Shire,62,427,325,1,plains,7
+837,#62DFA5,land,82,Honey Vale,The Green Dominion,Pumpkinfield,142,410,331,1,plains,6
+838,#AC664F,land,82,Honey Vale,The Green Dominion,Honey Bury,79,420,329,1,plains,6
+839,#212799,land,82,Honey Vale,The Green Dominion,Bell Barrow,43,435,330,1,plains,1
+840,#68A648,land,82,Honey Vale,The Green Dominion,Beetrootford,49,440,333,1,plains,2
+841,#D772B2,land,81,Cobble Vale,The Green Dominion,Sheepbrook,67,454,338,1,plains,0
+842,#4CADB5,land,81,Cobble Vale,The Green Dominion,Sunflowermarch,53,445,343,1,plains,4
+843,#92803D,land,42,The Coal Fields,The Burning Shires,Poppyport,226,313,352,1,plains,8
+844,#5C2099,land,89,Dandelionshire,The Sunny Reaches,Breadcross,101,404,366,1,plains,8
+845,#5DD575,land,103,Bamboo Hills,The Wild Lowlands,Junglevale,112,717,405,1,jungle,2
+846,#BF4E58,land,106,Armadillo Weald,The Wild Lowlands,Parrot Watch,48,783,460,1,jungle,1
+847,#527EC5,land,106,Armadillo Weald,The Wild Lowlands,Emeraldstone,92,788,469,1,jungle,0
+848,#97BA4F,land,104,Creeper Downs,The Wild Lowlands,Orchidmouth,84,719,482,1,jungle,0
+849,#8D4D8B,land,104,Creeper Downs,The Wild Lowlands,Emerald Den,28,713,486,1,jungle,0
+850,#4DDFBA,land,104,Creeper Downs,The Wild Lowlands,Ferndale,93,719,495,1,jungle,0
+851,#DE7621,wasteland,,,,The Fox Wilds,12679,360,54,1,taiga,3
+852,#5B46CD,wasteland,,,,Copper Spires,4883,337,224,1,mountains,30
+853,#50D63C,wasteland,,,,The Iron Peaks,846,222,266,1,mountains,24
+854,#AF1A59,wasteland,,,,Gravel Spires,552,792,351,1,mountains,26
+855,#51B4DB,wasteland,,,,The Stony Heights,296,855,354,1,mountains,29
+856,#969545,wasteland,,,,The Skull Sands,3505,937,395,1,desert,6
+857,#6B1B8D,lake,,,,Dandelion Water,1875,458,314,1,,
+858,#2CE97A,sea,,,,Gulf of Tide,1358,515,216,1,,
+859,#D97669,sea,,,,Tide Inlet,1309,766,139,1,,
+860,#4859A7,sea,,,,Coral Strait,1068,810,514,1,,
+861,#7EE624,sea,,,,Trident Bay,1101,248,422,1,,
+862,#B82D96,sea,,,,Nautilus Waters,1601,102,152,1,,
+863,#1EC6BE,sea,,,,Shell Reef,1412,969,263,1,,
+864,#D59821,sea,,,,Sponge Roads,1818,222,189,1,,
+865,#9B75DD,sea,,,,Shell Waters,1633,1016,340,1,,
+866,#31E63F,sea,,,,Cod Bay,1949,518,469,1,,
+867,#902B41,sea,,,,Glow Squid Firth,1314,87,317,1,,
+868,#256FB7,sea,,,,Shell Sound,1649,744,292,1,,
+869,#90A14C,sea,,,,Pearl Roads,806,390,9,1,,
+870,#D468DF,sea,,,,Sail Inlet,1602,477,450,1,,
+871,#79E9BE,sea,,,,Cod Inlet,1920,693,226,1,,
+872,#D59474,sea,,,,Riptide Roads,1464,550,110,1,,
+873,#5B58C0,sea,,,,Cod Roads,656,833,270,1,,
+874,#8EE86F,sea,,,,Puffer Reef,1728,165,91,1,,
+875,#BB5B90,sea,,,,Turtle Firth,1575,924,495,1,,
+876,#39A6BA,sea,,,,Prismarine Waters,1580,537,378,1,,
+877,#A99D4E,sea,,,,Cod Sound,1641,397,410,1,,
+878,#631A99,sea,,,,Anchor Inlet,1370,665,131,1,,
+879,#7EE89C,sea,,,,Bubble Waters,1913,611,378,1,,
+880,#D2292A,sea,,,,Coral Shallows,1681,998,444,1,,
+881,#5583ED,sea,,,,Puffer Waters,1399,683,502,1,,
+882,#6A8D36,sea,,,,Gulf of Guardian,1410,310,381,1,,
+883,#C249B4,sea,,,,Tide Bay,1587,456,412,1,,
+884,#4CE6CB,sea,,,,Guardian Bay,1420,445,474,1,,
+885,#E3B076,sea,,,,Bubble Inlet,944,106,351,1,,
+886,#6B49D6,sea,,,,Pearl Inlet,1069,254,336,1,,
+887,#46AA41,sea,,,,Drowned Bay,2294,615,428,1,,
+888,#A84567,sea,,,,Gull Inlet,866,722,502,1,,
+889,#4A9AC9,sea,,,,Wreck Roads,1320,563,194,1,,
+890,#959E22,sea,,,,Shipwreck Firth,1676,735,327,1,,
+891,#A747C2,sea,,,,Prismarine Strait,1491,565,393,1,,
+892,#2FD480,sea,,,,Conduit Reef,1663,1018,392,1,,
+893,#D15B3E,sea,,,,Squid Strait,1574,529,41,1,,
+894,#525FDE,sea,,,,Riptide Sound,2268,507,414,1,,
+895,#66C62A,sea,,,,Sea Lantern Roads,1201,804,218,1,,
+896,#B75C9A,sea,,,,Shipwreck Roads,1012,320,22,1,,
+897,#469D9F,sea,,,,Drowned Waters,1598,84,240,2,,
+898,#DFBE60,sea,,,,Wreck Firth,1944,266,165,1,,
+899,#7C4BB8,sea,,,,Gulf of Squid,1333,193,343,1,,
+900,#3F9F4E,sea,,,,Tide Firth,1171,163,351,1,,
+901,#B63A4B,sea,,,,Squid Firth,1228,360,412,1,,
+902,#236BCB,sea,,,,Coral Inlet,788,292,9,2,,
+903,#AEE324,sea,,,,Anchor Strait,1505,649,185,1,,
+904,#8C328D,sea,,,,Seagrass Sound,1032,193,429,1,,
+905,#46987F,sea,,,,Gulf of Gull,1699,56,209,2,,
+906,#9A5527,sea,,,,Glow Squid Shallows,1777,728,206,1,,
+907,#4032AD,sea,,,,Bubble Reef,1393,348,374,1,,
+908,#66D94D,sea,,,,Guardian Shallows,1367,597,262,1,,
+909,#9D436E,sea,,,,Nautilus Strait,1289,782,513,1,,
+910,#66CCEC,sea,,,,Ink Sound,1442,987,315,1,,
+911,#A9A337,sea,,,,Nautilus Firth,1958,567,476,1,,
+912,#794893,sea,,,,Glow Squid Sound,1586,484,45,1,,
+913,#54CA7F,sea,,,,Sponge Firth,1802,684,175,1,,
+914,#DF5B51,sea,,,,Cod Reef,1115,136,371,1,,
+915,#1E43C6,sea,,,,Glow Squid Strait,1656,880,513,1,,
+916,#9EDD5B,sea,,,,Anchor Reef,1331,589,115,1,,
+917,#D970C5,sea,,,,Sail Shallows,892,464,182,1,,
+918,#2BDBCA,sea,,,,Shipwreck Reef,1030,836,219,1,,
+919,#C7A165,sea,,,,Riptide Shallows,1667,145,127,1,,
+920,#5629B6,sea,,,,Riptide Bay,1189,897,231,1,,
+921,#219D24,sea,,,,Bubble Sound,966,720,531,1,,
+922,#C54265,sea,,,,Guardian Waters,1263,536,247,1,,
+923,#2A78B6,sea,,,,Ink Firth,1681,440,23,1,,
+924,#C2D45F,sea,,,,Tropical Waters,1286,234,369,1,,
+925,#A559B1,sea,,,,Wreck Bay,1346,957,220,1,,
+926,#50DC9F,sea,,,,Seagrass Bay,1725,961,474,1,,
+927,#C56C4B,sea,,,,Sea Lantern Firth,2046,213,100,1,,
+928,#3A3CD1,sea,,,,Gulf of Tropical,1425,78,278,1,,
+929,#4EBB1E,sea,,,,Gull Strait,1272,202,394,1,,
+930,#8E2D67,sea,,,,Gulf of Bubble,1307,632,251,1,,
+931,#4E9CA5,sea,,,,Turtle Waters,2025,553,435,1,,
+932,#C1AE59,sea,,,,Conduit Shallows,1231,650,507,1,,
+933,#945DC6,sea,,,,Anchor Roads,1496,671,267,1,,
+934,#20933B,sea,,,,Ink Shallows,1280,62,172,1,,
+935,#BE565C,sea,,,,Gulf of Coral,1436,221,51,1,,
+936,#526B9A,sea,,,,Puffer Firth,1717,424,440,1,,
+937,#88B439,sea,,,,Salmon Strait,1108,225,330,1,,
+938,#C625BB,sea,,,,Ink Waters,1250,570,240,1,,
+939,#2BAF91,sea,,,,Squid Sound,1524,699,411,1,,
+940,#E39C5A,sea,,,,Salmon Inlet,1285,528,76,1,,
+941,#6646E9,sea,,,,Salmon Waters,1521,644,469,1,,
+942,#4C9744,sea,,,,Squid Shallows,1338,757,538,1,,
+943,#992A55,sea,,,,Coral Firth,783,864,247,1,,
+944,#5D98B4,sea,,,,Sail Reef,1220,919,205,1,,
+945,#ADB130,sea,,,,Guardian Inlet,1305,474,128,1,,
+946,#952EBA,sea,,,,Tropical Shallows,1161,762,260,1,,
+947,#54C285,sea,,,,Squid Bay,524,121,330,1,,
+948,#9B3F2F,sea,,,,Trident Roads,1754,659,352,1,,
+949,#31409D,sea,,,,Squid Roads,1543,604,179,1,,
+950,#66C21F,sea,,,,Glow Squid Inlet,1110,802,153,1,,
+951,#90437B,sea,,,,Tropical Reef,1441,654,224,1,,
+952,#50ACAB,sea,,,,Trident Shallows,1383,181,52,1,,
+953,#CFA442,sea,,,,Anchor Sound,2053,712,361,2,,
+954,#6731B9,sea,,,,Glow Squid Reef,987,219,438,1,,
+955,#3AC449,sea,,,,Sponge Waters,1266,727,128,1,,
+956,#A24657,sea,,,,Coral Roads,1762,529,173,1,,
+957,#528FD2,sea,,,,Shell Roads,1329,607,483,1,,
+958,#B5CD65,sea,,,,Gulf of Conduit,1458,509,143,1,,
+959,#9A569E,sea,,,,Gulf of Prismarine,1468,503,103,1,,
+960,#3EDEA6,sea,,,,Shell Inlet,1078,354,14,1,,
+961,#D16B33,sea,,,,Kelp Strait,1311,275,360,1,,
+962,#746CF1,sea,,,,Glow Squid Waters,1180,234,20,1,,
+963,#6CE948,sea,,,,Conduit Bay,1208,699,295,1,,
+964,#A41C63,sea,,,,Bubble Strait,1259,630,114,1,,
+965,#187D94,sea,,,,Tropical Sound,1407,837,494,1,,
+966,#A69A31,sea,,,,Sail Bay,1284,716,158,1,,
+967,#A065C6,sea,,,,Turtle Sound,837,864,217,1,,
+968,#66DC8B,sea,,,,Prismarine Firth,1178,822,185,1,,
+969,#A73F3D,sea,,,,Gulf of Kelp,1754,949,306,1,,
+970,#728CD2,sea,,,,Gull Roads,1360,272,397,1,,
+971,#99DE41,sea,,,,Guardian Firth,1156,454,156,1,,
+972,#E95CD5,sea,,,,Dolphin Inlet,1626,665,439,1,,
+973,#7EE9DA,sea,,,,Sponge Strait,1389,231,144,1,,
+974,#966424,sea,,,,Squid Reef,1593,331,448,1,,
+975,#391795,sea,,,,Gulf of Pearl,1625,323,476,1,,
+976,#2BA529,sea,,,,Bubble Deep,6207,1034,118,1,,
+977,#E13D71,sea,,,,Gull Ocean,5784,37,537,1,,
+978,#578BAD,sea,,,,Squid Ocean,6149,371,543,1,,
+979,#ADBC24,sea,,,,The Cod Expanse,2597,507,12,1,,
+980,#864895,sea,,,,Pearl Trench,5701,790,98,1,,
+981,#4B9772,sea,,,,The Wreck Expanse,5505,1008,503,1,,
+982,#DB7659,sea,,,,Cod Ocean,5746,55,390,1,,
+983,#373D96,sea,,,,Puffer Trench,6222,1114,455,1,,
+984,#75BD4D,sea,,,,Anchor Abyss,5445,202,543,1,,
+985,#CD4CA0,sea,,,,Seagrass Trench,5486,105,83,1,,
+986,#3CCFD8,sea,,,,Tide Ocean,6329,978,48,1,,
+987,#8F7930,sea,,,,Wreck Trench,4909,1118,35,1,,
+988,#8435DC,sea,,,,Coral Abyss,7036,949,140,1,,
+989,#2FB849,sea,,,,Shipwreck Ocean,8060,574,536,1,,
+990,#961D2A,sea,,,,Sail Ocean,5283,826,553,1,,
+991,#336EC9,sea,,,,Seagrass Ocean,5217,153,23,1,,
+992,#719327,sea,,,,Shipwreck Abyss,2904,308,424,1,,
+993,#8F178D,sea,,,,The Salmon Expanse,5252,692,91,1,,
+994,#5CC0A5,sea,,,,Drowned Ocean,6629,1113,262,1,,
+995,#9E6132,sea,,,,Anchor Deep,5735,1113,109,1,,
+996,#7865E9,sea,,,,Kelp Sea,5350,254,478,1,,
+997,#5EB94E,sea,,,,The Dolphin Expanse,5469,1050,541,1,,
+998,#C6648F,sea,,,,Puffer Ocean,5307,1064,327,1,,
+999,#3AADD7,sea,,,,Squid Sea,5194,172,479,1,,
+1000,#B1AF51,sea,,,,Anchor Ocean,7009,589,53,1,,
+1001,#B945EF,sea,,,,The Trident Expanse,6970,1104,184,1,,
+1002,#27A257,sea,,,,The Shell Expanse,5575,827,33,1,,
+1003,#AD635A,sea,,,,Shell Abyss,5880,1121,361,1,,
+1004,#384EA7,sea,,,,Bubble Ocean,5563,876,96,1,,
+1005,#64A626,sea,,,,Ink Sea,5359,388,481,1,,
+1006,#C964B3,sea,,,,Trident Sea,4954,34,334,1,,
+1007,#27A198,sea,,,,Turtle Abyss,6104,289,538,1,,
+1008,#A68345,sea,,,,The Glow Squid Expanse,6257,1011,192,1,,
+1009,#9271D1,sea,,,,Sponge Abyss,5317,656,32,1,,
+1010,#6BCA70,sea,,,,Glow Squid Deep,5574,678,552,1,,
+1011,#C23A5A,sea,,,,The Coral Expanse,4864,29,456,1,,
+1012,#4C7090,sea,,,,Conduit Ocean,5537,1049,39,1,,
+1013,#A7BE41,sea,,,,Sea Lantern Sea,3049,19,180,1,,
+1014,#864C8D,sea,,,,Wreck Sea,6165,1025,263,1,,
+1015,#29AD78,sea,,,,Drowned Abyss,4779,93,479,1,,
+1016,#A04E2A,sea,,,,The Pearl Expanse,4334,28,262,1,,
+1017,#6866E7,sea,,,,The Gull Expanse,5763,742,34,1,,
+1018,#70B555,sea,,,,Guardian Ocean,6457,44,34,1,,
+1019,#D44A99,sea,,,,The Seagrass Expanse,5492,911,35,1,,
+1020,#57BDCE,sea,,,,The Ink Expanse,5848,870,165,1,,
+1021,#D1C060,sea,,,,Seagrass Sea,5827,1057,422,1,,
+1022,#7E569F,sea,,,,The Tropical Expanse,6071,936,547,1,,
+1023,#4F9662,sea,,,,The Guardian Expanse,2177,174,391,1,,
+1024,#BB2F32,sea,,,,Squid Trench,5402,1118,534,1,,
+1025,#3873EF,sea,,,,Drowned Sea,5279,118,543,1,,
+1026,#AEDA67,sea,,,,The Tide Expanse,5870,40,113,1,,
+1027,#AB1B9D,sea,,,,Salmon Deep,8761,475,531,1,,
+1028,#61BBA9,sea,,,,Sea Lantern Ocean,4610,121,420,1,,
+1029,#D28E46,sea,,,,Gull Abyss,2718,592,216,1,,
+1030,#5037AB,sea,,,,Salmon Ocean,2724,661,392,1,,

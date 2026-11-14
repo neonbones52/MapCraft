@@ -79,6 +79,9 @@
 | `mapgen/validate_land.py` | проверка `land.png` (и `wasteland.png`: та же палитра плюс пустошь) |
 | `mapgen/borders.py` | чтение и проверка `borders.png`: земли, оборванные концы линий, отдельные провинции; превью `build/borders/lands.png` |
 | `mapgen/biomes.py` | чтение и проверка `biome.png` по цветам `data/common/biomes.csv`; превью `build/biomes/biomes.png` |
-| `mapgen/generate_provinces.py` | нарезка провинций в `build/provinces/` |
+| `mapgen/river_paths.py` | реки `rivers.png` как пути по блокам: истоки, устья, слияния, ошибки, подъёмы; превью `build/rivers/rivers.png` |
+| `mapgen/generate_provinces.py` | регионы, провинции суши, пустоши, озёра и моря на сетке блоков, названия → `build/provinces/` |
+| `mapgen/names.py` | генератор названий в духе Майнкрафта |
+| `mapgen/palette.py` | различимые цвета для карт с метками |
 | `mapgen/edit_provinces.py` | правки замороженной карты |
 | `mapgen/sources.py` | общее чтение CSV и `provinces.png` |

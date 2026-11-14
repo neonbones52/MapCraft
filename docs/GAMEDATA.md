@@ -16,7 +16,7 @@ Tamriel Universalis и будет меняться вместе со специ�
 | Файл | Колонки | Что |
 |---|---|---|
 | `common/terrain.csv` | key, name, color | логический terrain провинций (не вид карты) |
-| `common/biomes.csv` | key, name, color | биомы вида карты: `color` — цвет в `biome.png`. Пока его читают только инструменты карты (`tools/mapgen/biomes.py`); блоки поверхности и оттенки добавятся с рендером блоков |
+| `common/biomes.csv` | key, name, color, density | биомы вида карты: `color` — цвет в `biome.png`, `density` — плотность провинций при генерации карты (1 — обычная, меньше — провинции крупнее). Пока его читают только инструменты карты (`tools/mapgen/biomes.py`, `generate_provinces.py`); блоки поверхности и оттенки добавятся с рендером блоков |
 | `common/countries.csv` | tag, name, adjective, color | определения стран; `adjective` — для частей, отрезанных от столицы, по умолчанию = name |
 | `common/culture_groups.csv` | key, name | группы культур |
 | `common/cultures.csv` | key, name, color, group | культуры |

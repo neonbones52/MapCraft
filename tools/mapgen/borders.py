@@ -23,7 +23,7 @@ from PIL import Image, ImageDraw
 from scipy import ndimage
 from skimage.morphology import skeletonize
 
-from generate_provinces import distinct_colors
+from palette import distinct_colors
 from heightmap import ROOT, read_blocks
 from validate_land import FOUR, LAND, PALETTE, Report, WASTE, load
 
@@ -138,19 +138,37 @@ def assign_lands(land, passable, lines):
     return labels, [m for m in major if (labels == m).any()], slivers
 
 
-def cells_in_regions(passable, lines, regions):
-    """-> cell label per passable block: the pieces left by all lines, line blocks given to the nearest piece of
-    their own region, so every cell lies inside one region."""
-    raw, _ = pieces(passable, lines > 0)
-    cells = np.zeros_like(raw)
+def nested_pieces(passable, cut, parents):
+    """-> label per passable block: the pieces left by `cut`, its blocks given to the nearest piece of their own
+    parent, so every piece lies inside one parent label."""
+    raw, _ = pieces(passable, cut)
+    out = np.zeros_like(raw)
+    for parent, box in enumerate(ndimage.find_objects(parents), 1):
+        if box is None:
+            continue
+        mine = parents[box] == parent
+        local = np.where(mine, raw[box], 0)
+        if not local.any():
+            continue
+        _, (iy, ix) = ndimage.distance_transform_edt(local == 0, return_indices=True)
+        out[box][mine] = local[iy, ix][mine]
+    return out
+
+
+def fixed_cells(passable, lines, lands):
+    """-> (line region label per passable block, nested in the lands; cell label per passable block, nested in the
+    line regions; set of fixed cells: every cell but the largest of its line region)."""
+    regions = nested_pieces(passable, (lines == LAND_LINE) | (lines == REGION_LINE), lands)
+    cells = nested_pieces(passable, lines > 0, regions)
+    areas = np.bincount(cells.ravel())
+    fixed = set()
     for region, box in enumerate(ndimage.find_objects(regions), 1):
         if box is None:
             continue
-        mine = regions[box] == region
-        local = np.where(mine, raw[box], 0)
-        _, (iy, ix) = ndimage.distance_transform_edt(local == 0, return_indices=True)
-        cells[box][mine] = local[iy, ix][mine]
-    return cells
+        inside = np.unique(cells[box][regions[box] == region])
+        inside = inside[inside > 0]
+        fixed.update(int(c) for c in sorted(inside, key=lambda c: -areas[c])[1:])
+    return regions, cells, fixed
 
 
 def analyse(land, passable, lines):
@@ -159,18 +177,12 @@ def analyse(land, passable, lines):
     target = passable.sum() / LAND_PROVINCES
     lands, major, slivers = assign_lands(land, passable, lines)
 
-    regions = nearest_piece(pieces(passable, (lines == LAND_LINE) | (lines == REGION_LINE))[0], passable)
-    cells = cells_in_regions(passable, lines, regions)
+    _, cells, chosen = fixed_cells(passable, lines, lands)
     cell_areas = np.bincount(cells.ravel())
     fixed = []
-    for region in range(1, regions.max() + 1):
-        inside = np.unique(cells[regions == region])
-        inside = inside[inside > 0]
-        if len(inside) < 2:
-            continue
-        for cell in sorted(inside, key=lambda c: -cell_areas[c])[1:]:
-            y, x = ndimage.center_of_mass(cells == cell)
-            fixed.append((int(x), int(y), int(cell_areas[cell])))
+    for cell in sorted(chosen):
+        y, x = ndimage.center_of_mass(cells == cell)
+        fixed.append((int(x), int(y), int(cell_areas[cell])))
     return lands, cells, [(m, int((lands == m).sum())) for m in major], slivers, fixed, target
 
 

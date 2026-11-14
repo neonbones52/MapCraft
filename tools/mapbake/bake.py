@@ -62,7 +62,7 @@ def main():
 
     neighbours = [[] for _ in range(count)]
     for r in read_csv(ROOT / 'adjacency.csv'):
-        a, b, length = int(r['a']), int(r['b']), int(r['border_px'])
+        a, b, length = int(r['a']), int(r['b']), int(r['border'])
         neighbours[a].append((b, length))
         neighbours[b].append((a, length))
     offsets = np.zeros(count + 1, np.uint32)

@@ -1,89 +1,64 @@
-"""Cut regions and sea into provinces: noisy geodesic Voronoi cells relaxed with Lloyd iterations."""
-import argparse
-import colorsys
+"""Cut the map into regions and provinces on the block grid (one pixel per block) and name everything.
+
+Reads the map sources in the repository root through the other mapgen modules: heightmap.png (heightmap.py),
+wasteland.png and borders.png (borders.py), biome.png (biomes.py), rivers.png (river_paths.py).
+
+- Lands are the user's land lines (borders.py). A land is cut into regions of about REGION_PROVINCES provinces; region
+  lines, where drawn, cut it first. A piece too small to be a region (an island) joins the nearest region of its land.
+- The passable land holds LAND_PROVINCES provinces, given to regions by area. A piece cut off by province lines is one
+  fixed province; the rest of every region is cut automatically.
+- Both cuts are geodesic Voronoi diagrams relaxed with Lloyd iterations. A step costs 1 + noise, RIVER_COST more into a
+  river block and STEP_COST more per height step, so borders run along rivers and ridges. Cells never leave their zone.
+- Every connected piece of wasteland is one province; every lake of at least MIN_LAKE blocks is one; decorative lakes
+  join the province around them. The sea is cut into coastal and open sea provinces.
+- Names come from names.py, after the biome, height and coast of each place.
+
+    python tools/mapgen/generate_provinces.py   # -> build/provinces/: provinces.png/.csv, regions.png/.csv,
+                                                #    adjacency.csv, preview.png, report.txt
+The output is copied to the root by hand; from then on the provinces are frozen (edit_provinces.py).
+"""
 import csv
 import heapq
 import math
-from pathlib import Path
+import sys
 
 import numpy as np
 from numba import njit
-from PIL import Image, ImageDraw
+from PIL import Image
 from scipy import ndimage
 from scipy.cluster.vq import kmeans2
 
-from validate_land import FOUR, LAKE, LAND, PALETTE, SEA
+from biomes import read_biomes
+from borders import assign_lands, fixed_cells, passable_land, read_borders
+from heightmap import ROOT, read_blocks
+from names import Namer
+from palette import distinct_colors
+from river_paths import read_lines, river_mask, trace
+from validate_land import FOUR, LAKE, MIN_LAKE, SEA
 
-MULTIPLIER = 3                # provinces per region = csv value x MULTIPLIER
-MIN_LAND_PROVINCE = 4000      # px; caps the count for small regions and islands
-SATELLITE_SHARE = 0.35        # pieces smaller than this share of a province join the nearest province
-MIN_LAKE_PROVINCE = 2500      # px; smaller lakes are decorative water inside a land province
-COAST_BAND = 110              # px of sea along the coast that forms the coastal zone
-COAST_PROVINCE = 22000        # px per coastal sea province
-OPEN_PROVINCE = 90000         # px per open sea province
-MIN_OPEN_RADIUS = 70          # px; open sea pieces narrower than twice this join the coastal zone
-MIN_SEA_PROVINCE = 3000       # px; smaller sea provinces join the sea neighbour with the longest shared border
+LAND_PROVINCES = 850          # provinces on the passable land, fixed ones included
+REGION_PROVINCES = 8          # provinces per automatic region
+SATELLITE_SHARE = 0.35        # pieces smaller than this share of a cell join their neighbours instead of getting one
 LLOYD_STEPS = 6
-NOISE_STRENGTH = 1.6          # path cost = 1 + NOISE_STRENGTH * fractal noise in [0, 1]
-SEED = 20260927
-WARP = ((110, 22.0), (40, 8.0), (12, 2.5))  # (noise scale px, displacement px): wiggles province borders
+NOISE_STRENGTH = 1.0          # step cost = 1 + NOISE_STRENGTH * fractal noise in [0, 1]
+RIVER_COST = 10.0             # extra cost of stepping into a river block
+STEP_COST = 3.0               # extra cost per height step climbed or descended
+COAST_BAND = 28               # blocks of sea along the coast that form the coastal zone
+COAST_PROVINCE = 1400         # blocks per coastal sea province
+OPEN_PROVINCE = 5600          # blocks per open sea province
+MIN_OPEN_RADIUS = 18          # blocks; open sea pieces narrower than twice this join the coastal zone
+MIN_SEA_PROVINCE = 190        # blocks; smaller sea provinces join the sea neighbour they share most border with
+SEA_NECK = 2                  # blocks; parts of a sea province narrower than 2 * SEA_NECK + 1 go to a sea neighbour
+LAKE_DENSITY = 1.5            # province density on the shore of a lake province, times the biome's density
+LAKE_REACH = 40               # blocks from the lake where its extra density fades out
+SEED = 20261114
 
 SQRT2 = math.sqrt(2.0)
+LAND, WASTELAND, SEA_KIND, LAKE_KIND = 1, 2, 3, 4
+KIND_NAMES = {LAND: 'land', WASTELAND: 'wasteland', SEA_KIND: 'sea', LAKE_KIND: 'lake'}
 
 
-def distinct_colors(count, seed=7):
-    """`count` distinct colours spread over the hue circle by the golden ratio, never black or white."""
-    rng = np.random.default_rng(seed)
-    colors, used = [], {(0, 0, 0), (255, 255, 255)}
-    golden = 0.618033988749895
-    hue = rng.random()
-    while len(colors) < count:
-        hue = (hue + golden) % 1.0
-        sat = 0.45 + 0.4 * rng.random()
-        val = 0.55 + 0.4 * rng.random()
-        color = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(hue, sat, val))
-        if color not in used:
-            used.add(color)
-            colors.append(color)
-    return colors
-
-
-def read_classes(path):
-    rgb = np.asarray(Image.open(path).convert('RGB')).astype(np.uint32)
-    key = (rgb[..., 0] << 16) | (rgb[..., 1] << 8) | rgb[..., 2]
-    classes = np.full(key.shape, 255, np.uint8)
-    for color, value in PALETTE.items():
-        classes[key == ((color[0] << 16) | (color[1] << 8) | color[2])] = value
-    if (classes == 255).any():
-        raise ValueError(f'{path}: pixels outside the palette')
-    return classes
-
-
-def read_regions(png, table):
-    rgb = np.asarray(Image.open(png).convert('RGB')).astype(np.uint32)
-    key = (rgb[..., 0] << 16) | (rgb[..., 1] << 8) | rgb[..., 2]
-    with open(table, encoding='utf-8-sig') as file:
-        rows = list(csv.DictReader(file))
-    regions = np.zeros(key.shape, np.int32)
-    for row in rows:
-        regions[key == int(row['color'].strip().lstrip('#'), 16)] = int(row['id'])
-    return regions, {int(row['id']): row for row in rows}
-
-
-def read_seeds(path, shape):
-    if not path.exists():
-        return []
-    rgba = np.asarray(Image.open(path).convert('RGBA'))
-    if rgba.shape[:2] != shape:
-        raise ValueError(f'{path}: size differs from land.png')
-    # Red and opaque; a transparent GIMP layer or a black background both mean "no seed".
-    dots = (rgba[..., 0] >= 200) & (rgba[..., 1] <= 60) & (rgba[..., 2] <= 60) & (rgba[..., 3] >= 128)
-    labels, count = ndimage.label(dots, np.ones((3, 3), bool))
-    centers = ndimage.center_of_mass(dots, labels, range(1, count + 1))
-    return [(int(round(y)), int(round(x))) for y, x in centers]
-
-
-def fractal_noise(shape, rng, scales=(160, 64, 24, 8), weights=(1.0, 0.6, 0.35, 0.15)):
+def fractal_noise(shape, rng, scales=(40, 16, 6, 2), weights=(1.0, 0.6, 0.35, 0.15)):
     total = np.zeros(shape, np.float32)
     for scale, weight in zip(scales, weights):
         grid = rng.random((shape[0] // scale + 3, shape[1] // scale + 3)).astype(np.float32)
@@ -94,13 +69,15 @@ def fractal_noise(shape, rng, scales=(160, 64, 24, 8), weights=(1.0, 0.6, 0.35, 
 
 
 @njit(cache=True)
-def geodesic_voronoi(zone, cost, seeds):
-    """Multi-source Dijkstra; cells never cross zone borders or cut diagonal corners."""
-    height, width = zone.shape
+def geodesic_voronoi(zone, cost, height, seeds):
+    """Multi-source Dijkstra; cells never cross zone borders or cut diagonal corners. A step costs the mean of the two
+    blocks' costs times its length, plus STEP_COST per height step between them."""
+    rows, cols = zone.shape
     flat_zone = zone.ravel()
     flat_cost = cost.ravel()
-    dist = np.full(height * width, np.inf, np.float64)
-    label = np.zeros(height * width, np.int32)
+    flat_height = height.ravel()
+    dist = np.full(rows * cols, np.inf, np.float64)
+    label = np.zeros(rows * cols, np.int32)
     heap = [(0.0, np.int64(0))]
     heap.pop()
     for index in range(seeds.shape[0]):
@@ -114,36 +91,37 @@ def geodesic_voronoi(zone, cost, seeds):
         d, p = heapq.heappop(heap)
         if d > dist[p]:
             continue
-        y = p // width
-        x = p - y * width
+        y = p // cols
+        x = p - y * cols
         z = flat_zone[p]
         for k in range(8):
             yy = y + dys[k]
             xx = x + dxs[k]
-            if yy < 0 or yy >= height or xx < 0 or xx >= width:
+            if yy < 0 or yy >= rows or xx < 0 or xx >= cols:
                 continue
-            q = yy * width + xx
+            q = yy * cols + xx
             if flat_zone[q] != z:
                 continue
             step = 1.0
             if dys[k] != 0 and dxs[k] != 0:
-                if flat_zone[y * width + xx] != z or flat_zone[yy * width + x] != z:
+                if flat_zone[y * cols + xx] != z or flat_zone[yy * cols + x] != z:
                     continue
                 step = SQRT2
-            nd = d + step * 0.5 * (flat_cost[p] + flat_cost[q])
+            nd = d + step * 0.5 * (flat_cost[p] + flat_cost[q]) + STEP_COST * abs(flat_height[p] - flat_height[q])
             if nd < dist[q]:
                 dist[q] = nd
                 label[q] = label[p]
                 heapq.heappush(heap, (nd, q))
-    return label.reshape(height, width)
+    return label.reshape(rows, cols)
 
 
-def initial_seeds(mask, count, rng):
-    """k-means on the pixel coordinates of one piece, snapped to pixels of the piece."""
+def initial_seeds(mask, weight, count, rng):
+    """k-means on block coordinates of one piece drawn in proportion to their weight, snapped to blocks of the
+    piece: dense places get more seeds."""
     ys, xs = np.nonzero(mask)
     points = np.column_stack([ys, xs]).astype(np.float64)
-    if len(points) > 20000:
-        points = points[rng.choice(len(points), 20000, replace=False)]
+    p = weight[ys, xs].astype(np.float64)
+    points = points[rng.choice(len(points), min(len(points), 20000), replace=False, p=p / p.sum())]
     if count == 1:
         centers = points.mean(axis=0, keepdims=True)
     else:
@@ -159,35 +137,36 @@ def initial_seeds(mask, count, rng):
     return chosen
 
 
-def relax(zone, cost, seeds, fixed, steps):
-    """Lloyd iterations: move every free seed to the pixel of its cell nearest to the cell centroid."""
-    width = zone.shape[1]
+def relax(zone, cost, height, weight, seeds, steps):
+    """Lloyd iterations: move every seed to the block of its cell nearest to the cell's weighted centroid, so cells
+    shrink where the weight is high."""
+    cols = zone.shape[1]
     seeds = np.array(seeds, np.int64)
+    flat_weight = weight.ravel().astype(np.float64)
     for step in range(steps + 1):
-        labels = geodesic_voronoi(zone, cost, seeds)
+        labels = geodesic_voronoi(zone, cost, height, seeds)
         if step == steps:
-            return labels, seeds
+            return labels
         flat = labels.ravel()
         inside = np.nonzero(flat)[0]
         owner = flat[inside]
-        ys, xs = inside // width, inside % width
-        count = np.bincount(owner, minlength=len(seeds) + 1).astype(np.float64)
-        cy = np.bincount(owner, ys, minlength=len(seeds) + 1) / np.maximum(count, 1)
-        cx = np.bincount(owner, xs, minlength=len(seeds) + 1) / np.maximum(count, 1)
+        w = flat_weight[inside]
+        ys, xs = inside // cols, inside % cols
+        count = np.bincount(owner, w, minlength=len(seeds) + 1)
+        cy = np.bincount(owner, ys * w, minlength=len(seeds) + 1) / np.maximum(count, 1e-9)
+        cx = np.bincount(owner, xs * w, minlength=len(seeds) + 1) / np.maximum(count, 1e-9)
         d2 = (ys - cy[owner]) ** 2 + (xs - cx[owner]) ** 2
         order = np.lexsort((d2, owner))
         first = np.ones(len(order), bool)
         first[1:] = owner[order][1:] != owner[order][:-1]
-        best = inside[order][first]
-        for label, pixel in zip(owner[order][first], best):
-            if not fixed[label - 1]:
-                seeds[label - 1] = pixel
+        for label, block in zip(owner[order][first], inside[order][first]):
+            seeds[label - 1] = block
 
 
-def allocate(pieces_areas, total):
-    """Split `total` provinces over pieces by area (largest remainder), at least one each."""
-    total = max(total, len(pieces_areas))
-    share = np.array(pieces_areas, np.float64) / sum(pieces_areas) * total
+def allocate(areas, total):
+    """Split `total` over pieces by area (largest remainder), at least one each."""
+    total = max(total, len(areas))
+    share = np.array(areas, np.float64) / sum(areas) * total
     result = np.maximum(np.floor(share).astype(int), 1)
     while result.sum() < total:
         result[np.argmax(share - result)] += 1
@@ -197,122 +176,50 @@ def allocate(pieces_areas, total):
     return result
 
 
-def plan_land(classes, regions, table, forced, rng, log):
-    """Seeds for every region; satellites (islets) get no seed and join later."""
-    land = (classes == LAND) | ((classes == LAKE) & ~big_lakes(classes))
-    missing = land & (regions == 0)
-    if missing.any():
-        _, (iy, ix) = ndimage.distance_transform_edt(regions == 0, return_indices=True)
-        regions = np.where(missing, regions[iy, ix], regions)
-        log.append(f'{int(missing.sum())} land px without a region joined the nearest region')
-    zone = np.where(land, regions, 0).astype(np.int32)
-    seeds, fixed, owner = [], [], []
-    boxes = ndimage.find_objects(zone)
-    for region_id, box in enumerate(boxes, 1):
-        if box is None:
+def cut(zone, counts, cost, height, weight, rng):
+    """Cut every zone into counts[zone] cells, smaller where the weight is higher. A zone's piece too small for a
+    cell of its own gets no seed and joins the nearest cell of its zone whole. -> (cell label per block, zone of
+    every cell)."""
+    seeds, owner = [], []
+    for zone_id, box in enumerate(ndimage.find_objects(zone), 1):
+        if box is None or not counts.get(zone_id):
             continue
-        mask = zone[box] == region_id
-        area = int(mask.sum())
-        value = (table[region_id]['provinces'] or '1').strip()
-        if value.endswith('!'):
-            count = int(value[:-1])          # exact count, no multiplier
-        else:
-            count = max(1, min(int(value) * MULTIPLIER, area // MIN_LAND_PROVINCE))
-        pieces, piece_count = ndimage.label(mask, FOUR)
-        piece_areas = np.bincount(pieces.ravel())[1:]
-        major = [i + 1 for i in range(piece_count) if piece_areas[i] >= SATELLITE_SHARE * area / count]
-        region_forced = [(y - box[0].start, x - box[1].start) for y, x in forced
-                         if box[0].start <= y < box[0].stop and box[1].start <= x < box[1].stop and mask[y - box[0].start, x - box[1].start]]
-        split = allocate([piece_areas[i - 1] for i in major], count)
-        for piece, piece_count_wanted in zip(major, split):
-            piece_mask = pieces == piece
-            pinned = [p for p in region_forced if piece_mask[p]]
-            free = max(piece_count_wanted - len(pinned), 0)
-            local = pinned + (initial_seeds(piece_mask, free, rng) if free else [])
-            for index, (y, x) in enumerate(local):
+        mask = zone[box] == zone_id
+        local_weight = weight[box]
+        wanted = counts[zone_id]
+        parts, count = ndimage.label(mask, FOUR)
+        areas = ndimage.sum(local_weight, parts, range(1, count + 1))
+        blocks = np.bincount(parts.ravel())[1:]
+        total = float(np.sum(areas))
+        major = [i + 1 for i in range(count) if areas[i] >= SATELLITE_SHARE * total / wanted] or \
+                [int(np.argmax(areas)) + 1]
+        for part, number in zip(major, allocate([areas[i - 1] for i in major], wanted)):
+            for y, x in initial_seeds(parts == part, local_weight, min(number, int(blocks[part - 1])), rng):
                 seeds.append((y + box[0].start) * zone.shape[1] + x + box[1].start)
-                fixed.append(index < len(pinned))
-                owner.append(region_id)
-    return zone, seeds, fixed, owner
+                owner.append(zone_id)
+    labels = relax(zone, cost, height, weight, seeds, LLOYD_STEPS)
+    join_whole(labels, zone)
+    repair_fragments(labels, zone)
+    return labels, np.array([0] + owner, np.int32)
 
 
-def big_lakes(classes):
-    lakes, count = ndimage.label(classes == LAKE, FOUR)
-    areas = np.bincount(lakes.ravel())
-    return (lakes > 0) & (areas[lakes] >= MIN_LAKE_PROVINCE)
-
-
-def plan_sea(classes, noise, forced, rng, log):
-    sea = classes == SEA
-    distance = ndimage.distance_transform_edt(sea)
-    coastal = sea & (distance + 40 * (noise - 0.5) <= COAST_BAND)
-    open_parts, open_count = ndimage.label(sea & ~coastal, FOUR)
-    radius = ndimage.maximum(ndimage.distance_transform_edt(open_parts > 0), open_parts, range(1, open_count + 1))
-    thin = [index + 1 for index, value in enumerate(radius) if value < MIN_OPEN_RADIUS]
-    coastal |= np.isin(open_parts, thin)
-    log.append(f'sea: {len(thin)} thin open-sea pieces moved into the coastal zone')
-    zone = np.zeros(classes.shape, np.int32)
-    seeds, fixed = [], []
-    next_zone = 1
-    for mask_all, target in ((coastal, COAST_PROVINCE), (sea & ~coastal, OPEN_PROVINCE)):
-        parts, count = ndimage.label(mask_all, FOUR)
-        areas = np.bincount(parts.ravel())
-        for index, box in enumerate(ndimage.find_objects(parts), 1):
-            if areas[index] < 200:
-                continue
-            mask = parts[box] == index
-            zone[box][mask] = next_zone
-            number = max(1, round(areas[index] / target))
-            pinned = [(y - box[0].start, x - box[1].start) for y, x in forced
-                      if box[0].start <= y < box[0].stop and box[1].start <= x < box[1].stop and mask[y - box[0].start, x - box[1].start]]
-            free = max(number - len(pinned), 0)
-            local = pinned + (initial_seeds(mask, free, rng) if free else [])
-            for k, (y, x) in enumerate(local):
-                seeds.append((y + box[0].start) * zone.shape[1] + x + box[1].start)
-                fixed.append(k < len(pinned))
-            next_zone += 1
-    leftover = sea & (zone == 0)
-    log.append(f'sea: {len(seeds)} seeds, coastal zone {int(coastal.sum())} px, open {int((sea & ~coastal).sum())} px, {int(leftover.sum())} px in slivers')
-    return zone, seeds, fixed
-
-
-def fill_unreached(labels, mask, same):
-    """Unlabelled pixels in `mask` take the label of the nearest labelled pixel with the same `same` value."""
-    todo = mask & (labels == 0)
-    if not todo.any():
-        return 0
-    for value in np.unique(same[todo]):
-        within = same == value
-        known = within & (labels > 0)
+def join_whole(labels, zone):
+    """Every connected piece of a zone left without a label joins, whole, the label nearest to it in its zone."""
+    todo, _ = ndimage.label((zone > 0) & (labels == 0), FOUR)
+    for piece, box in enumerate(ndimage.find_objects(todo), 1):
+        mine = todo == piece
+        zone_id = zone[mine][0]
+        known = (zone == zone_id) & (labels > 0)
         if not known.any():
-            known = mask & (labels > 0)
-        box = ndimage.find_objects(within.astype(np.int32))[0]
-        _, (iy, ix) = ndimage.distance_transform_edt(~known[box], return_indices=True)
-        local = labels[box]
-        hole = todo[box] & within[box]
-        local[hole] = local[iy[hole], ix[hole]]
-    return int(todo.sum())
+            continue
+        distance, (iy, ix) = ndimage.distance_transform_edt(~known, return_indices=True)
+        ys, xs = np.nonzero(mine)
+        k = int(np.argmin(distance[ys, xs]))
+        labels[mine] = labels[iy[ys[k], xs[k]], ix[ys[k], xs[k]]]
 
 
-def warp_labels(labels, zones, rng):
-    """Resample labels through a noisy displacement field; a pixel only takes labels from its own zone."""
-    height, width = labels.shape
-    dy = np.zeros(labels.shape, np.float32)
-    dx = np.zeros(labels.shape, np.float32)
-    for scale, amount in WARP:
-        for field in (dy, dx):
-            field += amount * (2.0 * fractal_noise(labels.shape, rng, scales=(scale,), weights=(1.0,)) - 1.0)
-    ys, xs = np.indices(labels.shape)
-    sy = np.clip(np.rint(ys + dy).astype(np.int32), 0, height - 1)
-    sx = np.clip(np.rint(xs + dx).astype(np.int32), 0, width - 1)
-    same = (zones[sy, sx] == zones) & (zones != 0)
-    warped = np.where(same, labels[sy, sx], labels)
-    return warped, int((warped != labels).sum())
-
-
-def repair_fragments(labels, kind_of):
-    """A detached piece of a province joins its dominant neighbour of the same kind; islets stay."""
-    moved = 0
+def repair_fragments(labels, zone):
+    """A detached piece of a cell joins the neighbour of the same zone it shares most border with; islets stay."""
     for label, box in enumerate(ndimage.find_objects(labels), 1):
         if box is None:
             continue
@@ -329,33 +236,114 @@ def repair_fragments(labels, kind_of):
             piece = parts == part
             ring = ndimage.binary_dilation(piece, FOUR) & ~piece
             neighbours = labels[grown][ring]
+            same = zone[grown][ring] == zone[grown][piece][0]
+            neighbours = neighbours[(neighbours > 0) & (neighbours != label) & same]
+            if len(neighbours):
+                labels[grown][piece] = np.bincount(neighbours).argmax()
+
+
+def merge_small(labels, zone, minimum):
+    """Pieces of `zone` (labels) smaller than `minimum` join, whole, the nearest other piece of the same parent:
+    -> labels renumbered densely. `zone` is the parent label per block."""
+    areas = np.bincount(labels.ravel())
+    for label in np.flatnonzero((areas < minimum) & (areas > 0)):
+        mine = labels == label
+        parent = zone[mine][0]
+        others = (zone == parent) & (labels > 0) & ~mine & (areas[labels] >= minimum)
+        if not others.any():
+            continue
+        distance, (iy, ix) = ndimage.distance_transform_edt(~others, return_indices=True)
+        ys, xs = np.nonzero(mine)
+        k = int(np.argmin(distance[ys, xs]))
+        labels[mine] = labels[iy[ys[k], xs[k]], ix[ys[k], xs[k]]]
+    used = np.unique(labels[labels > 0])
+    remap = np.zeros(labels.max() + 1, np.int32)
+    remap[used] = np.arange(1, len(used) + 1)
+    return remap[labels]
+
+
+def trim_necks(labels, radius):
+    """Parts of a cell narrower than a disc of `radius` (necks, panhandles) go to the neighbouring cell they share
+    most border with; a part with no other neighbour (an inlet only this cell reaches) stays. -> blocks moved."""
+    disc = np.hypot(*np.mgrid[-radius:radius + 1, -radius:radius + 1]) <= radius + 0.5
+    moved = 0
+    for label, box in enumerate(ndimage.find_objects(labels), 1):
+        if box is None:
+            continue
+        grown = tuple(slice(max(s.start - radius - 1, 0), s.stop + radius + 1) for s in box)
+        own = labels[grown] == label
+        body = ndimage.binary_opening(own, disc)
+        if body.sum() < own.sum() / 2:
+            continue                                  # a small or thin cell as a whole: leave it
+        parts, count = ndimage.label(own & ~body, FOUR)
+        for part in range(1, count + 1):
+            piece = parts == part
+            ring = ndimage.binary_dilation(piece, FOUR) & ~piece
+            neighbours = labels[grown][ring]
             neighbours = neighbours[(neighbours > 0) & (neighbours != label)]
-            neighbours = neighbours[kind_of[neighbours] == kind_of[label]]
             if len(neighbours):
                 labels[grown][piece] = np.bincount(neighbours).argmax()
                 moved += int(piece.sum())
     return moved
 
 
-def merge_small_sea(labels, kind_of, log):
-    """Fold tiny sea provinces into a sea neighbour, then renumber ids densely."""
-    areas = np.bincount(labels.ravel(), minlength=len(kind_of))
-    merged = 0
-    for label in np.nonzero((kind_of == 2) & (areas < MIN_SEA_PROVINCE) & (areas > 0))[0]:
-        box = ndimage.find_objects((labels == label).astype(np.int32))[0]
-        grown = tuple(slice(max(s.start - 1, 0), s.stop + 1) for s in box)
-        own = labels[grown] == label
-        ring = ndimage.binary_dilation(own, FOUR) & ~own
-        neighbours = labels[grown][ring]
-        neighbours = neighbours[kind_of[neighbours] == 2]
-        if len(neighbours):
-            labels[grown][own] = np.bincount(neighbours).argmax()
-            merged += 1
-    used = np.unique(labels[labels > 0])
-    remap = np.zeros(len(kind_of), np.int32)
-    remap[used] = np.arange(1, len(used) + 1)
-    log.append(f'sea: {merged} provinces under {MIN_SEA_PROVINCE} px merged into neighbours')
-    return remap[labels], used
+def plan_sea(classes, noise, rng, cost, height, log):
+    """Coastal and open sea zones, then sea provinces in them."""
+    sea = classes == SEA
+    distance = ndimage.distance_transform_edt(sea)
+    coastal = sea & (distance + 10 * (noise - 0.5) <= COAST_BAND)
+    open_parts, open_count = ndimage.label(sea & ~coastal, FOUR)
+    radius = ndimage.maximum(ndimage.distance_transform_edt(open_parts > 0), open_parts, range(1, open_count + 1))
+    thin = [index + 1 for index, value in enumerate(np.atleast_1d(radius)) if value < MIN_OPEN_RADIUS]
+    coastal |= np.isin(open_parts, thin)
+    zone = np.zeros(classes.shape, np.int32)
+    counts, opened = {}, {}
+    next_zone = 1
+    for mask_all, target, is_open in ((coastal, COAST_PROVINCE, False), (sea & ~coastal, OPEN_PROVINCE, True)):
+        parts, count = ndimage.label(mask_all, FOUR)
+        areas = np.bincount(parts.ravel())
+        for index in range(1, count + 1):
+            zone[parts == index] = next_zone
+            counts[next_zone] = max(1, round(areas[index] / target))
+            opened[next_zone] = is_open
+            next_zone += 1
+    labels, owner = cut(zone, counts, np.ones_like(cost), np.zeros_like(height), np.ones_like(cost), rng)
+    moved = trim_necks(labels, SEA_NECK)
+    labels = merge_small(labels, np.where(sea, 1, 0), MIN_SEA_PROVINCE)
+    log.append(f'sea: coastal zone {int(coastal.sum())} blocks, open {int((sea & ~coastal).sum())} blocks, '
+               f'{labels.max()} provinces; {moved} blocks of narrow necks moved to neighbours')
+    open_sea = np.zeros(labels.max() + 1, bool)
+    for label in range(1, labels.max() + 1):
+        open_sea[label] = opened[int(np.bincount(zone[labels == label]).argmax())]
+    return labels, open_sea
+
+
+def density(biomes, biome_rows, classes):
+    """Province density per block: the biome's `density` (data/common/biomes.csv), raised towards the shore of a lake
+    province up to LAKE_DENSITY times, fading out over LAKE_REACH blocks. Cells are smaller where it is higher."""
+    per_biome = np.array([1.0] + [float(row.get('density') or 1.0) for row in biome_rows], np.float32)
+    weight = per_biome[biomes]
+    lakes, count = ndimage.label(classes == LAKE, FOUR)
+    sizes = np.bincount(lakes.ravel())
+    big = np.isin(lakes, [i for i in range(1, count + 1) if sizes[i] >= MIN_LAKE])
+    if big.any():
+        reach = np.clip(1.0 - ndimage.distance_transform_edt(~big) / LAKE_REACH, 0.0, 1.0)
+        weight = weight * (1.0 + (LAKE_DENSITY - 1.0) * reach).astype(np.float32)
+    return np.where(weight > 0, weight, 1.0).astype(np.float32)
+
+
+def dominant(values, labels, count):
+    """Most common value per label 1..count."""
+    out = np.zeros(count + 1, np.int64)
+    keys = labels.ravel().astype(np.int64) * 256 + values.ravel()
+    keys = keys[labels.ravel() > 0]
+    found, numbers = np.unique(keys, return_counts=True)
+    best = np.zeros(count + 1, np.int64)
+    for key, number in zip(found, numbers):
+        label = key // 256
+        if number > best[label]:
+            best[label], out[label] = number, key % 256
+    return out
 
 
 def adjacency(labels):
@@ -366,111 +354,215 @@ def adjacency(labels):
         hi = np.maximum(a[border], b[border]).astype(np.int64)
         keys, counts = np.unique(lo * 100000 + hi, return_counts=True)
         for key, count in zip(keys, counts):
-            pairs[(int(key // 100000), int(key % 100000))] = pairs.get((int(key // 100000), int(key % 100000)), 0) + int(count)
+            pair = (int(key // 100000), int(key % 100000))
+            pairs[pair] = pairs.get(pair, 0) + int(count)
     return pairs
 
 
+def edges(labels):
+    edge = np.zeros(labels.shape, bool)
+    edge[:, 1:] |= labels[:, 1:] != labels[:, :-1]
+    edge[1:, :] |= labels[1:, :] != labels[:-1, :]
+    return edge
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root', type=Path, default=Path('.'))
-    parser.add_argument('--out', type=Path, default=Path('build/provinces'))
-    args = parser.parse_args()
-    args.out.mkdir(parents=True, exist_ok=True)
-    rng = np.random.default_rng(SEED)
+    out = ROOT / 'build' / 'provinces'
+    out.mkdir(parents=True, exist_ok=True)
     log = []
-
-    classes = read_classes(args.root / 'land.png')
-    regions, table = read_regions(args.root / 'regions.png', args.root / 'regions.csv')
-    forced = read_seeds(args.root / 'seeds.png', classes.shape)
-    if forced:
-        log.append(f'seeds.png: {len(forced)} fixed province centres')
+    try:
+        classes, steps, _ = read_blocks()
+        land, passable = passable_land()
+        lines, problems = read_borders()
+        if problems:
+            raise ValueError('borders.png: ' + '; '.join(problems))
+        biomes, biome_rows = read_biomes()
+        kinds_of_lines, problems = read_lines()
+        if problems:
+            raise ValueError('rivers.png: ' + '; '.join(problems))
+    except (ValueError, FileNotFoundError) as error:
+        sys.stderr.write(f'{error}\n')
+        return 1
+    rivers, river_problems = trace(kinds_of_lines, classes)
+    if river_problems:
+        log.append(f'rivers.png has {len(river_problems)} problems; run river_paths.py')
+    river = river_mask(rivers, steps)
+    biome_keys = [''] + [row['key'] for row in biome_rows]
+    rng = np.random.default_rng(SEED)
     noise = fractal_noise(classes.shape, rng)
-    cost = (1.0 + NOISE_STRENGTH * noise).astype(np.float32)
+    cost = (1.0 + NOISE_STRENGTH * noise + RIVER_COST * river).astype(np.float32)
+    height = steps.astype(np.float32)
+    weight = density(biomes, biome_rows, classes)
+    province_area = float(weight[passable].sum()) / LAND_PROVINCES        # weighted blocks per province
 
-    land_zone, land_seeds, land_fixed, land_owner = plan_land(classes, regions, table, forced, rng, log)
-    land_labels, _ = relax(land_zone, cost, land_seeds, land_fixed, LLOYD_STEPS)
-    reached = fill_unreached(land_labels, land_zone > 0, land_zone)
-    log.append(f'land: {len(land_seeds)} provinces, {reached} px of islets joined the nearest province of their region')
+    # Lands, line regions, fixed provinces.
+    lands, _, _ = assign_lands(land, passable, lines)
+    used = np.unique(lands[lands > 0])
+    remap = np.zeros(lands.max() + 1, np.int32)
+    remap[used] = np.arange(1, len(used) + 1)
+    lands = remap[lands]
+    line_regions, cells, fixed = fixed_cells(passable, lines, lands)
+    line_regions = merge_small(line_regions, lands, REGION_PROVINCES * province_area / 2)
+    land_count = int(lands.max())
 
-    sea_zone, sea_seeds, sea_fixed = plan_sea(classes, noise, forced, rng, log)
-    sea_labels, _ = relax(sea_zone, cost, sea_seeds, sea_fixed, LLOYD_STEPS)
-    fill_unreached(sea_labels, classes == SEA, np.ones_like(sea_zone))
+    # Regions: every line region cut into about REGION_PROVINCES provinces' worth.
+    areas = np.bincount(line_regions.ravel(), weight.ravel())
+    counts = {z: max(1, round(areas[z] / (REGION_PROVINCES * province_area))) for z in range(1, len(areas))}
+    regions, region_zone = cut(line_regions, counts, cost, height, weight, rng)
+    for cell in fixed:                                   # a fixed province lies in one region
+        mine = cells == cell
+        regions[mine] = np.bincount(regions[mine]).argmax()
+    regions = merge_small(regions, lands, 1)
+    region_count = int(regions.max())
+    region_land = np.zeros(region_count + 1, np.int32)
+    for region in range(1, region_count + 1):
+        region_land[region] = np.bincount(lands[regions == region]).argmax()
 
-    lakes, lake_count = ndimage.label(big_lakes(classes), FOUR)
+    # Provinces on the passable land: fixed ones, the rest of every region cut by area.
+    in_fixed = np.isin(cells, list(fixed)) if fixed else np.zeros(cells.shape, bool)
+    free_zone = np.where(passable & ~in_fixed, regions, 0)
+    free_areas = np.bincount(free_zone.ravel(), weight.ravel(), minlength=region_count + 1)[1:]
+    present = [r + 1 for r in range(region_count) if free_areas[r] > 0]
+    numbers = allocate([free_areas[r - 1] for r in present], LAND_PROVINCES - len(fixed))
+    provinces, owner = cut(free_zone, dict(zip(present, numbers)), cost, height, weight, rng)
+    free_count = int(provinces.max())
+    province_region = list(owner[1:])
+    for k, cell in enumerate(sorted(fixed), 1):
+        mine = cells == cell
+        provinces[mine] = free_count + k
+        province_region.append(int(np.bincount(regions[mine]).argmax()))
+    land_province_count = int(provinces.max())
+    log.append(f'land: {land_count} lands, {region_count} regions, {land_province_count} provinces '
+               f'({len(fixed)} fixed)')
 
-    labels = land_labels.copy()
-    land_count = len(land_seeds)
-    labels[sea_labels > 0] = sea_labels[sea_labels > 0] + land_count
-    labels[lakes > 0] = lakes[lakes > 0] + land_count + len(sea_seeds)
-    zones = np.where(land_zone > 0, land_zone, 0)
-    zones[classes == SEA] = 1 << 20
-    labels, warped = warp_labels(labels, zones, rng)
-    log.append(f'warp: {warped} px changed owner')
-    kind_of = np.array([0] + [1] * land_count + [2] * len(sea_seeds) + [3] * lake_count, np.int8)
-    moved = repair_fragments(labels, kind_of)
-    log.append(f'fragments: {moved} px reassigned to neighbours')
+    # Wasteland, lakes, decorative lakes, sea.
+    labels = provinces.copy()
+    waste = land & ~passable
+    waste_labels, waste_count = ndimage.label(waste, FOUR)
+    labels[waste_labels > 0] = waste_labels[waste_labels > 0] + land_province_count
+    lake_parts, lake_count = ndimage.label(classes == LAKE, FOUR)
+    lake_areas = np.bincount(lake_parts.ravel())
+    big = [i for i in range(1, lake_count + 1) if lake_areas[i] >= MIN_LAKE]
+    next_id = land_province_count + waste_count
+    for k, lake in enumerate(big, 1):
+        labels[lake_parts == lake] = next_id + k
+    for lake in range(1, lake_count + 1):
+        if lake in big:
+            continue
+        mine = lake_parts == lake
+        ring = ndimage.binary_dilation(mine, np.ones((3, 3), bool)) & ~mine & (labels > 0)
+        labels[mine] = np.bincount(labels[ring]).argmax() if ring.any() else 0
+    next_id += len(big)
+    sea_labels, open_sea = plan_sea(classes, noise, rng, cost, height, log)
+    labels[sea_labels > 0] = sea_labels[sea_labels > 0] + next_id
+    total = int(labels.max())
+    kind = np.zeros(total + 1, np.int8)
+    kind[1:land_province_count + 1] = LAND
+    kind[land_province_count + 1:land_province_count + waste_count + 1] = WASTELAND
+    kind[land_province_count + waste_count + 1:next_id + 1] = LAKE_KIND
+    kind[next_id + 1:] = SEA_KIND
+    region_of = np.zeros(total + 1, np.int32)
+    region_of[1:land_province_count + 1] = province_region
+    log.append(f'wasteland: {waste_count} provinces; lakes: {len(big)} provinces, '
+               f'{lake_count - len(big)} decorative')
 
-    kinds = ['land'] * land_count + ['sea'] * len(sea_seeds) + ['lake'] * lake_count
-    owners = land_owner + [0] * (len(sea_seeds) + lake_count)
-    labels, used = merge_small_sea(labels, kind_of, log)
-    kinds = [kinds[i - 1] for i in used]
-    owners = [owners[i - 1] for i in used]
-    sea_count = kinds.count('sea')
-    total = len(used)
+    # Names.
+    namer = Namer(SEED)
+    biome_of = dominant(biomes.astype(np.int64), labels, total)
+    mean_step = np.concatenate([[0.0], ndimage.mean(steps, labels, range(1, total + 1))])
+    coast = np.zeros(total + 1, bool)
+    near_sea = ndimage.binary_dilation(classes == SEA, FOUR)
+    coast[np.unique(labels[near_sea & (labels > 0) & (classes != SEA)])] = True
+    land_biome = dominant(biomes.astype(np.int64), lands, land_count)
+    land_names = [''] + [namer.land(biome_keys[land_biome[i]]) for i in range(1, land_count + 1)]
+    region_biome = dominant(biomes.astype(np.int64), regions, region_count)
+    region_step = np.concatenate([[0.0], ndimage.mean(steps, regions, range(1, region_count + 1))])
+    region_names = [''] + [namer.region(biome_keys[region_biome[i]], region_step[i]) for i in range(1, region_count + 1)]
+    names = [''] * (total + 1)
+    lake_biome = {}
+    for pid in range(1, total + 1):
+        if kind[pid] == LAKE_KIND:
+            mine = labels == pid
+            ring = ndimage.binary_dilation(mine, FOUR) & ~mine & (biomes > 0)
+            lake_biome[pid] = int(np.bincount(biomes[ring]).argmax()) if ring.any() else 1
+    for pid in range(1, total + 1):
+        if kind[pid] == LAND:
+            names[pid] = namer.province(biome_keys[biome_of[pid]], mean_step[pid], coast[pid])
+        elif kind[pid] == WASTELAND:
+            names[pid] = namer.wasteland(biome_keys[biome_of[pid]])
+        elif kind[pid] == LAKE_KIND:
+            names[pid] = namer.lake(biome_keys[lake_biome[pid]])
+        else:
+            names[pid] = namer.sea(bool(open_sea[pid - next_id]))
+
+    # Files.
     colors = distinct_colors(total, seed=11)
     lut = np.array([(0, 0, 0)] + colors, np.uint8)
-    Image.fromarray(lut[labels]).save(args.out / 'provinces.png', optimize=True)
-
+    Image.fromarray(lut[labels]).save(out / 'provinces.png', optimize=True)
+    region_colors = distinct_colors(region_count, seed=3)
+    region_lut = np.array([(0, 0, 0)] + region_colors, np.uint8)
+    Image.fromarray(region_lut[regions]).save(out / 'regions.png', optimize=True)
+    with open(out / 'regions.csv', 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, lineterminator='\n')
+        writer.writerow(['id', 'color', 'name', 'parent', 'provinces'])
+        for region in range(1, region_count + 1):
+            writer.writerow([region, '#%02X%02X%02X' % region_colors[region - 1], region_names[region],
+                             land_names[region_land[region]], int((region_of == region).sum())])
     areas = np.bincount(labels.ravel(), minlength=total + 1)
     centers = ndimage.center_of_mass(labels > 0, labels, range(1, total + 1))
-    pieces = [0] * total
-    for label, box in enumerate(ndimage.find_objects(labels), 1):
-        if box is not None:
-            pieces[label - 1] = ndimage.label(labels[box] == label, FOUR)[1]
-    with open(args.out / 'provinces.csv', 'w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(['id', 'color', 'type', 'region', 'region_name', 'parent', 'name', 'area', 'x', 'y', 'pieces'])
-        for index in range(total):
-            region = owners[index]
-            row = table.get(region, {})
-            cy, cx = centers[index]
-            writer.writerow([index + 1, '#%02X%02X%02X' % colors[index], kinds[index], region or '', row.get('name', ''), row.get('parent', ''),
-                             '', int(areas[index + 1]), round(cx), round(cy), pieces[index]])
-
+    boxes = ndimage.find_objects(labels)
+    pieces = [0] + [ndimage.label(labels[boxes[pid - 1]] == pid, FOUR)[1] for pid in range(1, total + 1)]
+    with open(out / 'provinces.csv', 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, lineterminator='\n')
+        writer.writerow(['id', 'color', 'type', 'region', 'region_name', 'parent', 'name', 'area', 'x', 'y', 'pieces',
+                         'biome', 'height'])
+        for pid in range(1, total + 1):
+            region = region_of[pid]
+            cy, cx = centers[pid - 1]
+            land_side = kind[pid] in (LAND, WASTELAND)
+            writer.writerow([pid, '#%02X%02X%02X' % colors[pid - 1], KIND_NAMES[kind[pid]], region or '',
+                             region_names[region] if region else '', land_names[region_land[region]] if region else '',
+                             names[pid], int(areas[pid]), round(cx), round(cy), pieces[pid],
+                             biome_keys[biome_of[pid]] if land_side else '', round(mean_step[pid]) if land_side else ''])
     pairs = adjacency(labels)
-    with open(args.out / 'adjacency.csv', 'w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(['a', 'b', 'kind', 'border_px'])
+    with open(out / 'adjacency.csv', 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file, lineterminator='\n')
+        writer.writerow(['a', 'b', 'kind', 'border'])
         for (a, b), length in sorted(pairs.items()):
-            writer.writerow([a, b, kinds[a - 1] + '-' + kinds[b - 1], length])
+            writer.writerow([a, b, KIND_NAMES[kind[a]] + '-' + KIND_NAMES[kind[b]], length])
 
-    # Preview: province colours muted, sea blue shades, province borders dark, region borders red.
+    # Preview, 2x: provinces muted over water, province borders dark, region borders red, land borders black.
     tint = lut.astype(np.float32)
-    water = np.array([k != 'land' for k in kinds])
-    tint[1:][water] = tint[1:][water] * 0.25 + np.array([30, 70, 140]) * 0.75
-    image = tint[labels]
-    edge_h = np.zeros(labels.shape, bool)
-    edge_h[:, 1:] |= labels[:, 1:] != labels[:, :-1]
-    edge_h[1:, :] |= labels[1:, :] != labels[:-1, :]
-    image[edge_h] = (25, 25, 25)
-    region_map = np.where(labels > 0, np.array([0] + owners, np.int32)[labels], 0)
-    region_edge = np.zeros(labels.shape, bool)
-    region_edge[:, 1:] |= (region_map[:, 1:] != region_map[:, :-1]) & (region_map[:, 1:] > 0) & (region_map[:, :-1] > 0)
-    region_edge[1:, :] |= (region_map[1:, :] != region_map[:-1, :]) & (region_map[1:, :] > 0) & (region_map[:-1, :] > 0)
-    image[ndimage.binary_dilation(region_edge)] = (200, 30, 30)
-    Image.fromarray(image.astype(np.uint8)).save(args.out / 'preview_full.png', optimize=True)
+    water = (kind == SEA_KIND) | (kind == LAKE_KIND)
+    tint[water] = tint[water] * 0.25 + np.array([30, 70, 140]) * 0.75
+    tint[kind == WASTELAND] = (110, 110, 110)
+    scale = 2
+    big_labels = labels.repeat(scale, 0).repeat(scale, 1)
+    image = tint[big_labels]
+    image[edges(big_labels)] = (40, 40, 40)
+    region_map = region_of[labels]
+    land_map = region_land[region_map].repeat(scale, 0).repeat(scale, 1)
+    region_map = region_map.repeat(scale, 0).repeat(scale, 1)
+    image[edges(region_map) & (region_map > 0)] = (200, 30, 30)
+    image[edges(land_map) & (land_map > 0)] = (0, 0, 0)
+    Image.fromarray(image.astype(np.uint8)).save(out / 'preview.png', optimize=True)
 
-    land_areas = areas[1:land_count + 1]
-    sea_areas = areas[land_count + 1:land_count + sea_count + 1]
-    log.append(f'total {total}: land {land_count}, sea {sea_count}, lakes {lake_count}')
-    log.append(f'land area px min {land_areas.min()} median {int(np.median(land_areas))} max {land_areas.max()}')
-    log.append(f'sea area px min {sea_areas.min()} median {int(np.median(sea_areas))} max {sea_areas.max()}')
-    log.append(f'multi-piece provinces: land {sum(1 for i in range(land_count) if pieces[i] > 1)}, sea {sum(1 for i in range(land_count, land_count + sea_count) if pieces[i] > 1)}')
+    land_areas = areas[1:land_province_count + 1]
+    sea_areas = areas[next_id + 1:]
+    log.append(f'total {total}: land {land_province_count}, wasteland {waste_count}, lakes {len(big)}, '
+               f'sea {total - next_id}')
+    log.append(f'land province blocks: min {land_areas.min()} median {int(np.median(land_areas))} max {land_areas.max()}')
+    log.append(f'sea province blocks: min {sea_areas.min()} median {int(np.median(sea_areas))} max {sea_areas.max()}')
+    region_sizes = np.bincount(region_of[1:land_province_count + 1], minlength=region_count + 1)[1:]
+    log.append(f'provinces per region: min {region_sizes.min()} median {int(np.median(region_sizes))} '
+               f'max {region_sizes.max()}')
+    log.append(f'multi-piece land provinces: {sum(1 for pid in range(1, land_province_count + 1) if pieces[pid] > 1)}')
     log.append(f'adjacencies: {len(pairs)}')
     text = '\n'.join(log)
-    (args.out / 'report.txt').write_text(text + '\n', encoding='utf-8')
+    (out / 'report.txt').write_text(text + '\n', encoding='utf-8', newline='\n')
     print(text)
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
