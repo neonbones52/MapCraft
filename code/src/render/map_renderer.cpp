@@ -413,9 +413,7 @@ namespace mc
         context->OMSetBlendState(opaque_.Get(), nullptr, 0xFFFFFFFF);
         context->OMSetDepthStencilState(depth_write_.Get(), 0);
         terrain_.draw(context);
-        if (view.models) {
-            models_.draw(context, camera);
-        }
+        models_.draw(context, camera, view.model_fades);
 
         // Borders, blended over the blocks.
         context->OMSetBlendState(alpha_.Get(), nullptr, 0xFFFFFFFF);

@@ -141,8 +141,8 @@ namespace mc
             {
             }
 
-            bool add(const std::string& key, const minecraft::VoxelModel& model, const std::array<float, 3>& origin,
-                     std::uint32_t* out, std::string* error)
+            bool add(const std::string& key, ModelSet::Group group, const minecraft::VoxelModel& model,
+                     const std::array<float, 3>& origin, std::uint32_t* out, std::string* error)
             {
                 std::vector<minecraft::MeshVertex> vertices;
                 if (!minecraft::build_mesh(models_, textures_, model, origin, &vertices, error)) {
@@ -152,6 +152,7 @@ namespace mc
                 ModelSet::Mesh mesh;
                 mesh.first = static_cast<std::uint32_t>(set_->vertices.size());
                 mesh.count = static_cast<std::uint32_t>(vertices.size());
+                mesh.group = group;
                 for (const minecraft::MeshVertex& v : vertices) {
                     ModelSet::Vertex out_vertex{};
                     out_vertex.pos[0] = v.x;
@@ -307,8 +308,8 @@ namespace mc
                 for (auto& v : model.voxels) {
                     v.y -= lowest;
                 }
-                if (!meshes.add("house " + name, model, { model.size[0] * 0.5f, 0.0f, model.size[2] * 0.5f }, &mesh,
-                                error)) {
+                if (!meshes.add("house " + name, ModelSet::Group::settlements, model,
+                                { model.size[0] * 0.5f, 0.0f, model.size[2] * 0.5f }, &mesh, error)) {
                     return false;
                 }
                 const auto footprint = static_cast<float>(std::max({ model.size[0], model.size[2], 1 }));
@@ -322,7 +323,8 @@ namespace mc
 
         // Piers.
         std::uint32_t pier_mesh = 0;
-        if (!meshes.add("pier", pier(), { kPierBlocks * 0.5f, 0.0f, 0.0f }, &pier_mesh, error)) {
+        if (!meshes.add("pier", ModelSet::Group::settlements, pier(), { kPierBlocks * 0.5f, 0.0f, 0.0f },
+                        &pier_mesh, error)) {
             return false;
         }
         for (std::uint32_t pid = 1; pid < map.count; ++pid) {
@@ -362,8 +364,8 @@ namespace mc
                         return false;
                     }
                     std::uint32_t mesh = 0;
-                    if (!meshes.add(std::format("tree {} {}", feature, k), model, { 0.5f, 0.0f, 0.5f }, &mesh,
-                                    error)) {
+                    if (!meshes.add(std::format("tree {} {}", feature, k), ModelSet::Group::trees, model,
+                                    { 0.5f, 0.0f, 0.5f }, &mesh, error)) {
                         return false;
                     }
                     if (k == 0) {

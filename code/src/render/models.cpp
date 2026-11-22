@@ -20,7 +20,8 @@ namespace mc
         {
             std::uint32_t first_instance;
             std::uint32_t first_vertex;
-            std::uint32_t pad[2];
+            float fade;   // the mesh's group: 0 hidden, 1 whole
+            std::uint32_t pad;
         };
     }
 
@@ -99,9 +100,10 @@ namespace mc
                d3d::check(device->CreateBuffer(&cb, nullptr, &draw_constants_), "model draw constants", error);
     }
 
-    void ModelLayer::draw(ID3D11DeviceContext* context, const CameraView& camera)
+    void ModelLayer::draw(ID3D11DeviceContext* context, const CameraView& camera,
+                          const std::array<float, ModelSet::kGroups>& fades)
     {
-        if (instances_.empty()) {
+        if (instances_.empty() || std::ranges::all_of(fades, [](float f) { return f <= 0.0f; })) {
             return;
         }
         float planes[6][4];
@@ -152,17 +154,19 @@ namespace mc
         context->PSSetSamplers(1, 1, samplers);
         ID3D11Buffer* cbs[] = { draw_constants_.Get() };
         context->VSSetConstantBuffers(3, 1, cbs);
+        context->PSSetConstantBuffers(3, 1, cbs);
         context->VSSetShader(vs_.Get(), nullptr, 0);
         context->PSSetShader(ps_.Get(), nullptr, 0);
         for (std::size_t m = 0; m < meshes_.size(); ++m) {
-            if (draw_count_[m] == 0 || meshes_[m].count == 0) {
+            const float fade = fades[static_cast<std::size_t>(meshes_[m].group)];
+            if (draw_count_[m] == 0 || meshes_[m].count == 0 || fade <= 0.0f) {
                 continue;
             }
             D3D11_MAPPED_SUBRESOURCE mapped{};
             if (FAILED(context->Map(draw_constants_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
                 return;
             }
-            const DrawConstants constants{ draw_first_[m], meshes_[m].first, {} };
+            const DrawConstants constants{ draw_first_[m], meshes_[m].first, std::min(fade, 1.0f), 0 };
             std::memcpy(mapped.pData, &constants, sizeof(constants));
             context->Unmap(draw_constants_.Get(), 0);
             context->DrawInstanced(meshes_[m].count, draw_count_[m], 0, 0);

@@ -17,7 +17,20 @@ namespace mc
         constexpr float kProvinceNamesLevel = 8.5f;   // wheel notches in from the whole map (level 1 = 0 notches)
         constexpr float kNamesFade = 0.25f;           // s for the cross-fade
         constexpr float kViewMargin = 32.0f;          // map px the farthest view shows round the map
-        constexpr float kModelsLevel = 8.0f;          // wheel notches in from the whole map where models show
+        // Models show and hide by group with a hysteresis: zooming in a group appears past `show` (wheel notches in
+        // from the whole map), zooming out it goes only below `hide`. The camera rests on whole notches, so both lie
+        // halfway between them: towns come at the 7th notch and go at the 5th, trees come at the 8th and go at the
+        // 6th; in between a group stays as it was. Each fades over kModelsFade, turning back from where it is.
+        struct ModelsLevels
+        {
+            float show;
+            float hide;
+        };
+        constexpr std::array<ModelsLevels, ModelSet::kGroups> kModelsLevels = { {
+            { 6.5f, 5.5f },   // settlements: houses and piers
+            { 7.5f, 6.5f },   // trees
+        } };
+        constexpr float kModelsFade = 0.4f;   // s from hidden to whole
     }
 
     bool App::init(ID3D11Device* device, const std::filesystem::path& map_file, const std::filesystem::path& biomes_csv,
@@ -180,7 +193,16 @@ namespace mc
         // names: a short cross-fade once the zoom passes halfway between the 9th and the 10th.
         const float zoom = camera_.zoom_level(view_width, view_height);
         const bool provinces_shown = zoom > kProvinceNamesLevel;
-        view.models = zoom > kModelsLevel;
+        for (std::size_t g = 0; g < ModelSet::kGroups; ++g) {
+            if (zoom > kModelsLevels[g].show) {
+                models_shown_[g] = true;
+            } else if (zoom < kModelsLevels[g].hide) {
+                models_shown_[g] = false;
+            }
+            const float fade_step = dt / kModelsFade;
+            model_fades_[g] = std::clamp(model_fades_[g] + (models_shown_[g] ? fade_step : -fade_step), 0.0f, 1.0f);
+        }
+        view.model_fades = model_fades_;
         const float step = dt / kNamesFade;
         province_names_ = std::clamp(province_names_ + (provinces_shown ? step : -step), 0.0f, 1.0f);
         view.mode_names_alpha = 1.0f - province_names_;

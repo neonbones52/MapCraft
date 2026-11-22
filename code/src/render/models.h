@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -34,10 +35,18 @@ namespace mc
             std::uint32_t tint;               // RGBA8 for Tint::fixed
         };
         static_assert(sizeof(Vertex) == 28);
+        // What a mesh belongs to: each group shows and fades out by itself (app.cpp, the zoom levels).
+        enum class Group : std::uint32_t
+        {
+            settlements = 0,   // houses and piers
+            trees = 1,
+        };
+        static constexpr std::size_t kGroups = 2;
         struct Mesh
         {
             std::uint32_t first = 0;   // vertex
             std::uint32_t count = 0;
+            Group group = Group::settlements;
         };
         // A placed copy: world position of its ground point, world units per block, a quarter turn (0..3, clockwise
         // seen from above, as Minecraft turns north to east) with flags, and the colours of the ground it stands on.
@@ -62,13 +71,16 @@ namespace mc
     };
 
     // Draws the model set (docs/RENDER.md, "Модели на карте"): instances sorted into chunks of the map; each frame
-    // only the chunks in view are drawn, mesh by mesh. Texels with alpha under one half are cut out.
+    // only the chunks in view are drawn, mesh by mesh. Texels with alpha under one half are cut out; a group fading
+    // in or out dissolves in an ordered dither (no blending, so no sorting).
     class ModelLayer
     {
     public:
         bool init(ID3D11Device* device, const ModelSet& set, float map_width, float map_height, std::string* error);
-        // Draws the instances in the camera's view (the map renderer has set the frame constants and depth).
-        void draw(ID3D11DeviceContext* context, const CameraView& camera);
+        // Draws the instances in the camera's view (the map renderer has set the frame constants and depth); `fades`
+        // per group: 0 hidden, 1 whole.
+        void draw(ID3D11DeviceContext* context, const CameraView& camera,
+                  const std::array<float, ModelSet::kGroups>& fades);
         [[nodiscard]] std::size_t instance_count() const { return instances_.size(); }
         [[nodiscard]] std::size_t vertex_count() const { return vertex_count_; }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <span>
 #include <string>
@@ -25,7 +26,7 @@ namespace mc
         std::uint32_t map_mode = 0;  // 0 terrain: no fill; otherwise the fills colour the land (EU4 formula)
         float mode_names_alpha = 1.0f;       // the map mode's names (countries, cultures, ...)
         float province_names_alpha = 0.0f;   // the provinces' names, instead of those when zoomed in
-        bool models = false;                 // houses, piers and trees (shown when zoomed in)
+        std::array<float, ModelSet::kGroups> model_fades{};   // per model group: 0 hidden, 1 whole (zoomed in)
     };
 
     // RGBA per province: rgb colour, a = how strongly it covers the land (0 for water in political modes).

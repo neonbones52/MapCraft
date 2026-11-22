@@ -344,7 +344,8 @@ float4 ps_terrain(TerrainOut input) : SV_Target
 // ----------------------------------------------------------------------------------------------------- models
 // Houses, piers and trees (render/models.cpp): instanced block-model meshes. A vertex is in Minecraft blocks (x east,
 // y up, z south); an instance turns it in quarter turns (north to east, as Minecraft), scales it to world units and
-// stands it on its ground point. Faces keep Minecraft's directional shade; texels under half alpha are cut out.
+// stands it on its ground point. Faces keep Minecraft's directional shade; texels under half alpha are cut out. A
+// group fading in or out dissolves pixel by pixel in a 4x4 ordered dither, each copy with its own phase.
 
 struct ModelVertex
 {
@@ -370,7 +371,8 @@ cbuffer ModelDraw : register(b3)
 {
     uint  model_first;          // the draw's first instance in model_instances
     uint  model_first_vertex;   // and its mesh's first vertex in model_vertices (the ids start at 0 in every draw)
-    uint2 model_pad;
+    float model_fade;           // the mesh's group: 0 hidden, 1 whole
+    uint  model_pad;
 };
 
 struct ModelOut
@@ -383,6 +385,7 @@ struct ModelOut
     nointerpolation float shade : TEXCOORD6;    // Minecraft's directional shade of the face
     nointerpolation float4 fill : TEXCOORD4;    // the map mode's fill of its province, a = 0 for none
     nointerpolation float hover : TEXCOORD5;
+    nointerpolation float phase : TEXCOORD7;    // the copy's own offset into the dither
 };
 
 float3 rgba8(uint c)
@@ -409,6 +412,7 @@ ModelOut vs_model(uint vid : SV_VertexID, uint iid : SV_InstanceID)
     o.color = tint;
     o.shade = ((v.packed >> 16) & 255) / 255.0;
     o.layer = v.packed & 0xFFFF;
+    o.phase = frac(sin(dot(inst.pos.xz, float2(12.9898, 78.233))) * 43758.5453);
     // The province it stands in, read once at its ground point, so a whole tree takes one colour.
     o.fill = float4(0.0, 0.0, 0.0, 0.0);
     o.hover = 0.0;
@@ -425,6 +429,11 @@ float4 ps_model(ModelOut input) : SV_Target
 {
     float4 texel = model_layers.Sample(s_point, float3(input.uv, input.layer));
     clip(texel.a - 0.5);
+    if (model_fade < 1.0) {   // fading: a share model_fade of the pixels stays
+        static const float BAYER[16] = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
+        uint2 p = uint2(input.pos.xy) & 3;
+        clip(model_fade - frac((BAYER[p.y * 4 + p.x] + 0.5) / 16.0 + input.phase));
+    }
     float3 base = texel.rgb * input.color;
     float3 color = base;
     if (map_mode != 0) {   // as the blocks: EU4's political shading (ps_terrain)

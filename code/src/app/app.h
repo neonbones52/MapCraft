@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <filesystem>
 #include <vector>
 #include <string>
@@ -61,6 +62,8 @@ namespace mc
         LabelFont label_font_;
         std::vector<MapLabel> labels_;
         float province_names_ = 0.0f;   // 0: the mode's names show, 1: the provinces' names (faded over time)
+        std::array<bool, ModelSet::kGroups> models_shown_{};    // per model group, as the zoom's hysteresis left it
+        std::array<float, ModelSet::kGroups> model_fades_{};    // 0 hidden, 1 whole (faded over time)
         Camera camera_;
         MapRenderer renderer_;
         MapMode map_mode_ = MapMode::political;
