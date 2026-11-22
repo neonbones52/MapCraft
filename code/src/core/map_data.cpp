@@ -100,6 +100,7 @@ namespace mc
         region = view<std::uint16_t>(section("PREG"));
         color = view<std::uint32_t>(section("PCOL"));
         positions = view<float>(section("PPOS"));
+        sites = view<std::uint16_t>(section("PSIT"));
         adjacency_offsets = view<std::uint32_t>(section("ADJO"));
         adjacency_ids = view<std::uint16_t>(section("ADJI"));
 
@@ -176,7 +177,8 @@ namespace mc
             return fail("missing or malformed block sections (rebuild with tools/mapbake/bake.py)");
         }
         if (pixel_province.size() != pixels || pixel_class.size() != pixels || kind.size() != count ||
-            color.size() != count || positions.size() != std::size_t{ count } * 8 || name_offsets_.empty() ||
+            color.size() != count || positions.size() != std::size_t{ count } * 8 || sites.size() != std::size_t{ count } * 6 ||
+            name_offsets_.empty() ||
             border_chains.size() % 4 != 0 || river_points.size() % 3 != 0 || river_chains.size() % 4 != 0 ||
             font_chars.empty() || font_line_height <= 0 || region_name_offsets_.empty() || land_name_offsets_.empty() ||
             province_glyphs.size() % 7 != 0 || province_glyph_owner.size() * 7 != province_glyphs.size() ||

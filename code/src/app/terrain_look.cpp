@@ -2,12 +2,10 @@
 
 #include <algorithm>
 #include <array>
-#include <charconv>
 #include <cmath>
 #include <format>
 #include <unordered_map>
 
-#include "core/csv.h"
 #include "core/map_data.h"
 #include "minecraft/assets.h"
 
@@ -22,14 +20,6 @@ namespace mc
         constexpr int kBlend = 2;                // blocks each way: 5 x 5, Minecraft's default biome blend
         constexpr int kLandBase = 2;             // ground level of height step 0 (tools/mapgen/surface.py LAND_BASE)
         constexpr std::uint32_t kDefaultWater = 0x3F76E4;
-
-        struct BiomeRow
-        {
-            std::string key;
-            std::string vanilla;
-            std::array<std::string, 7> blocks;   // top, side, under, deep, shore, snow_top, snow_side
-            int snow_line = -1;                  // height step, -1 = never
-        };
 
         std::uint32_t rgba(std::uint32_t rgb)
         {
@@ -169,90 +159,22 @@ namespace mc
             TerrainLook* look_;
             std::unordered_map<std::string, std::uint32_t> index_;
         };
-
-        bool read_biomes(const std::filesystem::path& path, std::vector<BiomeRow>* rows, std::string* error)
-        {
-            csv::Table table;
-            if (!csv::read(path, &table, error)) {
-                return false;
-            }
-            const std::array<const char*, 10> names = { "key",  "minecraft_biome", "top",      "side",      "under",
-                                                        "deep", "shore",           "snow_top", "snow_side", "snow_line" };
-            std::array<int, 10> col{};
-            for (std::size_t c = 0; c < names.size(); ++c) {
-                col[c] = table.column(names[c]);
-                if (col[c] < 0) {
-                    *error = std::format("{}: no column {}", path.string(), names[c]);
-                    return false;
-                }
-            }
-            for (std::size_t r = 0; r < table.rows.size(); ++r) {
-                const auto& row = table.rows[r];
-                BiomeRow biome;
-                biome.key = row[col[0]];
-                biome.vanilla = row[col[1]];
-                const std::string& line = row[col[9]];
-                if (!line.empty()) {
-                    const auto [end, ec] = std::from_chars(line.data(), line.data() + line.size(), biome.snow_line);
-                    if (ec != std::errc() || end != line.data() + line.size() || biome.snow_line < 0) {
-                        *error = std::format("{}:{}: snow_line '{}' is not a height step", path.string(),
-                                             table.lines[r], line);
-                        return false;
-                    }
-                }
-                // Snow blocks are needed only with a snow line; without one they stay the biome's own.
-                for (std::size_t b = 0; b < biome.blocks.size(); ++b) {
-                    biome.blocks[b] = row[col[2 + b]];
-                    const bool snow = b >= 5;
-                    if (biome.blocks[b].empty() && snow && biome.snow_line < 0) {
-                        biome.blocks[b] = biome.blocks[b - 5];
-                    }
-                    if (biome.blocks[b].empty()) {
-                        *error = std::format("{}:{}: {} has no {}", path.string(), table.lines[r], biome.key,
-                                             names[2 + b]);
-                        return false;
-                    }
-                }
-                if (biome.vanilla.empty()) {
-                    *error = std::format("{}:{}: {} has no minecraft_biome", path.string(), table.lines[r], biome.key);
-                    return false;
-                }
-                rows->push_back(std::move(biome));
-            }
-            return true;
-        }
     }
 
-    bool build_terrain_look(const MapData& map, const std::filesystem::path& biomes_csv,
+    bool build_terrain_look(const MapData& map, const std::vector<const BiomeRow*>& biomes,
                             const minecraft::Assets& assets, TerrainLook* look, std::string* error)
     {
-        std::vector<BiomeRow> table;
-        if (!read_biomes(biomes_csv, &table, error)) {
-            return false;
-        }
-        // The map's biomes (BKEY order, [0] = none) as biomes.csv rows.
         const std::uint32_t biome_count = map.biome_count();
-        if (biome_count < 2 || (biome_count - 1) * kVariants > 256) {
+        if (biome_count < 2 || (biome_count - 1) * kVariants > 256 || biomes.size() != biome_count) {
             *error = std::format("the map has {} biomes; the renderer takes 1 to {}", biome_count - 1, 256 / kVariants);
             return false;
-        }
-        std::vector<const BiomeRow*> biomes(biome_count, nullptr);
-        for (std::uint32_t b = 1; b < biome_count; ++b) {
-            const std::string_view key = map.biome_key(b);
-            const auto row = std::ranges::find(table, key, &BiomeRow::key);
-            if (row == table.end()) {
-                *error = std::format("{}: no biome {} (the map was baked with it; rebake or add it)",
-                                     biomes_csv.string(), key);
-                return false;
-            }
-            biomes[b] = &*row;
         }
 
         *look = TerrainLook{};
         TextureSet textures(assets, look);
         auto texture = [&](const std::string& name, std::uint32_t* out) {
             if (!textures.get(name, out, error)) {
-                *error = std::format("{}: {}", biomes_csv.string(), *error);
+                *error = std::format("biomes.csv: {}", *error);
                 return false;
             }
             return true;
@@ -290,7 +212,7 @@ namespace mc
             look->materials.push_back(shore);
             look->materials.push_back(snow);
             if (!assets.biome(row.vanilla, &vanilla[b], error)) {
-                *error = std::format("{}: biome {}: {}", biomes_csv.string(), row.key, *error);
+                *error = std::format("biomes.csv: biome {}: {}", row.key, *error);
                 return false;
             }
             base_grass[b] = vanilla[b].grass_color.value_or(

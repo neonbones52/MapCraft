@@ -100,7 +100,7 @@ namespace mc::minecraft
         return true;
     }
 
-    bool Assets::read(std::string_view entry, std::vector<std::uint8_t>* out) const
+    bool Assets::file(std::string_view entry, std::vector<std::uint8_t>* out) const
     {
         if (!zip_) {
             return false;
@@ -119,6 +119,28 @@ namespace mc::minecraft
                0;
     }
 
+    std::vector<std::string> Assets::list(std::string_view prefix) const
+    {
+        std::vector<std::string> out;
+        if (!zip_) {
+            return out;
+        }
+        const mz_uint count = mz_zip_reader_get_num_files(&zip_->archive);
+        char name[512];
+        for (mz_uint i = 0; i < count; ++i) {
+            if (mz_zip_reader_get_filename(&zip_->archive, i, name, sizeof(name)) == 0 ||
+                mz_zip_reader_is_file_a_directory(&zip_->archive, i)) {
+                continue;
+            }
+            const std::string_view entry(name);
+            if (entry.starts_with(prefix)) {
+                out.emplace_back(entry);
+            }
+        }
+        std::ranges::sort(out);
+        return out;
+    }
+
     bool Assets::has_texture(std::string_view name) const
     {
         if (!zip_) {
@@ -132,7 +154,7 @@ namespace mc::minecraft
     {
         std::vector<std::uint8_t> bytes;
         const std::string entry = std::format("{}{}.png", kTextures, name);
-        if (!read(entry, &bytes)) {
+        if (!file(entry, &bytes)) {
             if (error) {
                 *error = std::format("{}: no {}", path_.string(), entry);
             }
@@ -165,7 +187,7 @@ namespace mc::minecraft
         out->order.clear();
         out->frame_time = kTick;
         std::vector<std::uint8_t> meta;
-        if (read(std::format("{}{}.png.mcmeta", kTextures, name), &meta)) {
+        if (file(std::format("{}{}.png.mcmeta", kTextures, name), &meta)) {
             const nlohmann::json json = nlohmann::json::parse(meta.begin(), meta.end(), nullptr, false);
             if (json.is_object() && json.contains("animation") && json["animation"].is_object()) {
                 const nlohmann::json& animation = json["animation"];
@@ -197,7 +219,7 @@ namespace mc::minecraft
     {
         std::vector<std::uint8_t> bytes;
         const std::string entry = std::format("{}{}.json", kBiomes, name);
-        if (!read(entry, &bytes)) {
+        if (!file(entry, &bytes)) {
             if (error) {
                 *error = std::format("{}: no vanilla biome {} ({})", path_.string(), name, entry);
             }

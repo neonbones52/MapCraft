@@ -61,8 +61,12 @@ namespace mc::minecraft
         bool image(std::string_view name, Image* out, std::string* error) const;
         bool biome(std::string_view name, Biome* out, std::string* error) const;
 
+        // Any entry of the jar by its full path ("data/minecraft/structure/....nbt"); false if there is none.
+        bool file(std::string_view entry, std::vector<std::uint8_t>* out) const;
+        // The entries (files, not folders) whose path starts with `prefix`, sorted.
+        [[nodiscard]] std::vector<std::string> list(std::string_view prefix) const;
+
     private:
-        bool read(std::string_view entry, std::vector<std::uint8_t>* out) const;
 
         struct Zip;
         std::unique_ptr<Zip> zip_;

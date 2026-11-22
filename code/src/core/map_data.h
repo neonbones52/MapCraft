@@ -55,6 +55,10 @@ namespace mc
         std::span<const std::uint8_t> region_parent;    // per region: its land (the region's parent), see land_name
         std::span<const std::uint32_t> color;           // RGBA8, debug colour
         std::span<const float> positions;               // count * 8: city, unit, text, port (x, y)
+        // count * 6 (PSIT): the house site's north-west block x, y and facing; the pier's coast block x, y and the
+        // direction it reaches into the sea. Facings and directions: 0 north, 1 east, 2 south, 3 west; kNoSite = none.
+        std::span<const std::uint16_t> sites;
+        static constexpr std::uint16_t kNoSite = 0xFFFF;
         std::span<const std::uint32_t> adjacency_offsets;
         std::span<const std::uint16_t> adjacency_ids;
 

@@ -41,6 +41,7 @@ namespace mc
         }
 
         constexpr ProvinceFill kNone{ 0.55f, 0.55f, 0.55f, 1.0f };   // a field not set yet
+        constexpr ProvinceFill kWasteland{ 90.0f / 255.0f, 90.0f / 255.0f, 90.0f / 255.0f, 1.0f };   // all modes but terrain
         constexpr std::int32_t kMinBridgedPiece = 1;   // water joins pieces of one province too (map_modes.h)
 
         ProvinceFill listed(const DefinitionList& list, std::uint8_t index)
@@ -242,6 +243,10 @@ namespace mc
 
         fills->assign(map.count, ProvinceFill{});
         for (std::uint32_t id = 1; id < map.count; ++id) {
+            if (map.kind[id] == ProvinceKind::wasteland && mode != MapMode::terrain) {
+                (*fills)[id] = kWasteland;   // the terrain mode shows its true look, like the rest of the map
+                continue;
+            }
             if (map.kind[id] != ProvinceKind::land) {
                 continue;
             }

@@ -341,6 +341,84 @@ float4 ps_terrain(TerrainOut input) : SV_Target
     return float4(color, 1.0);
 }
 
+// ----------------------------------------------------------------------------------------------------- models
+// Houses, piers and trees (render/models.cpp): instanced block-model meshes. A vertex is in Minecraft blocks (x east,
+// y up, z south); an instance turns it in quarter turns (north to east, as Minecraft), scales it to world units and
+// stands it on its ground point. Faces keep Minecraft's directional shade; texels under half alpha are cut out.
+
+struct ModelVertex
+{
+    float3 pos;
+    float2 uv;
+    uint   packed;   // layer | shade << 16 | tint kind << 24 (0 none, 1 grass, 2 foliage, 3 the vertex's colour)
+    uint   tint;
+};
+struct ModelInstance
+{
+    float3 pos;
+    float  scale;
+    uint   mesh;
+    uint   turn;
+    uint   foliage;
+    uint   grass;
+};
+StructuredBuffer<ModelVertex>   model_vertices  : register(t19);
+StructuredBuffer<ModelInstance> model_instances : register(t20);
+Texture2DArray<float4>          model_layers    : register(t21);
+
+cbuffer ModelDraw : register(b3)
+{
+    uint  model_first;          // the draw's first instance in model_instances
+    uint  model_first_vertex;   // and its mesh's first vertex in model_vertices (the ids start at 0 in every draw)
+    uint2 model_pad;
+};
+
+struct ModelOut
+{
+    float4 pos   : SV_Position;
+    float2 uv    : TEXCOORD0;
+    float2 map   : TEXCOORD1;
+    float3 color : TEXCOORD2;
+    nointerpolation uint layer : TEXCOORD3;
+};
+
+float3 rgba8(uint c)
+{
+    return float3(c & 255, (c >> 8) & 255, (c >> 16) & 255) / 255.0;
+}
+
+ModelOut vs_model(uint vid : SV_VertexID, uint iid : SV_InstanceID)
+{
+    ModelVertex v = model_vertices[model_first_vertex + vid];
+    ModelInstance inst = model_instances[model_first + iid];
+    float2 xz = v.pos.xz;
+    for (uint t = 0; t < (inst.turn & 3); ++t) {
+        xz = float2(-xz.y, xz.x);   // a quarter turn clockwise seen from above: north becomes east
+    }
+    float3 world = inst.pos + inst.scale * float3(xz.x, v.pos.y, -xz.y);   // Minecraft's south is the map's +y
+    uint kind = v.packed >> 24;
+    float3 tint = kind == 1 ? rgba8(inst.grass) : kind == 2 ? rgba8(inst.foliage) : kind == 3 ? rgba8(v.tint)
+                : float3(1.0, 1.0, 1.0);
+    ModelOut o;
+    o.pos = mul(float4(world, 1.0), view_proj);
+    o.uv = v.uv;
+    o.map = float2(world.x, -world.z);
+    o.color = tint * (((v.packed >> 16) & 255) / 255.0);
+    o.layer = v.packed & 0xFFFF;
+    return o;
+}
+
+float4 ps_model(ModelOut input) : SV_Target
+{
+    float4 texel = model_layers.Sample(s_point, float3(input.uv, input.layer));
+    clip(texel.a - 0.5);
+    float3 color = texel.rgb * input.color;
+    float2 m = input.map;
+    float edge = min(min(m.x, m.y), min(map_size.x - m.x, map_size.y - m.y));
+    color = lerp(color, FOG_COLOR, 1.0 - smoothstep(0.0, FOG_WIDTH, edge));
+    return float4(color, 1.0);
+}
+
 // ---------------------------------------------------------------------------------------------------- borders
 
 struct BorderVertex

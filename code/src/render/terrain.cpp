@@ -5,12 +5,16 @@
 #include <format>
 
 #include "core/map_data.h"
+#include "render/d3d_util.h"
 #include "render/shaders.h"
 
 namespace mc
 {
     namespace
     {
+        using d3d::check;
+        using d3d::structured;
+
         // Faces, as the shader numbers them (HLSL FACE_*): the top, then the sides by the way they face on the map.
         enum Face : std::uint32_t
         {
@@ -53,35 +57,6 @@ namespace mc
         };
         static_assert(sizeof(TerrainConstants) % 16 == 0);
 
-        constexpr std::uint32_t kMips = 5;   // 16, 8, 4, 2, 1
-
-        bool check(HRESULT hr, const char* what, std::string* error)
-        {
-            if (FAILED(hr) && error) {
-                *error = std::format("{} failed: 0x{:08X}", what, static_cast<std::uint32_t>(hr));
-            }
-            return SUCCEEDED(hr);
-        }
-
-        template <class T>
-        bool structured(ID3D11Device* device, const std::vector<T>& data, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>* srv,
-                        const char* what, std::string* error)
-        {
-            std::vector<T> padded = data;
-            padded.resize(std::max<std::size_t>(padded.size(), 1));
-            D3D11_BUFFER_DESC desc{};
-            desc.ByteWidth = static_cast<UINT>(padded.size() * sizeof(T));
-            desc.Usage = D3D11_USAGE_IMMUTABLE;
-            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-            desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-            desc.StructureByteStride = sizeof(T);
-            const D3D11_SUBRESOURCE_DATA init{ padded.data(), 0, 0 };
-            Microsoft::WRL::ComPtr<ID3D11Buffer> buffer;
-            return check(device->CreateBuffer(&desc, &init, &buffer), what, error) &&
-                   check(device->CreateShaderResourceView(buffer.Get(), nullptr, srv->ReleaseAndGetAddressOf()), what,
-                         error);
-        }
-
         bool texture2d(ID3D11Device* device, UINT width, UINT height, DXGI_FORMAT format, const void* data, UINT pitch,
                        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>* srv, const char* what, std::string* error)
         {
@@ -99,34 +74,6 @@ namespace mc
             return check(device->CreateTexture2D(&desc, &init, &tex), what, error) &&
                    check(device->CreateShaderResourceView(tex.Get(), nullptr, srv->ReleaseAndGetAddressOf()), what, error);
         }
-
-        // The next mip of a square RGBA8 image: 2 x 2 boxes, colours weighted by alpha so cut-out edges keep their
-        // colour.
-        std::vector<std::uint8_t> half(const std::uint8_t* src, std::uint32_t size)
-        {
-            const std::uint32_t n = size / 2;
-            std::vector<std::uint8_t> out(std::size_t{ n } * n * 4);
-            for (std::uint32_t y = 0; y < n; ++y) {
-                for (std::uint32_t x = 0; x < n; ++x) {
-                    std::uint32_t sum[3] = {};
-                    std::uint32_t alpha = 0;
-                    for (std::uint32_t k = 0; k < 4; ++k) {
-                        const std::uint8_t* p = src + ((std::size_t{ y } * 2 + k / 2) * size + x * 2 + k % 2) * 4;
-                        for (int c = 0; c < 3; ++c) {
-                            sum[c] += p[c] * (p[3] + 1u);
-                        }
-                        alpha += p[3];
-                    }
-                    std::uint8_t* q = &out[(std::size_t{ y } * n + x) * 4];
-                    const std::uint32_t weight = alpha + 4;
-                    for (int c = 0; c < 3; ++c) {
-                        q[c] = static_cast<std::uint8_t>(sum[c] / weight);
-                    }
-                    q[3] = static_cast<std::uint8_t>(alpha / 4);
-                }
-            }
-            return out;
-        }
     }
 
     bool TerrainLayer::init(ID3D11Device* device, const MapData& map, const TerrainLook& look, std::string* error)
@@ -134,17 +81,13 @@ namespace mc
         ComPtr<ID3D10Blob> vs;
         ComPtr<ID3D10Blob> ps;
         const std::vector<std::uint8_t> falls = waterfalls(map);
-        D3D11_SAMPLER_DESC sd{};
-        sd.Filter = D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;   // Minecraft: crisp texels, blended mips
-        sd.AddressU = sd.AddressV = sd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        sd.MaxLOD = D3D11_FLOAT32_MAX;
         return shaders::compile(shaders::map_source, "map.hlsl", "vs_terrain", "vs_5_0", &vs, error) &&
                shaders::compile(shaders::map_source, "map.hlsl", "ps_terrain", "ps_5_0", &ps, error) &&
                check(device->CreateVertexShader(vs->GetBufferPointer(), vs->GetBufferSize(), nullptr, &vs_),
                      "vs_terrain", error) &&
                check(device->CreatePixelShader(ps->GetBufferPointer(), ps->GetBufferSize(), nullptr, &ps_),
                      "ps_terrain", error) &&
-               check(device->CreateSamplerState(&sd, &point_), "terrain sampler", error) &&
+               d3d::point_sampler(device, &point_, error) &&
                create_quads(device, map, falls, error) && create_textures(device, map, look, falls, error);
     }
 
@@ -302,33 +245,6 @@ namespace mc
                       (static_cast<std::uint32_t>(falls[i]) << 28);
         }
 
-        // The block textures with their mips: subresource = mip + layer * kMips.
-        std::vector<std::vector<std::uint8_t>> mips;
-        std::vector<D3D11_SUBRESOURCE_DATA> init;
-        mips.reserve(std::size_t{ look.layer_count } * kMips);
-        constexpr std::uint32_t size = TerrainLook::kTextureSize;
-        for (std::uint32_t layer = 0; layer < look.layer_count; ++layer) {
-            const std::uint8_t* base = &look.layers[std::size_t{ layer } * size * size * 4];
-            mips.emplace_back(base, base + std::size_t{ size } * size * 4);
-            for (std::uint32_t m = 1, s = size; m < kMips; ++m, s /= 2) {
-                mips.push_back(half(mips.back().data(), s));
-            }
-        }
-        for (std::uint32_t layer = 0; layer < look.layer_count; ++layer) {
-            for (std::uint32_t m = 0; m < kMips; ++m) {
-                init.push_back({ mips[std::size_t{ layer } * kMips + m].data(), (size >> m) * 4, 0 });
-            }
-        }
-        D3D11_TEXTURE2D_DESC desc{};
-        desc.Width = desc.Height = size;
-        desc.MipLevels = kMips;
-        desc.ArraySize = look.layer_count;
-        desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        desc.SampleDesc.Count = 1;
-        desc.Usage = D3D11_USAGE_IMMUTABLE;
-        desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        ComPtr<ID3D11Texture2D> array;
-
         const TerrainConstants constants{ { map.block_width, map.block_height },
                                           static_cast<float>(map.block_size),
                                           TerrainLook::kUnderDepth,
@@ -342,8 +258,8 @@ namespace mc
         const D3D11_SUBRESOURCE_DATA cinit{ &constants, 0, 0 };
 
         const UINT bw = map.block_width;
-        return check(device->CreateTexture2D(&desc, init.data(), &array), "block textures", error) &&
-               check(device->CreateShaderResourceView(array.Get(), nullptr, &array_), "block textures", error) &&
+        return d3d::texture_array(device, look.layers, look.layer_count, TerrainLook::kTextureSize, &array_,
+                                  "block textures", error) &&
                check(device->CreateBuffer(&cb, &cinit, &constants_), "terrain constants", error) &&
                texture2d(device, bw, map.block_height, DXGI_FORMAT_R8G8B8A8_UINT, data.data(), bw * 4, &blocks_,
                          "block data", error) &&

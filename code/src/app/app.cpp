@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cmath>
 
+#include "app/biome_table.h"
+#include "app/scenery.h"
 #include "app/terrain_look.h"
 #include "core/log.h"
 #include "minecraft/assets.h"
@@ -15,6 +17,7 @@ namespace mc
         constexpr float kProvinceNamesLevel = 8.5f;   // wheel notches in from the whole map (level 1 = 0 notches)
         constexpr float kNamesFade = 0.25f;           // s for the cross-fade
         constexpr float kViewMargin = 32.0f;          // map px the farthest view shows round the map
+        constexpr float kModelsLevel = 8.0f;          // wheel notches in from the whole map where models show
     }
 
     bool App::init(ID3D11Device* device, const std::filesystem::path& map_file, const std::filesystem::path& biomes_csv,
@@ -33,13 +36,25 @@ namespace mc
         }
         minecraft::Assets assets;
         TerrainLook look;
+        ModelSet models;
+        std::vector<BiomeRow> biome_table;
+        std::vector<const BiomeRow*> biomes;
         const auto look_started = std::chrono::steady_clock::now();
-        if (!assets.open(jar, error) || !build_terrain_look(map_, biomes_csv, assets, &look, error)) {
+        if (!assets.open(jar, error) || !read_biome_table(biomes_csv, &biome_table, error) ||
+            !map_biome_rows(map_, biome_table, biomes_csv, &biomes, error) ||
+            !build_terrain_look(map_, biomes, assets, &look, error)) {
             return false;
         }
         log::info("blocks: textures from {}, {} layers, {} materials, {:.0f} ms", jar.string(), look.layer_count,
                   look.materials.size(),
                   std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - look_started).count());
+        const auto models_started = std::chrono::steady_clock::now();
+        if (!build_scenery(map_, biomes, look, assets, &models, error)) {
+            return false;
+        }
+        log::info("models: {} meshes, {} vertices, {} textures, {} placed, {:.0f} ms", models.meshes.size(),
+                  models.vertices.size(), models.layer_count, models.instances.size(),
+                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - models_started).count());
         // The camera picks and zooms on the top of the blocks (water or ground).
         camera_.set_ground([this](float map_x, float map_y) {
             const float size = static_cast<float>(map_.block_size);
@@ -61,7 +76,7 @@ namespace mc
         label_font_.build(map_);
         log::info("label raster: {} provinces with pixels, {:.0f} ms", label_raster_.used.size(),
                   std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
-        if (!renderer_.init(device, map_, look, error)) {
+        if (!renderer_.init(device, map_, look, models, error)) {
             return false;
         }
         log::info("blocks: {} face runs", renderer_.terrain_quads());
@@ -163,7 +178,9 @@ namespace mc
         view.map_mode = static_cast<std::uint32_t>(map_mode_);
         // From the 10th zoom level (counted from the whole map as the 1st) the provinces' names replace the mode's
         // names: a short cross-fade once the zoom passes halfway between the 9th and the 10th.
-        const bool provinces_shown = camera_.zoom_level(view_width, view_height) > kProvinceNamesLevel;
+        const float zoom = camera_.zoom_level(view_width, view_height);
+        const bool provinces_shown = zoom > kProvinceNamesLevel;
+        view.models = zoom > kModelsLevel;
         const float step = dt / kNamesFade;
         province_names_ = std::clamp(province_names_ + (provinces_shown ? step : -step), 0.0f, 1.0f);
         view.mode_names_alpha = 1.0f - province_names_;

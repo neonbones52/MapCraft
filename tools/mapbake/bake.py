@@ -51,6 +51,7 @@ def main():
     pos = np.full((count, 8), np.nan, np.float32)   # city xy, unit xy, text xy, port xy
     port_sea = np.zeros(count, np.uint16)
     port_rot = np.zeros(count, np.float32)
+    sites = np.full((count, 6), 0xFFFF, np.uint16)  # house block xy, facing; pier coast block xy, direction
     for pid, row in provinces.items():
         kind[pid] = TYPES[row['type']]
         region[pid] = region_index.get(int(row['region'] or 0), 0)
@@ -61,6 +62,9 @@ def main():
         pos[pid] = [number(p[k]) for k in ('city_x', 'city_y', 'unit_x', 'unit_y', 'text_x', 'text_y', 'port_x', 'port_y')]
         port_sea[pid] = int(p['port_sea'] or 0)
         port_rot[pid] = number(p['port_rotation'], 0.0)
+        for k, key in enumerate(('city_bx', 'city_by', 'city_facing', 'pier_bx', 'pier_by', 'pier_dir')):
+            if p[key] != '':
+                sites[pid, k] = int(p[key])
 
     neighbours = [[] for _ in range(count)]
     for r in read_csv(ROOT / 'adjacency.csv'):
@@ -97,6 +101,7 @@ def main():
         (b'PPOS', pos.tobytes()),                                 # f32[n*8] city, unit, text, port (map px, NaN = none)
         (b'PPSE', port_sea.tobytes()),                            # u16[n] sea province of the port
         (b'PPRO', port_rot.tobytes()),                            # f32[n] port facing, radians, x right / y down
+        (b'PSIT', sites.tobytes()),                               # u16[n*6] house site, facing; pier block, direction
         (b'ADJO', offsets.tobytes()),                             # u32[n+1] CSR offsets
         (b'ADJI', adj_id.tobytes()),                              # u16[m] neighbour ids
         (b'ADJL', adj_len.tobytes()),                             # u16[m] shared border length, px

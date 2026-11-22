@@ -21,13 +21,20 @@ add_library(mc_game STATIC
     src/core/map_data.cpp
     src/core/labels.cpp
     src/minecraft/assets.cpp
+    src/minecraft/nbt.cpp
+    src/minecraft/blocks.cpp
+    src/minecraft/voxels.cpp
     src/render/map_renderer.cpp
     src/render/terrain.cpp
+    src/render/models.cpp
+    src/render/d3d_util.cpp
     src/render/labels.cpp
     src/render/shaders.cpp
     src/app/app.cpp
     src/app/map_modes.cpp
     src/app/terrain_look.cpp
+    src/app/biome_table.cpp
+    src/app/scenery.cpp
     src/app/shell.cpp
     src/app/bindings.cpp
     src/game/calendar.cpp

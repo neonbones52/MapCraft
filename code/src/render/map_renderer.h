@@ -10,6 +10,7 @@
 
 #include "core/camera.h"
 #include "render/labels.h"
+#include "render/models.h"
 #include "render/terrain.h"
 
 namespace mc
@@ -24,6 +25,7 @@ namespace mc
         std::uint32_t map_mode = 0;  // 0 terrain: no fill; otherwise the fills colour the land (EU4 formula)
         float mode_names_alpha = 1.0f;       // the map mode's names (countries, cultures, ...)
         float province_names_alpha = 0.0f;   // the provinces' names, instead of those when zoomed in
+        bool models = false;                 // houses, piers and trees (shown when zoomed in)
     };
 
     // RGBA per province: rgb colour, a = how strongly it covers the land (0 for water in political modes).
@@ -44,13 +46,15 @@ namespace mc
     };
 
     // The map (docs/RENDER.md): the voxel surface (render/terrain.h) with the map mode's colour applied in its pixel
-    // shader as in EU4, borders as strips along province outlines lying on the blocks, and the map names. Sets every
+    // shader as in EU4, the models standing on it (render/models.h), borders as strips along province outlines lying
+    // on the blocks, and the map names. Sets every
     // piece of pipeline state it uses, so it can run on a context whose state was cleared; keeps its own depth
     // buffer.
     class MapRenderer
     {
     public:
-        bool init(ID3D11Device* device, const MapData& map, const TerrainLook& look, std::string* error);
+        bool init(ID3D11Device* device, const MapData& map, const TerrainLook& look, const ModelSet& models,
+                  std::string* error);
         // Map mode data: one fill per province id, one style per border chain (MapData::border_chains order).
         void set_colors(ID3D11DeviceContext* context, std::span<const ProvinceFill> fills,
                         std::span<const BorderStyle> styles);
@@ -64,6 +68,7 @@ namespace mc
         void set_province_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
                                  std::span<const std::uint32_t> keys);
         [[nodiscard]] std::uint32_t terrain_quads() const { return terrain_.quad_count(); }
+        [[nodiscard]] const ModelLayer& models() const { return models_; }
 
     private:
         template <class T>
@@ -81,6 +86,7 @@ namespace mc
 
         ComPtr<ID3D11ShaderResourceView> province_ids_;
         TerrainLayer terrain_;
+        ModelLayer models_;
         ComPtr<ID3D11Buffer> fills_buffer_;
         ComPtr<ID3D11ShaderResourceView> fills_;
         ComPtr<ID3D11Buffer> selection_buffer_;
