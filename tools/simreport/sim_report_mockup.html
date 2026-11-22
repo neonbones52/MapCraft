@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sim Report Mockup</title>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+  :root {
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    --bg: #f5f4f0;
+    --panel: #ffffff;
+    --text: #1f1d1a;
+    --muted: #6d695f;
+    --border: #e2dfd6;
+    --grid: #ece9e1;
+    --mark: #9a958a;
+    --a: #5b6b82;
+    --b: #d9822b;
+    --c1: #d9822b;
+    --c2: #4f9a5a;
+    --c3: #b05fa8;
+    --c4: #8a6a3c;
+    --c5: #3f7fbf;
+    --pass: #2f8f4e;
+    --pass-bg: #e5f3e9;
+    --fail: #c0392b;
+    --fail-bg: #fbe8e5;
+    --warn: #8a5a00;
+    --warn-bg: #fdf0d2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141414;
+      --panel: #1d1d1c;
+      --text: #ece9e2;
+      --muted: #9b968b;
+      --border: #2f2e2c;
+      --grid: #2a2928;
+      --mark: #7a766d;
+      --a: #91a5c2;
+      --b: #f0a250;
+      --c1: #f0a250;
+      --c2: #6cc27a;
+      --c3: #d58bcd;
+      --c4: #c49a5e;
+      --c5: #6aa8e8;
+      --pass: #62c784;
+      --pass-bg: #15301f;
+      --fail: #ff7d6e;
+      --fail-bg: #3a1d19;
+      --warn: #f3c46b;
+      --warn-bg: #3a2d10;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141414;
+    --panel: #1d1d1c;
+    --text: #ece9e2;
+    --muted: #9b968b;
+    --border: #2f2e2c;
+    --grid: #2a2928;
+    --mark: #7a766d;
+    --a: #91a5c2;
+    --b: #f0a250;
+    --c1: #f0a250;
+    --c2: #6cc27a;
+    --c3: #d58bcd;
+    --c4: #c49a5e;
+    --c5: #6aa8e8;
+    --pass: #62c784;
+    --pass-bg: #15301f;
+    --fail: #ff7d6e;
+    --fail-bg: #3a1d19;
+    --warn: #f3c46b;
+    --warn-bg: #3a2d10;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.5 var(--font); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 16px 64px; }
+
+  header { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge { font-size: 11px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase;
+           padding: 3px 9px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+  .path { font: 12px var(--mono); color: var(--muted); }
+  h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.01em; font-family: var(--mono); }
+  .tagline { margin: 0; color: var(--muted); max-width: 760px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: 12px/1 var(--mono); padding: 6px 8px; border: 1px solid var(--border);
+          border-radius: 6px; background: var(--panel); color: var(--muted); }
+  .chip b { color: var(--text); font-weight: 600; }
+
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 22px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .card .k { font-size: 12px; color: var(--muted); }
+  .card .v { font-size: 24px; font-weight: 680; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .card .v.good { color: var(--pass); }
+  .card .v.bad { color: var(--fail); }
+
+  section { margin-top: 34px; }
+  h2 { font-size: 17px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 14px; font-size: 13px; max-width: 820px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 14px 6px; min-width: 0; }
+  .panel h3 { font-size: 13px; margin: 0; font-weight: 640; }
+  .panel .sub { font-size: 12px; color: var(--muted); margin: 0; }
+  .plot { width: 100%; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stack { display: grid; gap: 12px; }
+
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 12.5px; }
+  td.desc { white-space: normal; min-width: 220px; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+          padding: 3px 9px; border-radius: 999px; }
+  .pill.pass { background: var(--pass-bg); color: var(--pass); }
+  .pill.fail { background: var(--fail-bg); color: var(--fail); }
+
+  .key { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin: 0 0 14px; }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 18px; height: 10px; border-radius: 2px; display: inline-block; }
+  .sw.a { background: var(--a); }
+  .sw.b { background: var(--b); }
+  .sw.band { background: var(--b); opacity: .25; }
+
+  footer { margin-top: 40px; font-size: 12px; color: var(--muted); }
+  footer code { font-family: var(--mono); }
+
+  @media (max-width: 760px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .grid2 { grid-template-columns: 1fr; }
+    h1 { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">
+      <span class="badge">Мокап · синтетические данные</span>
+      <span class="path">runs/timber_ab/report.html</span>
+    </div>
+    <h1>timber_ab</h1>
+    <p class="tagline">A/B-прогон: технология <b>wood_pulp</b> (ветка Production) открывается на 15-м году
+      и разрешает бумагу из timber. A — без технологии, B — с ней. Одинаковые сиды в A и B, поэтому засухи
+      и прочие события совпадают, и вся разница между ними — эффект технологии.</p>
+    <div class="chips">
+      <span class="chip">сиды <b>1–5</b></span>
+      <span class="chip">прогонов <b>10</b></span>
+      <span class="chip">длительность <b>60 лет</b></span>
+      <span class="chip">запись <b>раз в месяц</b></span>
+      <span class="chip">коммит <b>3f9c2e1</b></span>
+      <span class="chip">2026-11-20</span>
+    </div>
+  </header>
+
+  <div class="cards">
+    <div class="card"><div class="k">Проверки</div><div class="v" id="card-checks">–</div></div>
+    <div class="card"><div class="k">Утечка изумрудов</div><div class="v good">0</div></div>
+    <div class="card"><div class="k">Бумага к 40-му году</div><div class="v" id="card-paper">–</div></div>
+    <div class="card"><div class="k">Стройки к 40-му году</div><div class="v" id="card-constr">–</div></div>
+  </div>
+
+  <section>
+    <h2>Ожидания сценария</h2>
+    <p class="lead">Цели записаны в сценарии до прогона. Факт — медиана B относительно A по 5 сидам,
+      среднее за год вокруг отметки; в скобках минимум и максимум по сидам.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Ожидание</th><th>Цель</th><th>Факт</th><th>Статус</th></tr></thead>
+        <tbody id="expectations"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Инвариант: изумруды сохраняются</h2>
+    <p class="lead">Σ всех счетов − (стартовый запас + вся добыча). Должно быть ровно 0 в каждом прогоне.
+      Если линия ушла от нуля, в коде есть утечка, и остальные графики смотреть рано.</p>
+    <div class="panel"><div id="ch-conservation" class="plot"></div></div>
+  </section>
+
+  <section>
+    <h2>Цепочка бумаги</h2>
+    <div class="key">
+      <span><i class="sw a"></i>A — без технологии</span>
+      <span><i class="sw b"></i>B — wood_pulp на 15-м году</span>
+      <span><i class="sw band"></i>разброс по сидам, 10–90%</span>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <h3>paper — цена</h3>
+        <p class="sub">изумрудов за единицу, медиана по сидам</p>
+        <div id="ch-paper" class="plot"></div>
+      </div>
+      <div class="grid2">
+        <div class="panel"><h3>sugar_cane</h3><p class="sub">спрос со стороны бумаги падает</p><div id="ch-sugar_cane" class="plot"></div></div>
+        <div class="panel"><h3>sugar</h3><p class="sub">дешевеет вслед за тростником</p><div id="ch-sugar" class="plot"></div></div>
+        <div class="panel"><h3>timber</h3><p class="sub">новый покупатель — бумажные фабрики</p><div id="ch-timber" class="plot"></div></div>
+        <div class="panel"><h3>lumber</h3><p class="sub">пилорамы конкурируют за timber</p><div id="ch-lumber" class="plot"></div></div>
+      </div>
+      <div class="panel">
+        <h3>Δ цены B относительно A</h3>
+        <p class="sub">(B / A − 1), медиана по сидам; всё, что сдвинула одна строка CSV</p>
+        <div id="ch-delta" class="plot"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Последствия</h2>
+    <div class="stack">
+      <div class="grid2">
+        <div class="panel">
+          <h3>Стоимость строек, B относительно A</h3>
+          <p class="sub">lumber дорожает, и стройки вместе с ним; цель ≤ +15%</p>
+          <div id="ch-construction" class="plot"></div>
+        </div>
+        <div class="panel">
+          <h3>Бумажные фабрики по рецепту</h3>
+          <p class="sub">B по сидам (медиана); пунктир — все фабрики в A</p>
+          <div id="ch-mills" class="plot"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Очки исследований в месяц</h3>
+        <p class="sub">дешевле бумага → дешевле книги → библиотекари довольнее</p>
+        <div id="ch-research" class="plot"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Мир</h2>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Изумруды в обращении</h3>
+        <p class="sub">млн; пунктир — все изумруды мира в A</p>
+        <div id="ch-money" class="plot"></div>
+      </div>
+      <div class="panel">
+        <h3>Добыча изумрудов</h3>
+        <p class="sub">в месяц; дорожает труд → добыча медленно падает</p>
+        <div id="ch-mining" class="plot"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Сгенерировано <code>tools/simreport/report.py</code> из <code>runs/timber_ab/*</code>. Это мокап: данные
+    синтетические, числа выдуманы для демонстрации вида отчёта.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- synthetic data ----------
+  const MONTHS = 720, TECH_M = 180, SEEDS = [1, 2, 3, 4, 5], M40 = 480;
+  const YEARS = Array.from({ length: MONTHS }, (_, m) => m / 12);
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gauss(r) {
+    let u = 0; while (u === 0) u = r();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r());
+  }
+  function ramp(m, months) { return m < TECH_M ? 0 : 1 - Math.exp(-(m - TECH_M) / months); }
+
+  // Shared noise per seed: A and B with the same seed see the same droughts.
+  function noisePath(seed, salt, sigma, phi, shockP, shockSize) {
+    const r = mulberry32(seed * 7919 + salt * 104729);
+    const out = new Float64Array(MONTHS);
+    let x = 0, shock = 0, left = 0;
+    for (let m = 0; m < MONTHS; m++) {
+      x = phi * x + sigma * gauss(r);
+      if (left === 0 && r() < shockP) { left = 6 + Math.floor(r() * 7); shock = shockSize * (0.6 + 0.8 * r()); }
+      let s = 0; if (left > 0) { s = shock; left--; }
+      out[m] = x + s;
+    }
+    return out;
+  }
+  function seedEffect(seed, salt, effect) {
+    const r = mulberry32(seed * 31337 + salt * 977);
+    return 1 + (effect - 1) * (1 + 0.22 * gauss(r));
+  }
+  function metric(o) {
+    const p = Object.assign({ drift: 0.004, sigma: 0.02, phi: 0.9, shockP: 0, shockSize: 0, effect: 1, rampM: 48 }, o);
+    const runs = { A: [], B: [] };
+    for (const s of SEEDS) {
+      const n = noisePath(s, p.salt, p.sigma, p.phi, p.shockP, p.shockSize);
+      // After the fork B drifts apart from A on its own: same seed, but a different world from then on.
+      const nB = noisePath(s, p.salt + 50, p.sigma * 0.6, p.phi, 0, 0);
+      const e = seedEffect(s, p.salt, p.effect);
+      const a = new Float64Array(MONTHS), b = new Float64Array(MONTHS);
+      for (let m = 0; m < MONTHS; m++) {
+        const v = p.base * (1 + p.drift * m / 12) * Math.exp(n[m]);
+        a[m] = v;
+        b[m] = v * (1 + (e - 1) * ramp(m, p.rampM)) * Math.exp(nB[m] * ramp(m, 24));
+      }
+      runs.A.push(a); runs.B.push(b);
+    }
+    return runs;
+  }
+  function quantile(sorted, q) {
+    const pos = (sorted.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+  }
+  function band(runs) {
+    const med = [], lo = [], hi = [];
+    for (let m = 0; m < MONTHS; m++) {
+      const v = runs.map(r => r[m]).sort((x, y) => x - y);
+      med.push(quantile(v, 0.5)); lo.push(quantile(v, 0.1)); hi.push(quantile(v, 0.9));
+    }
+    return { med, lo, hi };
+  }
+  function ratioRuns(mt) { return mt.B.map((b, i) => Array.from(b, (v, k) => (v / mt.A[i][k] - 1) * 100)); }
+  function windowMean(arr, m, w) { let s = 0, n = 0; for (let k = m - w; k <= m + w; k++) { s += arr[k]; n++; } return s / n; }
+  function deltaAt(mt, m) {
+    const d = SEEDS.map((_, i) => (windowMean(mt.B[i], m, 6) / windowMean(mt.A[i], m, 6) - 1) * 100).sort((x, y) => x - y);
+    return { med: quantile(d, 0.5), lo: d[0], hi: d[d.length - 1] };
+  }
+
+  const GOODS = {
+    paper:      metric({ salt: 1, base: 2.40, sigma: 0.025, effect: 0.69 }),
+    sugar_cane: metric({ salt: 2, base: 0.60, sigma: 0.03, shockP: 0.012, shockSize: 0.28, effect: 0.86 }),
+    sugar:      metric({ salt: 3, base: 1.10, sigma: 0.02, effect: 0.91, rampM: 60 }),
+    timber:     metric({ salt: 4, base: 0.80, sigma: 0.025, effect: 1.27 }),
+    lumber:     metric({ salt: 5, base: 1.50, sigma: 0.02, effect: 1.20, rampM: 60 })
+  };
+  const construction = metric({ salt: 6, base: 100, sigma: 0.012, drift: 0.003, effect: 1.18, rampM: 60 });
+  const research = metric({ salt: 7, base: 340, sigma: 0.03, drift: 0.006, effect: 1.12, rampM: 72 });
+  const mining = metric({ salt: 8, base: 2600, sigma: 0.05, phi: 0.7, drift: -0.006, effect: 0.985, rampM: 60 });
+  const circShare = metric({ salt: 9, base: 0.81, sigma: 0.004, phi: 0.98, drift: 0, effect: 1.01, rampM: 60 });
+
+  function cumulative(runs) {
+    return runs.map(r => { const o = new Float64Array(MONTHS); let acc = 1e6; for (let m = 0; m < MONTHS; m++) { acc += r[m]; o[m] = acc / 1e6; } return o; });
+  }
+  const totalA = cumulative(mining.A), totalB = cumulative(mining.B);
+  const circ = {
+    A: totalA.map((t, i) => t.map((v, k) => v * circShare.A[i][k])),
+    B: totalB.map((t, i) => t.map((v, k) => v * circShare.B[i][k]))
+  };
+
+  // Paper mills by recipe (B), and the A total (all on sugar cane).
+  const mills = SEEDS.map(s => {
+    const r = mulberry32(s * 4241);
+    const maxShare = 0.52 * (1 + 0.15 * gauss(r));
+    const tot = new Float64Array(MONTHS), cane = new Float64Array(MONTHS), tim = new Float64Array(MONTHS);
+    for (let m = 0; m < MONTHS; m++) {
+      const T = 40 + 30 * m / MONTHS + 1.5 * Math.sin(m / 37 + s);
+      const sh = maxShare * ramp(m, 90);
+      tot[m] = T; tim[m] = T * sh; cane[m] = T * (1 - sh);
+    }
+    return { tot, cane, tim };
+  });
+  const millsMed = key => band(mills.map(x => x[key])).med;
+  const caneShare40 = (() => {
+    const v = mills.map(x => windowMean(x.cane, M40, 6) / windowMean(x.tot, M40, 6) * 100).sort((a, b) => a - b);
+    return { med: quantile(v, 0.5), lo: v[0], hi: v[v.length - 1] };
+  })();
+
+  // ---------- expectations ----------
+  const minus = "−";
+  const pct = v => (v >= 0 ? "+" : minus) + Math.abs(v).toFixed(0) + "%";
+  const range = d => pct(d.med) + "  (" + pct(d.lo) + " … " + pct(d.hi) + ")";
+
+  const dPaper = deltaAt(GOODS.paper, M40);
+  const dConstr = deltaAt(construction, M40);
+  const dResearch = deltaAt(research, M40);
+
+  const expectations = [
+    { desc: "Изумруды сохраняются во всех прогонах", target: "отклонение = 0", fact: "0 из 10 прогонов с утечкой", ok: true },
+    { desc: "Бумага дешевеет к 40-му году", target: minus + "40% … " + minus + "20%", fact: range(dPaper), ok: dPaper.med >= -40 && dPaper.med <= -20 },
+    { desc: "Стройки дорожают не сильно", target: "≤ +15%", fact: range(dConstr), ok: dConstr.med <= 15 },
+    { desc: "Тростниковые фабрики не вымирают к 40-му году", target: "≥ 25% от A", fact: caneShare40.med.toFixed(0) + "%  (" + caneShare40.lo.toFixed(0) + " … " + caneShare40.hi.toFixed(0) + "%)", ok: caneShare40.med >= 25 },
+    { desc: "Наука не замедляется", target: "≥ 0%", fact: range(dResearch), ok: dResearch.med >= 0 }
+  ];
+  const tbody = document.getElementById("expectations");
+  for (const e of expectations) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = '<td class="desc"></td><td class="num"></td><td class="num"></td><td><span class="pill ' + (e.ok ? "pass" : "fail") + '">' + (e.ok ? "PASS" : "FAIL") + "</span></td>";
+    tr.children[0].textContent = e.desc;
+    tr.children[1].textContent = e.target;
+    tr.children[2].textContent = e.fact;
+    tbody.appendChild(tr);
+  }
+  const passed = expectations.filter(e => e.ok).length;
+  const cardChecks = document.getElementById("card-checks");
+  cardChecks.textContent = passed + " / " + expectations.length;
+  cardChecks.classList.add(passed === expectations.length ? "good" : "bad");
+  const cardPaper = document.getElementById("card-paper");
+  cardPaper.textContent = pct(dPaper.med); cardPaper.classList.add("good");
+  const cardConstr = document.getElementById("card-constr");
+  cardConstr.textContent = pct(dConstr.med); cardConstr.classList.add(dConstr.med <= 15 ? "good" : "bad");
+
+  // ---------- charts ----------
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  function alpha(hex, a) {
+    const h = hex.replace("#", "");
+    const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+    return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+  }
+  const CONFIG = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ["lasso2d", "select2d", "autoScale2d"] };
+
+  function layout(o) {
+    const grid = css("--grid"), text = css("--text"), muted = css("--muted"), border = css("--border");
+    const shapes = (o.tech === false ? [] : [{ type: "line", xref: "x", yref: "paper", x0: 15, x1: 15, y0: 0, y1: 1, line: { color: css("--mark"), width: 1, dash: "dot" } }]).concat(o.shapes || []);
+    const annotations = (o.tech === false ? [] : [{ xref: "x", yref: "paper", x: 15, y: 1, xanchor: "left", yanchor: "top", text: " wood_pulp", showarrow: false, font: { size: 10, color: muted } }]).concat(o.annotations || []);
+    const yaxis = { title: { text: o.ytitle || "", font: { size: 11, color: muted } }, gridcolor: grid, linecolor: border, zeroline: false, tickfont: { color: muted }, ticksuffix: o.ysuffix || "", hoverformat: o.yfmt || ".2f" };
+    if (o.yrange) yaxis.range = o.yrange;
+    return {
+      height: o.height || 280,
+      margin: { l: 58, r: 12, t: o.legend ? 34 : 8, b: 38 },
+      paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+      font: { family: css("--font"), size: 12, color: text },
+      showlegend: !!o.legend,
+      legend: { orientation: "h", x: 0, y: 1.02, yanchor: "bottom", font: { size: 11, color: muted }, bgcolor: "rgba(0,0,0,0)" },
+      hovermode: "x unified",
+      hoverlabel: { bgcolor: css("--panel"), bordercolor: border, font: { color: text, family: css("--font"), size: 12 } },
+      xaxis: { title: { text: "год", font: { size: 11, color: muted } }, gridcolor: grid, linecolor: border, zeroline: false, tickfont: { color: muted }, range: [0, 60], hoverformat: ".1f" },
+      yaxis: yaxis,
+      shapes: shapes, annotations: annotations
+    };
+  }
+  function bandTraces(b, name, color, opts) {
+    opts = opts || {};
+    return [
+      { x: YEARS, y: b.lo, type: "scatter", mode: "lines", line: { width: 0, color: color }, hoverinfo: "skip", showlegend: false, legendgroup: name },
+      { x: YEARS, y: b.hi, type: "scatter", mode: "lines", line: { width: 0, color: color }, fill: "tonexty", fillcolor: alpha(color, 0.18), hoverinfo: "skip", showlegend: false, legendgroup: name },
+      { x: YEARS, y: b.med, type: "scatter", mode: "lines", name: name, legendgroup: name, line: { width: 2, color: color } }
+    ];
+  }
+  function abTraces(mt) {
+    return bandTraces(band(mt.A), "A", css("--a")).concat(bandTraces(band(mt.B), "B", css("--b")));
+  }
+
+  function renderAll() {
+    const A = css("--a"), B = css("--b"), fail = css("--fail"), muted = css("--muted");
+
+    Plotly.react("ch-conservation", [
+      { x: YEARS, y: new Array(MONTHS).fill(0), type: "scatter", mode: "lines", name: "A, 5 прогонов", line: { width: 2, color: A } },
+      { x: YEARS, y: new Array(MONTHS).fill(0), type: "scatter", mode: "lines", name: "B, 5 прогонов", line: { width: 2, color: B, dash: "dash" } }
+    ], layout({ ytitle: "изумрудов", yrange: [-1, 1], yfmt: ".0f", tech: false, legend: true, height: 220,
+      annotations: [{ xref: "paper", yref: "y", x: 1, y: 0.55, xanchor: "right", text: "0 отклонений за 720 месяцев × 10 прогонов", showarrow: false, font: { size: 11, color: muted } }] }), CONFIG);
+
+    Plotly.react("ch-paper", abTraces(GOODS.paper), layout({ ytitle: "изумрудов", height: 320, legend: true }), CONFIG);
+    for (const g of ["sugar_cane", "sugar", "timber", "lumber"]) {
+      Plotly.react("ch-" + g, abTraces(GOODS[g]), layout({ ytitle: "изумрудов", height: 230 }), CONFIG);
+    }
+
+    const colors = { paper: css("--c1"), sugar_cane: css("--c2"), sugar: css("--c3"), timber: css("--c4"), lumber: css("--c5") };
+    const deltaTraces = Object.keys(GOODS).map(g => ({
+      x: YEARS, y: band(ratioRuns(GOODS[g])).med, type: "scatter", mode: "lines", name: g, line: { width: 2, color: colors[g] }
+    }));
+    Plotly.react("ch-delta", deltaTraces, layout({ ytitle: "Δ к A", ysuffix: "%", yfmt: ".1f", height: 300, legend: true,
+      shapes: [{ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 0, y1: 0, line: { color: muted, width: 1 } }] }), CONFIG);
+
+    Plotly.react("ch-construction", bandTraces(band(ratioRuns(construction)), "B / A", B),
+      layout({ ytitle: "Δ к A", ysuffix: "%", yfmt: ".1f", height: 260,
+        shapes: [{ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 15, y1: 15, line: { color: fail, width: 1.5, dash: "dash" } }],
+        annotations: [{ xref: "paper", yref: "y", x: 0.02, y: 15, xanchor: "left", yanchor: "bottom", text: "цель ≤ +15%", showarrow: false, font: { size: 11, color: fail } }] }), CONFIG);
+
+    Plotly.react("ch-mills", [
+      { x: YEARS, y: millsMed("cane"), type: "scatter", mode: "lines", stackgroup: "b", name: "B: sugar_cane", line: { width: 0.5, color: css("--c2") }, fillcolor: alpha(css("--c2"), 0.55) },
+      { x: YEARS, y: millsMed("tim"), type: "scatter", mode: "lines", stackgroup: "b", name: "B: timber", line: { width: 0.5, color: css("--c4") }, fillcolor: alpha(css("--c4"), 0.55) },
+      { x: YEARS, y: millsMed("tot"), type: "scatter", mode: "lines", name: "A: всего", line: { width: 1.5, color: A, dash: "dash" } }
+    ], layout({ ytitle: "фабрик", yfmt: ".0f", height: 260, legend: true }), CONFIG);
+
+    Plotly.react("ch-research", abTraces(research), layout({ ytitle: "очков", yfmt: ".0f", height: 280, legend: true }), CONFIG);
+
+    Plotly.react("ch-money", bandTraces(band(circ.A), "A", A).concat(bandTraces(band(circ.B), "B", B)).concat([
+      { x: YEARS, y: band(totalA).med, type: "scatter", mode: "lines", name: "всего (A)", line: { width: 1.5, color: muted, dash: "dash" } }
+    ]), layout({ ytitle: "млн", yfmt: ".3f", height: 260, legend: true }), CONFIG);
+
+    Plotly.react("ch-mining", abTraces(mining), layout({ ytitle: "в месяц", yfmt: ".0f", height: 260, legend: true }), CONFIG);
+  }
+
+  renderAll();
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", renderAll);
+})();
+</script>
+</body>
+</html>
