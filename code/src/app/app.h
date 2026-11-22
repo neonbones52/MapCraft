@@ -71,7 +71,7 @@ namespace mc
         std::vector<ProvinceFill> fills_;
         std::vector<BorderStyle> styles_;
         bool camera_ready_ = false;
-        double time_ = 0.0;
+        double time_ = 0.0;   // s, the clock of animated block textures (stopped when zoomed out)
         std::uint32_t hovered_ = 0;
     };
 }

@@ -180,13 +180,11 @@ namespace mc
             renderer_.set_selection(context, selection_);
             selection_dirty_ = false;
         }
-        time_ += dt;
         camera_.update(input, dt, view_width, view_height);
 
         FrameView view;
         view.camera = camera_.view(view_width, view_height);
         hovered_ = province_under(view.camera, input.cursor_x, input.cursor_y);
-        view.time = static_cast<float>(std::fmod(time_, 3600.0));
         view.hovered = hovered_;
         view.map_mode = static_cast<std::uint32_t>(map_mode_);
         // From the 10th zoom level (counted from the whole map as the 1st) the provinces' names replace the mode's
@@ -203,6 +201,12 @@ namespace mc
             model_fades_[g] = std::clamp(model_fades_[g] + (models_shown_[g] ? fade_step : -fade_step), 0.0f, 1.0f);
         }
         view.model_fades = model_fades_;
+        // Animated block textures (water) stand still while the houses are hidden: they stop on the frame they show
+        // and go on from it when the houses come back (the same hysteresis).
+        if (models_shown_[static_cast<std::size_t>(ModelSet::Group::settlements)]) {
+            time_ += dt;
+        }
+        view.time = static_cast<float>(std::fmod(time_, 3600.0));
         const float step = dt / kNamesFade;
         province_names_ = std::clamp(province_names_ + (provinces_shown ? step : -step), 0.0f, 1.0f);
         view.mode_names_alpha = 1.0f - province_names_;
