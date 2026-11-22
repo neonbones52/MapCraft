@@ -358,7 +358,7 @@ struct ModelInstance
     float3 pos;
     float  scale;
     uint   mesh;
-    uint   turn;
+    uint   turn_flags;   // quarter turns | 4: takes the map mode's fill
     uint   foliage;
     uint   grass;
 };
@@ -378,8 +378,11 @@ struct ModelOut
     float4 pos   : SV_Position;
     float2 uv    : TEXCOORD0;
     float2 map   : TEXCOORD1;
-    float3 color : TEXCOORD2;
+    float3 color : TEXCOORD2;                   // the block's tint
     nointerpolation uint layer : TEXCOORD3;
+    nointerpolation float shade : TEXCOORD6;    // Minecraft's directional shade of the face
+    nointerpolation float4 fill : TEXCOORD4;    // the map mode's fill of its province, a = 0 for none
+    nointerpolation float hover : TEXCOORD5;
 };
 
 float3 rgba8(uint c)
@@ -392,7 +395,7 @@ ModelOut vs_model(uint vid : SV_VertexID, uint iid : SV_InstanceID)
     ModelVertex v = model_vertices[model_first_vertex + vid];
     ModelInstance inst = model_instances[model_first + iid];
     float2 xz = v.pos.xz;
-    for (uint t = 0; t < (inst.turn & 3); ++t) {
+    for (uint t = 0; t < (inst.turn_flags & 3); ++t) {
         xz = float2(-xz.y, xz.x);   // a quarter turn clockwise seen from above: north becomes east
     }
     float3 world = inst.pos + inst.scale * float3(xz.x, v.pos.y, -xz.y);   // Minecraft's south is the map's +y
@@ -403,8 +406,18 @@ ModelOut vs_model(uint vid : SV_VertexID, uint iid : SV_InstanceID)
     o.pos = mul(float4(world, 1.0), view_proj);
     o.uv = v.uv;
     o.map = float2(world.x, -world.z);
-    o.color = tint * (((v.packed >> 16) & 255) / 255.0);
+    o.color = tint;
+    o.shade = ((v.packed >> 16) & 255) / 255.0;
     o.layer = v.packed & 0xFFFF;
+    // The province it stands in, read once at its ground point, so a whole tree takes one colour.
+    o.fill = float4(0.0, 0.0, 0.0, 0.0);
+    o.hover = 0.0;
+    if ((inst.turn_flags & 4) != 0) {
+        int2 m = clamp(int2(inst.pos.x, -inst.pos.z), int2(0, 0), int2(map_size) - 1);
+        uint pid = province_ids.Load(int3(m, 0));
+        o.fill = fills[pid];
+        o.hover = (hovered != 0 && pid == hovered) ? 1.0 : 0.0;
+    }
     return o;
 }
 
@@ -412,7 +425,14 @@ float4 ps_model(ModelOut input) : SV_Target
 {
     float4 texel = model_layers.Sample(s_point, float3(input.uv, input.layer));
     clip(texel.a - 0.5);
-    float3 color = texel.rgb * input.color;
+    float3 base = texel.rgb * input.color;
+    float3 color = base;
+    if (map_mode != 0) {   // as the blocks: EU4's political shading (ps_terrain)
+        float grey = lerp(0.36, dot(base, GREYIFY), 0.5);
+        color = lerp(base, (0.4 * grey + 0.45 * input.fill.rgb) * 1.35, input.fill.a);
+    }
+    color *= input.shade;
+    color = lerp(color, color * 1.2 + 0.06, input.hover * 0.6);
     float2 m = input.map;
     float edge = min(min(m.x, m.y), min(map_size.x - m.x, map_size.y - m.y));
     color = lerp(color, FOG_COLOR, 1.0 - smoothstep(0.0, FOG_WIDTH, edge));

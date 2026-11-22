@@ -232,14 +232,14 @@ namespace mc
             }
         }
         auto place = [&](std::uint32_t mesh, float x, float y, float z, float scale, std::uint32_t turn,
-                         std::size_t block) {
+                         std::size_t block, std::uint32_t flags = 0) {
             ModelSet::Instance instance{};
             instance.pos[0] = x;
             instance.pos[1] = y;
             instance.pos[2] = z;
             instance.scale = scale;
             instance.mesh = mesh;
-            instance.turn = turn & 3;
+            instance.turn_flags = (turn & ModelSet::kTurnMask) | flags;
             instance.foliage = foliage[std::min<std::size_t>(map.block_biome[block], foliage.size() - 1)];
             instance.grass = block < look.grass_tint.size() ? look.grass_tint[block] : 0xFFFFFFFFu;
             out->instances.push_back(instance);
@@ -416,7 +416,7 @@ namespace mc
                 const float cx = (static_cast<float>(x) + 0.5f + jx) * bs;
                 const float cy = (static_cast<float>(y) + 0.5f + jy) * bs;
                 place(mesh, cx, static_cast<float>(map.block_ground[i] - 1) * bs, -cy, feature_scale[feature],
-                      hash(ux, uy, 5), i);
+                      hash(ux, uy, 5), i, ModelSet::kFilled);   // trees take the map mode's colour, as the blocks
             }
         }
         return true;

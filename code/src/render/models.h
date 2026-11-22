@@ -40,13 +40,15 @@ namespace mc
             std::uint32_t count = 0;
         };
         // A placed copy: world position of its ground point, world units per block, a quarter turn (0..3, clockwise
-        // seen from above, as Minecraft turns north to east), and the colours of the ground it stands on.
+        // seen from above, as Minecraft turns north to east) with flags, and the colours of the ground it stands on.
+        static constexpr std::uint32_t kTurnMask = 3;
+        static constexpr std::uint32_t kFilled = 4;   // takes the map mode's fill of the province it stands in
         struct Instance
         {
             float pos[3];
             float scale;
             std::uint32_t mesh;
-            std::uint32_t turn;
+            std::uint32_t turn_flags;   // turn | kFilled
             std::uint32_t foliage;   // RGBA8
             std::uint32_t grass;     // RGBA8
         };
