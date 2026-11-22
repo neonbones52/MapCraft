@@ -30,7 +30,7 @@ from validate_land import FOUR, LAND, PALETTE, Report, WASTE, load
 LAND_LINE, REGION_LINE, PROVINCE_LINE = 1, 2, 3
 COLORS = {(255, 0, 0): LAND_LINE, (255, 255, 0): REGION_LINE, (0, 255, 255): PROVINCE_LINE}
 NAMES = {LAND_LINE: 'land', REGION_LINE: 'region', PROVINCE_LINE: 'province'}
-LAND_PROVINCES = 850            # provinces on the passable land
+LAND_PROVINCES = 700            # provinces on the passable land in all: fixed ones and islands included
 LANDS = 18                      # expected lands, for the size of a sliver
 MIN_LAND_SHARE = 0.1            # pieces below this share of an expected land join the nearest land
 FIXED_PROVINCE = (0.15, 3.0)    # a fixed province outside these multiples of an average province is reported

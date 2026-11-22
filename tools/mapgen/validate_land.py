@@ -10,6 +10,7 @@ from scipy import ndimage
 WIDTH, HEIGHT = 1152, 576   # blocks; a block is 4x4 px of the map
 MIN_ISLAND = 4              # blocks
 MIN_LAKE = 156              # blocks; smaller lakes are decorative (2500 px of the map)
+MIN_SEA = 190               # blocks; smaller water at the map edge is a lake, smaller sea provinces join a neighbour
 MIN_THIN_CLUSTER = 5
 
 SEA, LAND, LAKE, WASTE = 0, 1, 2, 3

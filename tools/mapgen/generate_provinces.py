@@ -1,17 +1,18 @@
 """Cut the map into regions and provinces on the block grid (one pixel per block) and name everything.
 
 Reads the map sources in the repository root through the other mapgen modules: heightmap.png (heightmap.py),
-wasteland.png and borders.png (border_lines.py), biome.png (biomes.py), rivers.png (river_paths.py).
+wasteland.png and borders.png (border_lines.py), biome.png (biomes.py).
 
 - Lands are the user's land lines (border_lines.py). A land is cut into regions of about REGION_PROVINCES provinces; region
   lines, where drawn, cut it first. A piece too small to be a region (an island) joins the nearest region of its land.
-- The passable land holds LAND_PROVINCES provinces, given to regions by area. A piece cut off by province lines is one
-  fixed province; the rest of every region is cut automatically. An island is never part of a province elsewhere: a
-  piece of a province on another landmass becomes a province of its own (on top of LAND_PROVINCES).
-- Both cuts are geodesic Voronoi diagrams relaxed with Lloyd iterations. A step costs 1 + noise, RIVER_COST more into a
-  river block and STEP_COST more per height step, so borders run along rivers and ridges. Cells never leave their zone.
+- The passable land holds LAND_PROVINCES provinces in all, given to regions by area. A piece cut off by province lines
+  is one fixed province; the rest of every region is cut automatically. An island is never part of a province
+  elsewhere: a piece of a province on another landmass becomes a province of its own, and the automatic cut is redone
+  with as many cells fewer.
+- Both cuts are geodesic Voronoi diagrams relaxed with Lloyd iterations. A step costs 1 + noise and STEP_COST more per
+  height step, so borders run along ridges; rivers cost nothing extra. Cells never leave their zone.
 - Every connected piece of wasteland is one province; every lake of at least MIN_LAKE blocks is one; decorative lakes
-  join the province around them. The sea is cut into coastal and open sea provinces.
+  join the province around them. The sea is cut into coastal and open sea provinces, each one 4-connected piece.
 - Names come from names.py, after the biome, height and coast of each place.
 
     python tools/mapgen/generate_provinces.py   # -> build/provinces/: provinces.png/.csv, regions.png/.csv,
@@ -30,25 +31,22 @@ from scipy import ndimage
 from scipy.cluster.vq import kmeans2
 
 from biomes import read_biomes
-from border_lines import assign_lands, fixed_cells, passable_land, read_borders
+from border_lines import LAND_PROVINCES, assign_lands, fixed_cells, passable_land, read_borders
 from heightmap import ROOT, read_blocks
 from names import Namer
 from palette import distinct_colors
-from river_paths import read_lines, river_mask, trace
-from validate_land import FOUR, LAKE, MIN_LAKE, SEA
+from validate_land import FOUR, LAKE, MIN_LAKE, MIN_SEA, SEA
 
-LAND_PROVINCES = 850          # provinces on the passable land, fixed ones included
-REGION_PROVINCES = 8          # provinces per automatic region
+ISLAND_TRIES = 4              # automatic cuts tried until the islands cut off match the cells left out for them
+REGION_PROVINCES = 8         # provinces per automatic region
 SATELLITE_SHARE = 0.35        # pieces smaller than this share of a cell join their neighbours instead of getting one
 LLOYD_STEPS = 6
 NOISE_STRENGTH = 1.0          # step cost = 1 + NOISE_STRENGTH * fractal noise in [0, 1]
-RIVER_COST = 10.0             # extra cost of stepping into a river block
-STEP_COST = 3.0               # extra cost per height step climbed or descended
+STEP_COST = 6.0               # extra cost per height step climbed or descended
 COAST_BAND = 28               # blocks of sea along the coast that form the coastal zone
 COAST_PROVINCE = 1400         # blocks per coastal sea province
 OPEN_PROVINCE = 5600          # blocks per open sea province
-MIN_OPEN_RADIUS = 18          # blocks; open sea pieces narrower than twice this join the coastal zone
-MIN_SEA_PROVINCE = 190        # blocks; smaller sea provinces join the sea neighbour they share most border with
+MIN_OPEN_RADIUS = 18          # blocks; open sea narrower than twice this anywhere (a strip, a neck, a piece) is coastal
 SEA_NECK = 2                  # blocks; parts of a sea province narrower than 2 * SEA_NECK + 1 go to a sea neighbour
 LAKE_DENSITY = 1.5            # province density on the shore of a lake province, times the biome's density
 LAKE_REACH = 40               # blocks from the lake where its extra density fades out
@@ -312,15 +310,54 @@ def trim_necks(labels, radius):
     return moved
 
 
+def settle_sea(labels, minimum):
+    """Every sea province ends as one 4-connected piece: every piece of a province but its largest becomes a province
+    of its own, then the smallest province under `minimum` blocks joins, whole, the sea neighbour it shares most border
+    with, until none is left. A water body without another sea province stays one, whatever its size. -> labels
+    renumbered densely."""
+    labels = labels.copy()
+    next_label = int(labels.max())
+    for label, box in enumerate(ndimage.find_objects(labels), 1):
+        if box is None:
+            continue
+        parts, count = ndimage.label(labels[box] == label, FOUR)
+        if count < 2:
+            continue
+        keep = int(np.argmax(np.bincount(parts.ravel())[1:])) + 1
+        for part in range(1, count + 1):
+            if part != keep:
+                next_label += 1
+                labels[box][parts == part] = next_label
+    while True:
+        areas = np.bincount(labels.ravel())
+        small = sorted((label for label in np.flatnonzero((areas > 0) & (areas < minimum)) if label > 0),
+                       key=lambda label: areas[label])
+        if not small:
+            break
+        pairs = adjacency(labels)
+        for label in small:
+            border = {b if a == label else a: length for (a, b), length in pairs.items() if label in (a, b)}
+            if border:
+                labels[labels == label] = max(border, key=border.get)
+                break
+        else:
+            break
+    used = np.unique(labels[labels > 0])
+    remap = np.zeros(labels.max() + 1, np.int32)
+    remap[used] = np.arange(1, len(used) + 1)
+    return remap[labels]
+
+
 def plan_sea(classes, noise, rng, cost, height, log):
     """Coastal and open sea zones, then sea provinces in them."""
     sea = classes == SEA
     distance = ndimage.distance_transform_edt(sea)
     coastal = sea & (distance + 10 * (noise - 0.5) <= COAST_BAND)
-    open_parts, open_count = ndimage.label(sea & ~coastal, FOUR)
-    radius = ndimage.maximum(ndimage.distance_transform_edt(open_parts > 0), open_parts, range(1, open_count + 1))
-    thin = [index + 1 for index, value in enumerate(np.atleast_1d(radius)) if value < MIN_OPEN_RADIUS]
-    coastal |= np.isin(open_parts, thin)
+    open_sea = sea & ~coastal                            # opened by a disc: what no disc of the radius covers is coastal
+    core = ndimage.distance_transform_edt(open_sea) >= MIN_OPEN_RADIUS
+    coastal |= open_sea & (ndimage.distance_transform_edt(~core) > MIN_OPEN_RADIUS)
+    open_parts, _ = ndimage.label(sea & ~coastal, FOUR)  # a piece too small for an open province: inner water, coastal
+    coastal |= (open_parts > 0) & (np.bincount(open_parts.ravel())[open_parts] < OPEN_PROVINCE / 2)
     zone = np.zeros(classes.shape, np.int32)
     counts, opened = {}, {}
     next_zone = 1
@@ -334,7 +371,7 @@ def plan_sea(classes, noise, rng, cost, height, log):
             next_zone += 1
     labels, owner = cut(zone, counts, np.ones_like(cost), np.zeros_like(height), np.ones_like(cost), rng)
     moved = trim_necks(labels, SEA_NECK)
-    labels = merge_small(labels, np.where(sea, 1, 0), MIN_SEA_PROVINCE)
+    labels = settle_sea(labels, MIN_SEA)
     log.append(f'sea: coastal zone {int(coastal.sum())} blocks, open {int((sea & ~coastal).sum())} blocks, '
                f'{labels.max()} provinces; {moved} blocks of narrow necks moved to neighbours')
     open_sea = np.zeros(labels.max() + 1, bool)
@@ -402,20 +439,13 @@ def main():
         if problems:
             raise ValueError('borders.png: ' + '; '.join(problems))
         biomes, biome_rows = read_biomes()
-        kinds_of_lines, problems = read_lines()
-        if problems:
-            raise ValueError('rivers.png: ' + '; '.join(problems))
     except (ValueError, FileNotFoundError) as error:
         sys.stderr.write(f'{error}\n')
         return 1
-    rivers, river_problems = trace(kinds_of_lines, classes)
-    if river_problems:
-        log.append(f'rivers.png has {len(river_problems)} problems; run river_paths.py')
-    river = river_mask(rivers, steps)
     biome_keys = [''] + [row['key'] for row in biome_rows]
     rng = np.random.default_rng(SEED)
     noise = fractal_noise(classes.shape, rng)
-    cost = (1.0 + NOISE_STRENGTH * noise + RIVER_COST * river).astype(np.float32)
+    cost = (1.0 + NOISE_STRENGTH * noise).astype(np.float32)
     height = steps.astype(np.float32)
     weight = density(biomes, biome_rows, classes)
     province_area = float(weight[passable].sum()) / LAND_PROVINCES        # weighted blocks per province
@@ -448,17 +478,23 @@ def main():
     free_zone = np.where(passable & ~in_fixed, regions, 0)
     free_areas = np.bincount(free_zone.ravel(), weight.ravel(), minlength=region_count + 1)[1:]
     present = [r + 1 for r in range(region_count) if free_areas[r] > 0]
-    numbers = allocate([free_areas[r - 1] for r in present], LAND_PROVINCES - len(fixed))
-    provinces, owner = cut(free_zone, dict(zip(present, numbers)), cost, height, weight, rng)
-    province_region = list(owner[1:])
     landmass, _ = ndimage.label(land, FOUR)
-    islands = separate_islands(provinces, landmass)
+    left_out = 0                                         # cells left out for the islands the cut will cut off
+    for _ in range(ISLAND_TRIES):
+        numbers = allocate([free_areas[r - 1] for r in present], LAND_PROVINCES - len(fixed) - left_out)
+        provinces, owner = cut(free_zone, dict(zip(present, numbers)), cost, height, weight, rng)
+        islands = separate_islands(provinces, landmass)
+        if len(islands) == left_out:
+            break
+        left_out = len(islands)
+    province_region = list(owner[1:])
     province_region += [province_region[source - 1] for _, source in islands]
     free_count = int(provinces.max())
     for k, cell in enumerate(sorted(fixed), 1):
         mine = cells == cell
         provinces[mine] = free_count + k
         province_region.append(int(np.bincount(regions[mine]).argmax()))
+    repair_fragments(provinces, np.array([0] + province_region, np.int32)[provinces])  # pieces cut off by fixed ones
     land_province_count = int(provinces.max())
     log.append(f'land: {land_count} lands, {region_count} regions, {land_province_count} provinces '
                f'({len(fixed)} fixed, {len(islands)} islands cut off from provinces elsewhere)')
@@ -513,6 +549,8 @@ def main():
             mine = labels == pid
             ring = ndimage.binary_dilation(mine, FOUR) & ~mine & (biomes > 0)
             lake_biome[pid] = int(np.bincount(biomes[ring]).argmax()) if ring.any() else 1
+    _, (near_y, near_x) = ndimage.distance_transform_edt(biomes == 0, return_indices=True)
+    shore_biome = dominant(biomes[near_y, near_x].astype(np.int64), labels, total)     # nearest land's biome
     for pid in range(1, total + 1):
         if kind[pid] == LAND:
             names[pid] = namer.province(biome_keys[biome_of[pid]], mean_step[pid], coast[pid])
@@ -521,7 +559,7 @@ def main():
         elif kind[pid] == LAKE_KIND:
             names[pid] = namer.lake(biome_keys[lake_biome[pid]])
         else:
-            names[pid] = namer.sea(bool(open_sea[pid - next_id]))
+            names[pid] = namer.sea(bool(open_sea[pid - next_id]), biome_keys[shore_biome[pid]])
 
     # Files.
     colors = distinct_colors(total, seed=11)
@@ -584,7 +622,8 @@ def main():
     region_sizes = np.bincount(region_of[1:land_province_count + 1], minlength=region_count + 1)[1:]
     log.append(f'provinces per region: min {region_sizes.min()} median {int(np.median(region_sizes))} '
                f'max {region_sizes.max()}')
-    log.append(f'multi-piece land provinces: {sum(1 for pid in range(1, land_province_count + 1) if pieces[pid] > 1)}')
+    log.append(f'multi-piece land provinces: {sum(1 for pid in range(1, land_province_count + 1) if pieces[pid] > 1)}, '
+               f'sea: {sum(1 for pid in range(next_id + 1, total + 1) if pieces[pid] > 1)}')
     log.append(f'adjacencies: {len(pairs)}')
     text = '\n'.join(log)
     (out / 'report.txt').write_text(text + '\n', encoding='utf-8', newline='\n')

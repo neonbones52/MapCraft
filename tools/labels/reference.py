@@ -80,7 +80,7 @@ def map_data():
 
 
 def map_font():
-    return MapFont(ROOT / 'build' / 'fonts' / 'mapfont.fnt', ROOT / 'blockyfont.otf')   # the ttf only draws previews
+    return MapFont(ROOT / 'build' / 'fonts' / 'mapfont.fnt', ROOT / 'fonts' / 'blockyfont.otf')   # the ttf only draws previews
 
 
 def to_map(label, height):

@@ -1,108 +1,88 @@
 id,color,name,parent,provinces
-1,#7F65DD,Wolf Vale,The Northern Hinterland,8
-2,#36952F,The Rime Crags,The Northern Hinterland,9
-3,#BD4771,Flint Range,The Northern Hinterland,6
-4,#68B0D7,Ice Valley,The Northern Hinterland,11
-5,#AFB45A,Powdershire,The Northern Hinterland,8
-6,#9B3FB8,Owl Hills,The Northern Hinterland,7
-7,#43D789,Bearshire,The Northern Hinterland,8
-8,#A9351C,Boulder Hundred,The Northern Hinterland,6
-9,#3D4ED3,Podzol Hundred,The Northern Hinterland,8
-10,#5C8C3C,Rabbit March,The Sunny Marches,7
-11,#AA1B7F,Tulip Hundred,The Sunny Marches,8
-12,#62E5E7,The Lantern Marches,The Sunny Marches,7
-13,#BC983B,Sunflower Hundred,The Sunny Marches,7
-14,#51228F,Wheat Valley,The Sunny Marches,10
-15,#2FB241,Sheep Hundred,The Sunny Marches,7
-16,#CF6A7A,Carrot Downs,The Sunny Marches,9
-17,#1C57A1,Potato Valley,The Sunny Marches,11
-18,#8BAA32,Frost Weald,The Golden Heartland,4
-19,#D136D5,Poppyshire,The Golden Heartland,9
-20,#68E0B9,Lantern Downs,The Golden Heartland,10
-21,#D1763C,Cow Valley,The Green Marches,6
-22,#3628B7,The Dandelion Fields,The Green Marches,7
-23,#5AE538,Emerald Range,The Green Marches,8
-24,#E273AA,Beetroot Vale,The Green Marches,6
-25,#4AA4BD,Wheat Hundred,The Green Marches,10
-26,#D3CB67,Cornflower March,The Green Marches,10
-27,#B563E5,Tulip Vale,The Green Marches,6
-28,#56C57C,The Meadow Peaks,The Green Marches,10
-29,#CA554F,Leaf Valley,The Green Marches,8
-30,#4A5E9E,The Cornflower Marches,The Green Marches,10
-31,#8CD836,The Villager Marches,The Fair Lowlands,11
-32,#EA4BCE,Rabbit Weald,The Fair Lowlands,10
-33,#6AE3D5,The Cow Fields,The Fair Lowlands,7
-34,#EEBC73,Zombieshire,The Fair Lowlands,7
-35,#673CCA,Pumpkin Vale,The Fair Lowlands,8
-36,#23DC25,Thorn Hundred,The Leafy Hinterland,11
-37,#912241,The Owl Crags,The Leafy Hinterland,6
-38,#3B6F94,The Oak Peaks,The Leafy Hinterland,8
-39,#96A24C,The Bog Fields,The Leafy Hinterland,7
-40,#851F99,Spidershire,The Leafy Hinterland,6
-41,#52BE8D,Tadpoleshire,The Leafy Hinterland,7
-42,#EE6232,The Coal Fields,The Burning Shires,8
-43,#2B2FA2,Ember Hundred,The Burning Shires,9
-44,#74D446,The Rabbit Marches,The Burning Shires,7
-45,#D16EAB,Andesite Range,The Burning Shires,9
-46,#50BDC8,Armadillo Hills,The Burning Shires,7
-47,#D0B23A,Pyramidshire,The Burning Shires,4
-48,#8443C4,The Lapis Crags,The Burning Shires,10
-49,#59BE6F,Diorite Hundred,The Fair Reaches,6
-50,#BD5E65,The Mire Marches,The Fair Reaches,7
-51,#497FDB,Wool March,The Fair Reaches,8
-52,#708E37,Oak Vale,The Fair Reaches,11
-53,#A1369B,The Carrot Marches,The Fair Reaches,9
-54,#2DB393,Saddleshire,The Fair Reaches,8
-55,#E99D5C,Cobble March,The Fair Reaches,7
-56,#5745AF,The Mushroom Marches,The Fair Reaches,8
-57,#5ABD4D,Pig Weald,The Sunny Shires,4
-58,#C4648B,The Hay Fields,The Sunny Shires,8
-59,#2395C5,Bee Valley,The Sunny Wilds,5
-60,#EBEC3B,Cow March,The Sunny Wilds,8
-61,#A72ED8,The Poppy Fields,The Sunny Wilds,7
-62,#32DF7B,The Hollow Marches,The Sunny Wilds,8
-63,#BD6254,Sunflower March,The Sunny Wilds,8
-64,#4454A6,Cow Downs,The Sunny Wilds,7
-65,#6CAC37,The Sunflower Fields,The Sunny Wilds,10
-66,#C73CA4,Mud Hundred,The Mossy Marches,9
-67,#5EB9B6,Root Vale,The Mossy Marches,8
-68,#D4AA53,Cauldron Hills,The Mossy Marches,9
-69,#6E519D,Cane Vale,The Mossy Marches,8
-70,#3EB549,Clay Hills,The Mossy Marches,10
-71,#AE314A,Lilyshire,The Mossy Marches,9
-72,#6EACEB,Bog Valley,The Mossy Marches,11
-73,#899B46,The Cocoa Marches,The Mossy Marches,3
-74,#A74CAE,Liana Hills,The Mossy Marches,3
-75,#59C29B,Goat Highlands,The Lofty Shires,9
-76,#99451A,Saddle Valley,The Lofty Shires,6
-77,#5550D0,The Bat Marches,The Lofty Shires,10
-78,#5FF22F,Oak Highlands,The Lofty Shires,8
-79,#C36095,Horseshire,The Green Dominion,6
-80,#1C7D91,Bell Weald,The Green Dominion,7
-81,#9D9031,Cobble Vale,The Green Dominion,8
-82,#A239EB,Honey Vale,The Green Dominion,14
-83,#2F8D4A,Bread Valley,The Green Dominion,6
-84,#B6605F,Meadow March,The Fair Wilds,6
-85,#2248A4,Villager Hills,The Fair Wilds,7
-86,#7EB533,Carrot Hills,The Fair Wilds,7
-87,#D45EC4,Emerald Valley,The Fair Wilds,10
-88,#4CB2A1,Cow Hills,The Sunny Reaches,13
-89,#BE7C2E,Dandelionshire,The Sunny Reaches,7
-90,#522DC0,Tallgrass Range,The Dry Uplands,7
-91,#5DB95A,Scute Mountains,The Dry Uplands,8
-92,#C5275C,Creeper Hundred,The Dry Uplands,9
-93,#17608C,Tallgrass Hills,The Dry Uplands,8
-94,#CFDA5A,Skull March,The Golden Lands,6
-95,#A736C5,Sun Hundred,The Golden Lands,9
-96,#41E593,The Dune Fields,The Golden Lands,9
-97,#C45336,Sun March,The Golden Lands,6
-98,#434FD0,Acacia Hundred,The Golden Lands,10
-99,#84D057,Skull Valley,The Golden Lands,8
-100,#DC43A9,The Cactus Marches,The Golden Lands,6
-101,#338B8F,The Meadow Marches,The Burning Shires,5
-102,#E3BD4C,Creeper Vale,The Wild Lowlands,6
-103,#7F3CCD,Bamboo Hills,The Wild Lowlands,4
-104,#45B057,Creeper Downs,The Wild Lowlands,16
-105,#942634,Melon Valley,The Wild Lowlands,11
-106,#2E7AE5,Armadillo Weald,The Wild Lowlands,9
-107,#749A19,Canopy Vale,The Wild Lowlands,7
+1,#7F65DD,Frost Vale,The Northern Hinterland,4
+2,#36952F,Rime Hundred,The Northern Hinterland,12
+3,#BD4771,Ice Valley,The Northern Hinterland,5
+4,#68B0D7,Powdershire,The Northern Hinterland,11
+5,#AFB45A,Pine Hills,The Northern Hinterland,12
+6,#9B3FB8,The Copper Peaks,The Northern Hinterland,8
+7,#43D789,Chicken Hundred,The Sunny Marches,6
+8,#A9351C,Honey Hundred,The Sunny Marches,8
+9,#3D4ED3,Lily March,The Sunny Marches,8
+10,#5C8C3C,Tulip Hundred,The Sunny Marches,7
+11,#AA1B7F,The Lantern Marches,The Sunny Marches,11
+12,#62E5E7,Sunflower Hundred,The Sunny Marches,8
+13,#BC983B,Wheat Valley,The Sunny Marches,10
+14,#51228F,Sheep Hundred,The Golden Heartland,9
+15,#2FB241,Carrot Downs,The Golden Heartland,10
+16,#CF6A7A,Potato Valley,The Green Marches,15
+17,#1C57A1,Potato Weald,The Green Marches,7
+18,#8BAA32,Poppyshire,The Green Marches,6
+19,#D136D5,Cobweb Downs,The Green Marches,7
+20,#68E0B9,Cow Valley,The Green Marches,6
+21,#D1763C,The Dandelion Fields,The Green Marches,5
+22,#3628B7,Beetroot Vale,The Green Marches,7
+23,#5AE538,Wheat Hundred,The Green Marches,11
+24,#E273AA,The Copper Crags,The Green Marches,6
+25,#4AA4BD,Tulip Vale,The Fair Lowlands,9
+26,#D3CB67,Meadowshire,The Fair Lowlands,7
+27,#B563E5,Sheep Valley,The Fair Lowlands,6
+28,#56C57C,The Creeper Marches,The Fair Lowlands,6
+29,#CA554F,The Villager Marches,The Fair Lowlands,9
+30,#4A5E9E,Drowned Weald,The Leafy Hinterland,8
+31,#8CD836,The Spider Fields,The Leafy Hinterland,7
+32,#EA4BCE,Zombieshire,The Leafy Hinterland,7
+33,#6AE3D5,Moss Mountains,The Leafy Hinterland,7
+34,#EEBC73,The Thorn Crags,The Leafy Hinterland,8
+35,#673CCA,The Gold Crags,The Burning Shires,9
+36,#23DC25,The Sand Marches,The Burning Shires,6
+37,#912241,The Bone Fields,The Burning Shires,10
+38,#3B6F94,Emeraldshire,The Burning Shires,7
+39,#96A24C,Rabbitshire,The Burning Shires,6
+40,#851F99,The Beetroot Fields,The Burning Shires,5
+41,#52BE8D,The Wool Marches,The Fair Reaches,9
+42,#EE6232,Mushroom Valley,The Fair Reaches,7
+43,#2B2FA2,Redstone Hills,The Fair Reaches,8
+44,#74D446,Oxeyeshire,The Fair Reaches,12
+45,#D16EAB,Villager Hundred,The Fair Reaches,8
+46,#50BDC8,Lily Hundred,The Fair Reaches,5
+47,#D0B23A,The Oxeye Marches,The Fair Reaches,6
+48,#8443C4,Wool March,The Sunny Shires,12
+49,#59BE6F,Oak Vale,The Sunny Wilds,6
+50,#BD5E65,The Carrot Marches,The Sunny Wilds,6
+51,#497FDB,Saddleshire,The Sunny Wilds,10
+52,#708E37,Fox March,The Sunny Wilds,8
+53,#A1369B,Pig Weald,The Sunny Wilds,7
+54,#2DB393,The Hay Fields,The Sunny Wilds,9
+55,#E99D5C,Mire Valley,The Mossy Marches,6
+56,#5745AF,Witch Hundred,The Mossy Marches,5
+57,#5ABD4D,Witch March,The Mossy Marches,10
+58,#C4648B,The Bog Fields,The Mossy Marches,7
+59,#2395C5,The Tadpole Marches,The Mossy Marches,8
+60,#EBEC3B,Moss March,The Mossy Marches,7
+61,#A72ED8,Witch Downs,The Mossy Marches,10
+62,#32DF7B,The Leaf Fields,The Mossy Marches,6
+63,#BD6254,The Oak Crags,The Lofty Shires,9
+64,#4454A6,Lantern Hills,The Lofty Shires,5
+65,#6CAC37,Gravel Vale,The Lofty Shires,9
+66,#C73CA4,Pickaxe Mountains,The Lofty Shires,6
+67,#5EB9B6,Pumpkinshire,The Green Dominion,10
+68,#D4AA53,Poppy Valley,The Green Dominion,10
+69,#6E519D,The Hay Marches,The Green Dominion,6
+70,#3EB549,Bread Hills,The Green Dominion,6
+71,#AE314A,Panda Weald,The Fair Wilds,8
+72,#6EACEB,Saddle Valley,The Fair Wilds,10
+73,#899B46,The Bloom Marches,The Fair Wilds,12
+74,#A74CAE,Wheat Downs,The Sunny Reaches,6
+75,#59C29B,Horseshire,The Sunny Reaches,12
+76,#99451A,Bloom Weald,The Dry Uplands,8
+77,#5550D0,Horse Vale,The Dry Uplands,11
+78,#5FF22F,Sunbaked Mountains,The Dry Uplands,7
+79,#C36095,Scute Valley,The Golden Lands,9
+80,#1C7D91,Dune March,The Golden Lands,9
+81,#9D9031,Armadillo Mountains,The Golden Lands,7
+82,#A239EB,Dust Hills,The Golden Lands,9
+83,#2F8D4A,Emerald Valley,The Wild Lowlands,5
+84,#B6605F,Llama Hills,The Wild Lowlands,8
+85,#2248A4,Fernshire,The Wild Lowlands,8
+86,#7EB533,Leaf Valley,The Wild Lowlands,8
+87,#D45EC4,Liana Vale,The Wild Lowlands,14

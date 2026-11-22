@@ -7,7 +7,7 @@ Azgaar draws a height h (land 20..100) as d3.interpolateGreys(1 - h/100); the gr
 Greys below the sea level are the sea depth bands and the anti-aliasing along the coast: water.
 
 A block is land when most of its pixels are; its step is round((mean h - 20) / H_PER_STEP), so h 100 is STEPS.
-Water that does not reach the map edge is a lake. A 2x2 of blocks touching only diagonally is resolved by flipping
+Water that does not reach the map edge, or is smaller than MIN_SEA blocks, is a lake. A 2x2 of blocks touching only diagonally is resolved by flipping
 the block whose vote was the closest to a tie.
 
     python tools/mapgen/heightmap.py      # heightmap.png -> land.png + build/heightmap/steps.png (preview)
@@ -19,13 +19,13 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-from validate_land import FOUR, HEIGHT, LAKE, LAND, PALETTE, SEA, WIDTH
+from validate_land import FOUR, HEIGHT, LAKE, LAND, MIN_SEA, PALETTE, SEA, WIDTH
 
 ROOT = Path(__file__).resolve().parents[2]
 BLOCK = 4                   # export px per block side
 SEA_LEVEL = 20              # Azgaar height of the coast
-H_PER_STEP = 2.5            # Azgaar height per block step
-STEPS = 32                  # step of h = 100
+H_PER_STEP = 5.0            # Azgaar height per block step
+STEPS = 16                  # step of h = 100
 SCHEME_TOLERANCE = 2.0      # grey levels a land pixel may differ from the scheme
 MAX_OFF_SCHEME = 0.001      # share of land pixels allowed off the scheme (anti-aliasing between bands)
 
@@ -117,7 +117,9 @@ def read_blocks(path=ROOT / 'heightmap.png'):
     edge = np.unique(np.concatenate([water[0], water[-1], water[:, 0], water[:, -1]]))
     classes = np.full(land.shape, LAND, np.uint8)
     classes[~land] = LAKE
-    classes[np.isin(water, edge[edge > 0])] = SEA
+    sizes = np.bincount(water.ravel())
+    seas = [body for body in edge if body > 0 and sizes[body] >= MIN_SEA]
+    classes[np.isin(water, seas)] = SEA
 
     histogram = np.bincount(steps[land], minlength=STEPS + 1)
     lakes = np.bincount(water[classes == LAKE])

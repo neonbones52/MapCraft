@@ -33,7 +33,7 @@ from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parents[2]
-FONT = ROOT / 'blockyfont.otf'
+FONT = ROOT / 'fonts' / 'blockyfont.otf'
 WEIGHT = 700               # for a variable font: Mapfont is bold=1
 LINE_HEIGHT = 100          # Mapfont.fnt common lineHeight
 BASE = 78                  # Mapfont.fnt common base

@@ -1,7 +1,7 @@
 """Place names in the spirit of Minecraft's overworld: nature, blocks, items and mobs; no End, no Nether.
 
 A name grows from a root that fits the place (its biome, its height, whether it lies on the coast or what kind of
-water it is) and a place word: Oakhollow, Cobble Crag, Sprucewatch, the Mossy Reaches, Kelp Sound, Lake Lilymere.
+water it is; a sea takes the climate of the land nearest to it) and a place word: Oakhollow, Cobble Crag, Sprucewatch, the Mossy Reaches, Kelp Sound, Lake Lilymere.
 Every name is unique within one Namer; the same seed and the same requests give the same names.
 """
 import numpy as np
@@ -52,9 +52,14 @@ LAND_ADJECTIVES = {
 REGION_PATTERNS = ['{root} Vale', '{root} Hills', 'The {root} Marches', '{root}shire', '{root} Downs', '{root} Weald',
                    '{root} Valley', 'The {root} Fields', '{root} Hundred', '{root} March']
 REGION_HIGH = ['{root} Mountains', 'The {root} Peaks', '{root} Highlands', '{root} Range', 'The {root} Crags']
-SEA_ROOTS = ['Kelp', 'Coral', 'Prismarine', 'Squid', 'Turtle', 'Dolphin', 'Salmon', 'Cod', 'Guardian', 'Drowned',
-             'Puffer', 'Tide', 'Nautilus', 'Seagrass', 'Sponge', 'Glow Squid', 'Pearl', 'Trident', 'Conduit', 'Wreck',
-             'Shell', 'Bubble', 'Riptide', 'Anchor', 'Sail', 'Gull', 'Shipwreck', 'Ink', 'Sea Lantern', 'Tropical']
+SEA_ROOTS = {         # 'any' fits every sea; a warm or cold sea also draws from its climate's list
+    'any': ['Kelp', 'Prismarine', 'Squid', 'Guardian', 'Drowned', 'Tide', 'Seagrass', 'Sponge', 'Glow Squid', 'Trident',
+            'Conduit', 'Wreck', 'Shell', 'Bubble', 'Riptide', 'Anchor', 'Sail', 'Gull', 'Shipwreck', 'Ink',
+            'Sea Lantern', 'Dolphin', 'Nautilus'],
+    'warm': ['Coral', 'Tropical', 'Turtle', 'Puffer', 'Sea Pickle', 'Pearl', 'Brain Coral', 'Fire Coral', 'Lagoon'],
+    'cold': ['Cod', 'Salmon', 'Ice', 'Floe', 'Frost', 'Polar Bear', 'Iceberg', 'Blue Ice', 'Stray'],
+}
+SEA_CLIMATE = {'jungle': 'warm', 'savannah': 'warm', 'desert': 'warm', 'taiga': 'cold'}   # other biomes: temperate
 SEA_COASTAL = ['{root} Bay', '{root} Sound', '{root} Shallows', 'Gulf of {root}', '{root} Strait', '{root} Inlet',
                '{root} Waters', '{root} Reef', '{root} Firth', '{root} Roads']
 SEA_OPEN = ['{root} Sea', '{root} Deep', '{root} Ocean', 'The {root} Expanse', '{root} Abyss', '{root} Trench']
@@ -90,7 +95,7 @@ class Namer:
     def province(self, biome, step, coast):
         """A settlement-like name: one word mostly, two words sometimes."""
         def make():
-            kind = 'coast' if coast and self.rng.random() < 0.45 else 'high' if step >= 20 and self.rng.random() < 0.6 \
+            kind = 'coast' if coast and self.rng.random() < 0.45 else 'high' if step >= 10 and self.rng.random() < 0.6 \
                 else 'wet' if biome == 'swamp' and self.rng.random() < 0.5 \
                 else 'dry' if biome in ('desert', 'savannah') and self.rng.random() < 0.35 else 'any'
             root, suffix = self.root(biome), self.pick(SUFFIXES[kind])
@@ -103,16 +108,18 @@ class Namer:
         return self.unique(make)
 
     def region(self, biome, step):
-        patterns = REGION_HIGH if step >= 18 else REGION_PATTERNS
+        patterns = REGION_HIGH if step >= 9 else REGION_PATTERNS
         return self.unique(lambda: self.pick(patterns).format(root=self.root(biome)))
 
     def land(self, biome):
         adjectives = LAND_ADJECTIVES.get(biome, LAND_ADJECTIVES['plains'])
         return self.unique(lambda: f'The {self.pick(adjectives)} {self.pick(LAND_NOUNS)}')
 
-    def sea(self, open_sea):
+    def sea(self, open_sea, biome):
+        """`biome`: the biome of the land nearest to the sea, for its climate."""
         patterns = SEA_OPEN if open_sea else SEA_COASTAL
-        return self.unique(lambda: self.pick(patterns).format(root=self.pick(SEA_ROOTS)))
+        roots = SEA_ROOTS['any'] + SEA_ROOTS.get(SEA_CLIMATE.get(biome, ''), [])
+        return self.unique(lambda: self.pick(patterns).format(root=self.pick(roots)))
 
     def lake(self, biome):
         return self.unique(lambda: self.pick(LAKE_PATTERNS).format(root=self.root(biome)))

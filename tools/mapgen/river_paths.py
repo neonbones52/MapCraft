@@ -25,7 +25,7 @@ from validate_land import HEIGHT, LAKE, LAND, SEA, WIDTH
 
 BROOK, RIVER, SOURCE, JOIN, SPLIT = 1, 2, 3, 4, 5
 COLORS = {(0, 225, 255): BROOK, (0, 100, 255): RIVER, (0, 255, 0): SOURCE, (255, 0, 0): JOIN, (255, 252, 0): SPLIT}
-CARVE = 2               # steps a river may cut below its banks where the ground rises (1 elsewhere)
+CARVE = 1               # steps a river may cut below its banks where the ground rises
 JOIN_REACH = 2          # last blocks of a tributary allowed to touch the river it joins
 FOUR_STEPS = ((0, 1), (1, 0), (0, -1), (-1, 0))
 DIAGONALS = ((1, 1), (1, -1), (-1, 1), (-1, -1))
@@ -191,21 +191,6 @@ def uphill(rivers, steps):
         if levels[river['into']][near] > levels[index][-1] + CARVE:
             found.append((x, y, fmt(river), levels[river['into']][near] - levels[index][-1]))
     return found
-
-
-def river_mask(rivers, steps):
-    """-> bool per block: the blocks of every river path, plus, where a path steps diagonally, the lower of the two
-    corner blocks, so the water is 4-connected."""
-    mask = np.zeros(steps.shape, bool)
-    for river in rivers:
-        path = river['path']
-        for (y0, x0), (y1, x1) in zip(path, path[1:]):
-            if y0 != y1 and x0 != x1:
-                a, b = (y0, x1), (y1, x0)
-                mask[a if steps[a] <= steps[b] else b] = True
-        for p in path:
-            mask[p] = True
-    return mask
 
 
 def preview(classes, steps, rivers, marks, scale=2):
