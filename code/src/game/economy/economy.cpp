@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
-#include <vector>
 
 #include "game/economy/ledger.h"
 
@@ -11,9 +10,9 @@ namespace mc
 {
     namespace
     {
-        std::size_t account(const Pops& pops, std::size_t type, std::uint32_t province)
+        std::uint32_t account(const Pops& pops, std::size_t type, std::uint32_t province)
         {
-            return type * pops.stride + province;
+            return static_cast<std::uint32_t>(type * pops.stride + province);
         }
 
         // Mining: an RGO whose outputs hold the money good mints, every day, workers x its amount per worker into
@@ -33,7 +32,7 @@ namespace mc
                     }
                     const double workers = pops.at(rgos.workers[rgo], p);
                     const Money amount = to_grains(workers * static_cast<double>(rgos.output_amount[o]));
-                    const std::size_t owners = account(pops, rgos.owners[rgo], p);
+                    const std::uint32_t owners = account(pops, rgos.owners[rgo], p);
                     ledger::mint(&state->money, owners, amount, Flow::mine);
                     const auto wage = static_cast<Money>(std::floor(static_cast<double>(amount) * rgos.wages[rgo]));
                     ledger::transfer(&state->money, owners, account(pops, rgos.workers[rgo], p), wage, Flow::wages);
@@ -59,171 +58,183 @@ namespace mc
             }
         }
 
+        // Buys `fill` units of a tier from its goods in `order`, cheapest first, out of `supply`: what each good gives
+        // goes to `taken`; returns the fill got and the emeralds it costs in `spent`.
+        double walk(const Content& content, std::size_t tier, const std::vector<std::uint8_t>& order,
+                    const std::vector<double>& supply, double fill, std::vector<double>* taken, double* spent)
+        {
+            const std::vector<std::uint8_t>& goods = content.needs.good[tier];
+            const std::vector<float>& weights = content.needs.weight[tier];
+            std::fill(taken->begin(), taken->end(), 0.0);
+            *spent = 0.0;
+            double got = 0.0;
+            for (const std::uint8_t i : order) {
+                const double take = std::min(supply[i] * weights[i], fill - got);
+                if (take <= 0.0) {
+                    continue;
+                }
+                (*taken)[i] = take / weights[i];
+                *spent += (*taken)[i] * content.goods_price[goods[i]];
+                got += take;
+            }
+            return got;
+        }
+
         // One tier of needs on one market (docs/GAMEDATA.md, "Экономика дня"): the market buys its pops' demand of
         // the tier from the goods that fill it, cheapest per unit of the tier first, at fixed prices; short supply
         // gives every pop the same share, min(1, S/D); a pop short of cash buys what its cash pays for. Each RGO
         // sells the same share of its stock of a good; the money goes to its workers and owners by its wage share.
-        class TierClearing
+        // Every step is a pass over the market's columns in the cache.
+        void clear_tier(const Content& content, WorldState* state, EconomyCache* c, std::size_t market,
+                        std::size_t tier)
         {
-        public:
-            TierClearing(const Content& content, WorldState* state, const std::vector<std::uint32_t>& provinces,
-                         std::size_t tier)
-                : content_(content), state_(*state), provinces_(provinces), tier_(tier),
-                  goods_(content.needs.good[tier]), weights_(content.needs.weight[tier])
-            {
+            const std::vector<std::uint8_t>& goods = content.needs.good[tier];
+            const std::vector<std::uint8_t>& order = c->tier_order[tier];
+            const std::uint32_t p0 = c->province_first[market];
+            const std::uint32_t p1 = c->province_first[market + 1];
+            const std::uint32_t e0 = c->pop_first[market];
+            const std::uint32_t e1 = c->pop_first[market + 1];
+            const std::size_t pops = e1 - e0;
+            Column<float>& filled = state->pops.filled[tier];
+
+            // Demand, per pop and in all.
+            c->want.resize(pops);
+            double demand = 0.0;
+            for (std::size_t e = 0; e < pops; ++e) {
+                c->want[e] = static_cast<double>(content.pop_types.need[c->pop_type[e0 + e]][tier]) *
+                             state->pops.size[c->pop_account[e0 + e]];
+                demand += c->want[e];
+            }
+            // Supply: the stock of each good of the tier over the market's provinces.
+            c->supply.assign(goods.size(), 0.0);
+            c->taken.assign(goods.size(), 0.0);
+            for (std::size_t i = 0; i < goods.size(); ++i) {
+                const float* row = &state->stock.amount[goods[i] * state->stock.stride];
+                for (std::uint32_t k = p0; k < p1; ++k) {
+                    c->supply[i] += row[c->province[k]];
+                }
+            }
+            double spent = 0.0;
+            const double got = demand > 0.0 ? walk(content, tier, order, c->supply, demand, &c->taken, &spent) : 0.0;
+            if (got <= 0.0) {
+                for (std::size_t e = 0; e < pops; ++e) {
+                    filled[c->pop_account[e0 + e]] = 0.0f;
+                }
+                return;
+            }
+            const double share = got / demand;   // min(1, S/D)
+            const double cost = spent / got;     // emeralds per unit of the tier
+
+            // What each pop can pay for, then what that costs bought cheapest first.
+            c->fill.resize(pops);
+            double bought = 0.0;
+            for (std::size_t e = 0; e < pops; ++e) {
+                const double cash = to_emeralds(state->money.cash[c->pop_account[e0 + e]]);
+                c->fill[e] = std::min(share * c->want[e], cash / cost);
+                bought += c->fill[e];
+            }
+            const double paid = bought > 0.0 ? walk(content, tier, order, c->supply, bought, &c->taken, &spent) : 0.0;
+            const double price = paid > 0.0 ? spent / paid : 0.0;
+            c->pay.resize(pops);
+            for (std::size_t e = 0; e < pops; ++e) {
+                const std::uint32_t a = c->pop_account[e0 + e];
+                c->pay[e] = std::min(to_grains(c->fill[e] * price), state->money.cash[a]);
+                filled[a] = c->want[e] > 0.0 ? static_cast<float>(c->fill[e] / c->want[e]) : 0.0f;
             }
 
-            void run()
-            {
-                const std::size_t n = goods_.size();
-                order_.resize(n);
-                std::iota(order_.begin(), order_.end(), std::size_t{ 0 });
-                std::sort(order_.begin(), order_.end(), [&](std::size_t a, std::size_t b) {
-                    const float ca = content_.goods_price[goods_[a]] / weights_[a];
-                    const float cb = content_.goods_price[goods_[b]] / weights_[b];
-                    return ca != cb ? ca < cb : goods_[a] < goods_[b];
-                });
-                supply_.assign(n, 0.0);
-                for (std::size_t i = 0; i < n; ++i) {
-                    for (const std::uint32_t p : provinces_) {
-                        supply_[i] += state_.stock.at(goods_[i], p);
-                    }
+            // Sellers: each RGO the same share of its stock of each good taken; paid by revenue.
+            const RgoTypes& rgos = content.rgo_types;
+            c->payee.clear();
+            c->weight.clear();
+            for (std::size_t i = 0; i < goods.size(); ++i) {
+                if (c->taken[i] <= 0.0 || c->supply[i] <= 0.0) {
+                    continue;
                 }
-
-                // What the pops want, then what the market has of it.
-                const Pops& pops = state_.pops;
-                double demand = 0.0;
-                for (const std::uint32_t p : provinces_) {
-                    for (std::size_t t = 1; t < pops.types; ++t) {
-                        demand += static_cast<double>(content_.pop_types.need[t][tier_]) * pops.at(t, p);
-                    }
-                }
-                if (demand <= 0.0) {
-                    return;
-                }
-                const double filled = walk(demand);
-                if (filled <= 0.0) {
-                    return;   // nothing on the market fills this tier: every pop gets 0 (filled was reset)
-                }
-                const double share = filled / demand;               // min(1, S/D)
-                const double cost = spent_ / filled;                 // emeralds per unit of the tier
-
-                // What each pop can pay for.
-                buyers_.clear();
-                double bought = 0.0;
-                for (const std::uint32_t p : provinces_) {
-                    for (std::size_t t = 1; t < pops.types; ++t) {
-                        const double want = static_cast<double>(content_.pop_types.need[t][tier_]) * pops.at(t, p);
-                        if (want <= 0.0) {
-                            continue;
-                        }
-                        const std::size_t a = account(pops, t, p);
-                        const double cash = to_emeralds(state_.money.cash[a]);
-                        const double fill = std::min(share * want, cash / cost);
-                        buyers_.push_back({ a, want, fill });
-                        bought += fill;
-                    }
-                }
-                if (bought <= 0.0) {
-                    return;
-                }
-                const double price = walk(bought) > 0.0 ? spent_ / bought : 0.0;   // cheapest first: <= cost
-
-                payers_.clear();
-                for (const Buyer& b : buyers_) {
-                    const Money pay = std::min(to_grains(b.fill * price), state_.money.cash[b.account]);
-                    payers_.push_back({ b.account, pay });
-                    state_.pops.filled[tier_][b.account] = static_cast<float>(b.fill / b.want);
-                }
-                sell();
-                ledger::settle(&state_.money, payers_, payees_, Flow::sales);
-            }
-
-        private:
-            struct Buyer
-            {
-                std::size_t account;
-                double want;    // units of the tier
-                double fill;    // bought
-            };
-
-            // Buys `fill` units of the tier, cheapest first: taken_ per good, spent_ in emeralds; returns the fill got.
-            double walk(double fill)
-            {
-                taken_.assign(goods_.size(), 0.0);
-                spent_ = 0.0;
-                double got = 0.0;
-                for (const std::size_t i : order_) {
-                    const double take = std::min(supply_[i] * weights_[i], fill - got);
-                    if (take <= 0.0) {
+                const double part = std::min(c->taken[i] / c->supply[i], 1.0);
+                const double unit = content.goods_price[goods[i]];
+                float* row = &state->stock.amount[goods[i] * state->stock.stride];
+                for (std::uint32_t k = p0; k < p1; ++k) {
+                    const std::uint32_t p = c->province[k];
+                    const std::uint8_t rgo = state->provinces.rgo[p];
+                    if (row[p] <= 0.0f || rgo == 0) {
                         continue;
                     }
-                    taken_[i] = take / weights_[i];
-                    spent_ += taken_[i] * content_.goods_price[goods_[i]];
-                    got += take;
+                    const double sold = row[p] * part;
+                    row[p] = part >= 1.0 ? 0.0f : static_cast<float>(row[p] - sold);
+                    const double wages = rgos.wages[rgo];
+                    c->payee.push_back(account(state->pops, rgos.workers[rgo], p));
+                    c->weight.push_back(sold * unit * wages);
+                    c->payee.push_back(account(state->pops, rgos.owners[rgo], p));
+                    c->weight.push_back(sold * unit * (1.0 - wages));
                 }
-                return got;
             }
+            ledger::settle(&state->money, { c->pop_account.data() + e0, pops }, c->pay, c->payee, c->weight, Flow::sales);
+        }
+    }
 
-            // Each RGO of the market sells the same share of its stock of each good taken; payees by revenue.
-            void sell()
-            {
-                const RgoTypes& rgos = content_.rgo_types;
-                payees_.clear();
-                for (std::size_t i = 0; i < goods_.size(); ++i) {
-                    if (taken_[i] <= 0.0 || supply_[i] <= 0.0) {
-                        continue;
-                    }
-                    const double part = std::min(taken_[i] / supply_[i], 1.0);
-                    for (const std::uint32_t p : provinces_) {
-                        float& stock = state_.stock.at(goods_[i], p);
-                        const std::uint8_t rgo = state_.provinces.rgo[p];
-                        if (stock <= 0.0f || rgo == 0) {
-                            continue;
-                        }
-                        const double sold = stock * part;
-                        stock = part >= 1.0 ? 0.0f : static_cast<float>(stock - sold);
-                        const double revenue = sold * content_.goods_price[goods_[i]];
-                        const double wages = rgos.wages[rgo];
-                        payees_.push_back({ account(state_.pops, rgos.workers[rgo], p), revenue * wages });
-                        payees_.push_back({ account(state_.pops, rgos.owners[rgo], p), revenue * (1.0 - wages) });
-                    }
-                }
+    void prepare_economy(const Content& content, const WorldState& state, EconomyCache* c)
+    {
+        c->money_good = content.goods.find(kMoneyGood);
+        const std::size_t markets = content.markets.size();
+        const Pops& pops = state.pops;
+        std::vector<std::uint8_t> market_of(state.provinces.count, 0);
+        std::vector<std::uint32_t> count(markets + 1, 0);
+        for (std::uint32_t p = 1; p < state.provinces.count; ++p) {
+            const std::uint16_t region = content.province_region[p];
+            market_of[p] = region < state.regions.count ? state.regions.market[region] : 0;
+            ++count[market_of[p]];
+        }
+        // Counting sort by market: provinces by id within each, their pops by province then type.
+        const std::size_t types = pops.types > 0 ? pops.types - 1 : 0;
+        c->province_first.assign(markets + 1, 0);
+        c->pop_first.assign(markets + 1, 0);
+        for (std::size_t m = 1; m < markets; ++m) {
+            c->province_first[m + 1] = c->province_first[m] + count[m];
+            c->pop_first[m + 1] = c->pop_first[m] + static_cast<std::uint32_t>(count[m] * types);
+        }
+        if (markets > 0) {
+            c->province_first[0] = c->province_first[1] = 0;
+        }
+        c->province.assign(markets > 0 ? c->province_first[markets] : 0, 0);
+        c->pop_account.assign(markets > 0 ? c->pop_first[markets] : 0, 0);
+        c->pop_type.assign(c->pop_account.size(), 0);
+        std::vector<std::uint32_t> next(c->province_first.begin(), c->province_first.end());
+        for (std::uint32_t p = 1; p < state.provinces.count; ++p) {
+            const std::uint8_t m = market_of[p];
+            if (m == 0) {
+                continue;
             }
+            const std::uint32_t k = next[m]++;
+            c->province[k] = p;
+            const std::size_t e = c->pop_first[m] + (k - c->province_first[m]) * types;
+            for (std::size_t t = 1; t <= types; ++t) {
+                c->pop_account[e + t - 1] = account(pops, t, p);
+                c->pop_type[e + t - 1] = static_cast<std::uint8_t>(t);
+            }
+        }
 
-            const Content& content_;
-            WorldState& state_;
-            const std::vector<std::uint32_t>& provinces_;
-            std::size_t tier_;
-            const std::vector<std::uint8_t>& goods_;
-            const std::vector<float>& weights_;
-            std::vector<std::size_t> order_;
-            std::vector<double> supply_;
-            std::vector<double> taken_;
-            double spent_ = 0.0;
-            std::vector<Buyer> buyers_;
-            std::vector<ledger::Payment> payers_;
-            std::vector<ledger::Share> payees_;
-        };
+        // The goods of each tier by price per unit of the tier (prices are fixed), then by good: a full order.
+        for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
+            const std::vector<std::uint8_t>& goods = content.needs.good[tier];
+            const std::vector<float>& weights = content.needs.weight[tier];
+            std::vector<std::uint8_t>& order = c->tier_order[tier];
+            order.resize(goods.size());
+            std::iota(order.begin(), order.end(), std::uint8_t{ 0 });
+            std::sort(order.begin(), order.end(), [&](std::uint8_t a, std::uint8_t b) {
+                const float ca = content.goods_price[goods[a]] / weights[a];
+                const float cb = content.goods_price[goods[b]] / weights[b];
+                return ca != cb ? ca < cb : goods[a] < goods[b];
+            });
+        }
+    }
 
-        // Markets: the provinces of each market (by their region), then each tier in order on each market.
-        void trade(const Content& content, WorldState* state)
-        {
-            for (Column<float>& tier : state->pops.filled) {
-                std::fill(tier.begin(), tier.end(), 0.0f);
-            }
-            std::vector<std::vector<std::uint32_t>> markets(content.markets.size());
-            for (std::uint32_t p = 1; p < state->provinces.count; ++p) {
-                const std::uint16_t region = content.province_region[p];
-                const std::uint8_t market = region < state->regions.count ? state->regions.market[region] : 0;
-                if (market != 0) {
-                    markets[market].push_back(p);
-                }
-            }
-            for (std::size_t m = 1; m < markets.size(); ++m) {
-                for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
-                    TierClearing(content, state, markets[m], tier).run();
-                }
+    void economy_day(const Content& content, WorldState* state, EconomyCache* cache)
+    {
+        mine(content, state, cache->money_good);
+        produce(content, state, cache->money_good);
+        for (std::size_t m = 1; m + 1 < cache->province_first.size(); ++m) {
+            for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
+                clear_tier(content, state, cache, m, tier);
             }
         }
     }
@@ -239,13 +250,5 @@ namespace mc
             got += w * pops.filled[tier][account(pops, t, province)];
         }
         return want > 0.0 ? static_cast<float>(got / want) : -1.0f;
-    }
-
-    void economy_day(const Content& content, WorldState* state)
-    {
-        const int money_good = content.goods.find(kMoneyGood);
-        mine(content, state, money_good);
-        produce(content, state, money_good);
-        trade(content, state);
     }
 }

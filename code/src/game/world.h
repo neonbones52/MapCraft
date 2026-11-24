@@ -4,6 +4,7 @@
 #include <string>
 
 #include "game/calendar.h"
+#include "game/economy/economy.h"
 #include "game/game_data.h"
 
 namespace mc
@@ -43,6 +44,7 @@ namespace mc
 
         GameData data_;
         WorldState start_;              // the state as loaded, for restart
+        EconomyCache economy_;          // the day's index and scratch (not state: rebuilt on load and restart)
         std::uint32_t day_ = kStartDay;
         bool unbalanced_ = false;       // the money invariant broke (logged once)
     };

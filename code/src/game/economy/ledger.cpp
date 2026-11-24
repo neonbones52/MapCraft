@@ -40,13 +40,14 @@ namespace mc::ledger
         return true;
     }
 
-    void settle(Balances* money, std::span<const Payment> payers, std::span<const Share> payees, Flow flow)
+    void settle(Balances* money, std::span<const std::uint32_t> payers, std::span<const Money> amounts,
+                std::span<const std::uint32_t> payees, std::span<const double> weights, Flow flow)
     {
         double weight = 0.0;
         std::size_t largest = 0;
-        for (std::size_t i = 0; i < payees.size(); ++i) {
-            weight += payees[i].weight;
-            if (payees[i].weight > payees[largest].weight) {
+        for (std::size_t i = 0; i < weights.size(); ++i) {
+            weight += weights[i];
+            if (weights[i] > weights[largest]) {
                 largest = i;
             }
         }
@@ -54,17 +55,17 @@ namespace mc::ledger
             return;
         }
         Money total = 0;
-        for (const Payment& p : payers) {
-            money->cash[p.account] -= p.amount;
-            total += p.amount;
+        for (std::size_t i = 0; i < payers.size(); ++i) {
+            money->cash[payers[i]] -= amounts[i];
+            total += amounts[i];
         }
         Money given = 0;
-        for (const Share& s : payees) {
-            const Money part = static_cast<Money>(std::floor(static_cast<double>(total) * (s.weight / weight)));
-            money->cash[s.account] += part;
+        for (std::size_t i = 0; i < payees.size(); ++i) {
+            const auto part = static_cast<Money>(std::floor(static_cast<double>(total) * (weights[i] / weight)));
+            money->cash[payees[i]] += part;
             given += part;
         }
-        money->cash[payees[largest].account] += total - given;
+        money->cash[payees[largest]] += total - given;
         money->flows[static_cast<std::size_t>(flow)] += total;
     }
 

@@ -13,6 +13,7 @@ namespace mc
             return false;
         }
         start_ = data_.state;
+        prepare_economy(data_.content, data_.state, &economy_);
         log::info("world {}: {}", dir.string(), data_.summary());
         for (const std::string& w : data_.warnings) {
             log::warn("game data: {}", w);
@@ -30,7 +31,7 @@ namespace mc
 
     void World::tick_day()
     {
-        economy_day(data_.content, &data_.state);
+        economy_day(data_.content, &data_.state, &economy_);
         ++day_;
         if (!unbalanced_ && !ledger::balanced(data_.state.money)) {
             unbalanced_ = true;   // reported once: after the first break every day would repeat it
@@ -44,6 +45,7 @@ namespace mc
     {
         day_ = kStartDay;
         data_.state = start_;
+        prepare_economy(data_.content, data_.state, &economy_);
         unbalanced_ = false;
     }
 }
