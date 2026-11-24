@@ -6,7 +6,7 @@
 #include <format>
 #include <unordered_map>
 
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "minecraft/assets.h"
 #include "minecraft/voxels.h"
 
@@ -205,7 +205,7 @@ namespace mc
         }
     }
 
-    bool build_scenery(const MapData& map, const std::vector<const BiomeRow*>& biomes, const TerrainLook& look,
+    bool build_scenery(const MapView& map, const std::vector<const BiomeRow*>& biomes, const TerrainLook& look,
                        const minecraft::Assets& assets, ModelSet* out, std::string* error)
     {
         *out = ModelSet{};
@@ -252,7 +252,7 @@ namespace mc
         std::unordered_map<std::string, std::pair<std::uint32_t, float>> house_meshes;   // mesh, footprint (blocks)
         for (std::uint32_t pid = 1; pid < map.count; ++pid) {
             const std::uint16_t* site = &map.sites[std::size_t{ pid } * 6];
-            if (map.kind[pid] != ProvinceKind::land || site[0] == MapData::kNoSite) {
+            if (map.kind[pid] != ProvinceKind::land || site[0] == MapView::kNoSite) {
                 continue;
             }
             const int bx = site[0];
@@ -329,7 +329,7 @@ namespace mc
         }
         for (std::uint32_t pid = 1; pid < map.count; ++pid) {
             const std::uint16_t* site = &map.sites[std::size_t{ pid } * 6];
-            if (site[3] == MapData::kNoSite || site[5] > 3) {
+            if (site[3] == MapView::kNoSite || site[5] > 3) {
                 continue;
             }
             const int bx = site[3];

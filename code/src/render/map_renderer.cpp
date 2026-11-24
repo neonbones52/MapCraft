@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "render/shaders.h"
 
 namespace mc
@@ -99,7 +99,7 @@ namespace mc
         }
     }
 
-    bool MapRenderer::init(ID3D11Device* device, const MapData& map, const TerrainLook& look, const ModelSet& models,
+    bool MapRenderer::init(ID3D11Device* device, const MapView& map, const TerrainLook& look, const ModelSet& models,
                            std::string* error)
     {
         device_ = device;
@@ -146,7 +146,7 @@ namespace mc
         return vs("vs_border", border_vs_) && ps("ps_border", border_ps_);
     }
 
-    bool MapRenderer::create_borders(const MapData& map, std::string* error)
+    bool MapRenderer::create_borders(const MapView& map, std::string* error)
     {
         // Two vertices per polyline point, one on each side; segments longer than kBorderStep are split, so the strip
         // follows the blocks under it.
@@ -337,13 +337,13 @@ namespace mc
         return true;
     }
 
-    void MapRenderer::set_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
+    void MapRenderer::set_labels(const MapView& map, const LabelFont& font, std::span<const MapLabel> labels,
                                  std::span<const std::uint32_t> keys)
     {
         labels_.set_labels(device_.Get(), map, font, labels, keys);
     }
 
-    void MapRenderer::set_province_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
+    void MapRenderer::set_province_labels(const MapView& map, const LabelFont& font, std::span<const MapLabel> labels,
                                           std::span<const std::uint32_t> keys)
     {
         province_labels_.set_labels(device_.Get(), map, font, labels, keys);

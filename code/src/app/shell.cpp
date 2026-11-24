@@ -128,7 +128,7 @@ namespace mc
             app_.ensure_camera(view_width, view_height);
             const std::uint32_t id = seat(world_.state(), session_.player());
             if (id != 0) {
-                const MapData::Point city = app_.map().city_position(id);
+                const MapView::Point city = app_.map().city_position(id);
                 app_.camera().fly_to(city.x, city.y, Camera::scale_at_level_from_closest(kPlayZoomLevel), view_width,
                                      view_height);
             }

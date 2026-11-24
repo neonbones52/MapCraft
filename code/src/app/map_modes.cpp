@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "game/game_data.h"
-#include "core/map_data.h"
+#include "view/map_view.h"
 
 namespace mc
 {
@@ -58,7 +58,7 @@ namespace mc
         }
 
         // EU4's impassable provinces: the wastelands, land that no realm takes and names do not cross.
-        std::vector<std::uint8_t> impassable(const MapData& map)
+        std::vector<std::uint8_t> impassable(const MapView& map)
         {
             std::vector<std::uint8_t> out(map.count, 0);
             for (std::uint32_t id = 1; id < map.count; ++id) {
@@ -69,7 +69,7 @@ namespace mc
 
         // Names of province groups without capitals (regions): each key a "country" of EU4's
         // realm names, so every mode joins its pieces across straits and lakes the same way as the countries.
-        std::vector<MapLabel> group_names(const MapData& map, const LabelRaster& raster, const LabelFont& font,
+        std::vector<MapLabel> group_names(const MapView& map, const LabelRaster& raster, const LabelFont& font,
                                           std::vector<std::int32_t> owner, std::vector<std::string> names)
         {
             RealmNames realms;
@@ -84,7 +84,7 @@ namespace mc
             return generate_names(raster, font, realm_records(raster, realms));
         }
 
-        std::vector<MapLabel> region_names(const MapData& map, const LabelRaster& raster, const LabelFont& font)
+        std::vector<MapLabel> region_names(const MapView& map, const LabelRaster& raster, const LabelFont& font)
         {
             const std::uint32_t regions = map.region_count();
             std::vector<std::int32_t> owner(map.count, -1);
@@ -102,7 +102,7 @@ namespace mc
         }
 
         // The market of a province's region, 0 = none.
-        std::uint8_t market_of(const MapData& map, const GameData& game, std::uint32_t id)
+        std::uint8_t market_of(const MapView& map, const GameData& game, std::uint32_t id)
         {
             const std::uint16_t r = map.region[id];
             return r < game.state.regions.count ? game.state.regions.market[r] : std::uint8_t{ 0 };
@@ -123,7 +123,7 @@ namespace mc
             return t < 0.0f ? mix(even, cheap, -t) : mix(even, dear, t);
         }
 
-        std::vector<MapLabel> market_names(const MapData& map, const GameData& game, const LabelRaster& raster,
+        std::vector<MapLabel> market_names(const MapView& map, const GameData& game, const LabelRaster& raster,
                                            const LabelFont& font)
         {
             std::vector<std::int32_t> owner(map.count, -1);
@@ -136,7 +136,7 @@ namespace mc
             return group_names(map, raster, font, std::move(owner), game.content.markets.name);
         }
 
-        std::vector<MapLabel> country_names(const MapData& map, const GameData& game, const LabelRaster& raster,
+        std::vector<MapLabel> country_names(const MapView& map, const GameData& game, const LabelRaster& raster,
                                             const LabelFont& font)
         {
             // EU4's geography for the names of parts cut off from the capital: its regions are large (Western
@@ -195,7 +195,7 @@ namespace mc
         return "?";
     }
 
-    std::vector<MapLabel> map_mode_labels(const MapData& map, const GameData* game, const LabelRaster& raster,
+    std::vector<MapLabel> map_mode_labels(const MapView& map, const GameData* game, const LabelRaster& raster,
                                           const LabelFont& font, MapMode mode)
     {
         switch (mode) {
@@ -212,7 +212,7 @@ namespace mc
         }
     }
 
-    std::vector<std::uint32_t> map_mode_label_keys(const MapData& map, const GameData* game, MapMode mode)
+    std::vector<std::uint32_t> map_mode_label_keys(const MapView& map, const GameData* game, MapMode mode)
     {
         std::vector<std::uint32_t> keys(map.count, 0);
         const bool data = has_game(game);
@@ -234,7 +234,7 @@ namespace mc
         return keys;
     }
 
-    void map_mode_colors(const MapData& map, const GameData* game, MapMode mode, std::uint8_t price_good,
+    void map_mode_colors(const MapView& map, const GameData* game, MapMode mode, std::uint8_t price_good,
                          std::vector<ProvinceFill>* fills, std::vector<BorderStyle>* styles)
     {
         const bool data = has_game(game);

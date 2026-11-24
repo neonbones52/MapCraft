@@ -9,7 +9,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
     namespace minecraft
     {
         class Assets;
@@ -24,6 +24,6 @@ namespace mc
     //   the biome's `trees` features (grown from the jar's configured features, several variants each), none
     //   at or above `tree_line`, on the shore, on house sites or pier blocks.
     // `look` gives the grass colour per block; foliage takes the vanilla biome's colour.
-    bool build_scenery(const MapData& map, const std::vector<const BiomeRow*>& biomes, const TerrainLook& look,
+    bool build_scenery(const MapView& map, const std::vector<const BiomeRow*>& biomes, const TerrainLook& look,
                        const minecraft::Assets& assets, ModelSet* out, std::string* error);
 }

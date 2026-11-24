@@ -6,7 +6,7 @@
 #include <imgui.h>
 
 #include "game/game_data.h"
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "game/countries.h"
 #include "game/economy/economy.h"
 #include "game/economy/ledger.h"

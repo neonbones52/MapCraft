@@ -8,7 +8,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
     namespace minecraft
     {
         class Assets;
@@ -23,6 +23,6 @@ namespace mc
     //   the sea or a lake next to it (8 neighbours), else the biome's own;
     // - tints blended over 5 x 5 blocks (Minecraft's default biome blend).
     // Textures tinted by the grass colour: grass_block_top and every *_overlay; by the water colour: water_*.
-    bool build_terrain_look(const MapData& map, const std::vector<const BiomeRow*>& biomes,
+    bool build_terrain_look(const MapView& map, const std::vector<const BiomeRow*>& biomes,
                             const minecraft::Assets& assets, TerrainLook* look, std::string* error);
 }

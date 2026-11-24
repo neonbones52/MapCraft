@@ -12,7 +12,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
 
     // The map names (view/labels.h) as glyph quads lying on the blocks: every name is one flat plane at the median top
     // (ground or water) of the blocks under its letters, so it never steps. A name's pixel is hidden where blocks of
@@ -24,11 +24,11 @@ namespace mc
     class LabelLayer
     {
     public:
-        bool init(ID3D11Device* device, const MapData& map, std::string* error);
+        bool init(ID3D11Device* device, const MapView& map, std::string* error);
         // `keys`: per province id the group its names belong to (the province itself for province names; owner or
         // region for a map mode's names), 0 = none. A name's group is the most common key under its glyphs; blocks of
         // provinces of that group never hide it.
-        void set_labels(ID3D11Device* device, const MapData& map, const LabelFont& font,
+        void set_labels(ID3D11Device* device, const MapView& map, const LabelFont& font,
                         std::span<const MapLabel> labels, std::span<const std::uint32_t> keys);
         // Needs the renderer's state (frame constants b0, linear clamp sampler s0, the terrain's block data t4 and
         // constants b2) and an alpha blend state.
@@ -41,8 +41,8 @@ namespace mc
         using ComPtr = Microsoft::WRL::ComPtr<T>;
 
         // World height of a name's plane.
-        [[nodiscard]] static float plane_height(const MapData& map, const MapLabel& label);
-        [[nodiscard]] static std::uint32_t label_group(const MapData& map, const MapLabel& label,
+        [[nodiscard]] static float plane_height(const MapView& map, const MapLabel& label);
+        [[nodiscard]] static std::uint32_t label_group(const MapView& map, const MapLabel& label,
                                                        std::span<const std::uint32_t> keys);
 
         ComPtr<ID3D11VertexShader> vs_;

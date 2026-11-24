@@ -9,7 +9,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
 
     // What the blocks look like, prepared on the CPU (app/terrain_look.cpp): the block textures, the materials that
     // pick them by face and depth, and per block its material and tints. The renderer knows no files or biomes.
@@ -51,13 +51,13 @@ namespace mc
         std::vector<Material> materials;
         std::uint32_t water_still = 0;      // texture of water surfaces
         std::uint32_t water_flow = 0;       // texture of water falling down a step
-        // Per block (MapData block grid, rows top down).
+        // Per block (MapView block grid, rows top down).
         std::vector<std::uint8_t> block_material;
         std::vector<std::uint32_t> grass_tint;   // RGBA8, blended between biomes
         std::vector<std::uint32_t> water_tint;
     };
 
-    // The voxel surface (docs/RENDER.md): one height per block (MapData BHGT, BWTR), drawn as its visible faces only,
+    // The voxel surface (docs/RENDER.md): one height per block (MapView BHGT, BWTR), drawn as its visible faces only,
     // the tops and the sides of steps, merged into runs of equal height. What a face shows (texture, tint, Minecraft
     // face shading and ambient occlusion, map mode fill) is worked out per pixel from the block textures, so a run
     // can cross blocks of any material. Water is opaque: nothing under it is drawn. Where a river or lake stands
@@ -66,7 +66,7 @@ namespace mc
     class TerrainLayer
     {
     public:
-        bool init(ID3D11Device* device, const MapData& map, const TerrainLook& look, std::string* error);
+        bool init(ID3D11Device* device, const MapView& map, const TerrainLook& look, std::string* error);
         // Binds the terrain's resources (t4, t7..t12) for the map shaders and draws the faces.
         void draw(ID3D11DeviceContext* context);
         // The block data (t4), also read by the border strips to lie on the surface.
@@ -78,10 +78,10 @@ namespace mc
         using ComPtr = Microsoft::WRL::ComPtr<T>;
 
         // Per block: the Face toward the higher water falling into it, 0 = none.
-        static std::vector<std::uint8_t> waterfalls(const MapData& map);
-        bool create_quads(ID3D11Device* device, const MapData& map, const std::vector<std::uint8_t>& falls,
+        static std::vector<std::uint8_t> waterfalls(const MapView& map);
+        bool create_quads(ID3D11Device* device, const MapView& map, const std::vector<std::uint8_t>& falls,
                           std::string* error);
-        bool create_textures(ID3D11Device* device, const MapData& map, const TerrainLook& look,
+        bool create_textures(ID3D11Device* device, const MapView& map, const TerrainLook& look,
                              const std::vector<std::uint8_t>& falls, std::string* error);
 
         ComPtr<ID3D11VertexShader> vs_;

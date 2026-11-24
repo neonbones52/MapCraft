@@ -1,5 +1,5 @@
 @echo off
-rem Configures (first time) and builds mapcraft.exe and mapcraft_editor.exe into build\release.
+rem Configures (first time) and builds mapcraft.exe, mapcraft_editor.exe and mapcraft_sim.exe into build\release.
 rem The compiler is found with vswhere: the latest Visual Studio or Build Tools instance with the x64 MSVC toolset.
 setlocal
 if not defined VCPKG_ROOT (

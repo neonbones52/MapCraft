@@ -8,7 +8,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
 
     // EU4's automatic map names, ported one to one from the reverse engineering in archeologyEU4/Labels (LABEL.md,
     // docs/label/*.md) and its verified Python port (LabelPython): province group -> pixel moments -> two OLS
@@ -24,7 +24,7 @@ namespace mc
     class LabelRaster
     {
     public:
-        void build(const MapData& map);
+        void build(const MapView& map);
 
         std::int32_t width = 0;
         std::int32_t height = 0;
@@ -39,11 +39,11 @@ namespace mc
         [[nodiscard]] std::size_t count() const { return land.size(); }
     };
 
-    // Mapfont.fnt metrics (MapData::font_*) with byte lookup; measure() is GetActualRequiredSize for one line.
+    // Mapfont.fnt metrics (MapView::font_*) with byte lookup; measure() is GetActualRequiredSize for one line.
     class LabelFont
     {
     public:
-        void build(const MapData& map);
+        void build(const MapView& map);
         struct Char
         {
             bool present = false;

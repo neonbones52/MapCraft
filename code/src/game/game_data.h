@@ -16,6 +16,13 @@ namespace mc
     class MapData;
 
     // Columns are padded to whole SIMD batches and 64-byte aligned (docs/GAMEDATA.md).
+    //
+    // Every piece of the game's data carries one of three labels (docs/GAMEDATA.md, "Метки колонок"):
+    //   saved    the state: what the days change and a save holds (WorldState and its parts, listed column by column
+    //            in game/saved_state.h; the dump and the checksum of mapcraft_sim walk that list)
+    //   content  what the game is made of, fixed once loaded from data/common and the map (Content and its parts)
+    //   cache    rebuilt from the other two after a load, deterministically, never saved (EconomyCache)
+    // Sizes (count, stride, types, goods) are neither: they follow from the content and the map.
     inline constexpr std::size_t kLanes = 16;
     inline constexpr std::size_t padded(std::size_t n) { return (n + kLanes - 1) / kLanes * kLanes; }
 
@@ -35,7 +42,7 @@ namespace mc
     template <class T>
     using Column = std::vector<T, AlignedAllocator<T>>;
 
-    // One list of data/common: terrain, goods, ... Index 0 is "none" (empty key); the rest in file order.
+    // Content. One list of data/common: terrain, goods, ... Index 0 is "none" (empty key); the rest in file order.
     struct DefinitionList
     {
         std::vector<std::string> key;
@@ -47,7 +54,7 @@ namespace mc
         [[nodiscard]] int find(std::string_view k) const;
     };
 
-    // Country definitions (data/common/countries.csv): content, fixed once loaded. Index 0 = none; the same index
+    // Content. Country definitions (data/common/countries.csv): fixed once loaded. Index 0 = none; the same index
     // as CountryStates.
     struct CountryDefinitions
     {
@@ -61,8 +68,8 @@ namespace mc
         [[nodiscard]] std::string tag_text(std::size_t country) const;
     };
 
-    // Province state, one column per field, indexed by province id (MapData ids, 0 = none), padded(count) long.
-    // Hot (changes in the simulation) and cold fields are separate columns anyway; strings never live here.
+    // Saved. Province state, one column per field, indexed by province id (MapData ids, 0 = none), padded(count)
+    // long. Hot (changes in the simulation) and cold fields are separate columns anyway; strings never live here.
     struct Provinces
     {
         std::uint32_t count = 0;            // MapData::count: ids 0..count-1
@@ -92,8 +99,8 @@ namespace mc
     // The tiers of a pop's needs, in the order they are met (Pops::filled has one column per tier).
     inline constexpr std::size_t kNeedTiers = 3;
 
-    // Pops (data/setup/pops.csv at the start): one per province and pop type, a matrix of rows by type, each row a
-    // province column: type t of province p at t * stride + p, stride = padded(province count), so each row is
+    // Saved. Pops (data/setup/pops.csv at the start): one per province and pop type, a matrix of rows by type, each
+    // row a province column: type t of province p at t * stride + p, stride = padded(province count), so each row is
     // 64-byte aligned. A pop's place (t, p) is its id, stable; size 0 = no pop. Row 0 ("none") stays empty.
     struct Pops
     {
@@ -111,7 +118,7 @@ namespace mc
         float& at(std::size_t type, std::uint32_t province) { return size[type * stride + province]; }
     };
 
-    // Region state (data/setup/regions.csv at the start), indexed by the map's region (1-based, 0 = none),
+    // Saved. Region state (data/setup/regions.csv at the start), indexed by the map's region (1-based, 0 = none),
     // padded(count) long.
     struct Regions
     {
@@ -121,8 +128,9 @@ namespace mc
         void resize(std::uint32_t region_count);
     };
 
-    // Goods waiting to be sold, by where they were made: a matrix of rows by good, each row a province column (good g
-    // of province p at g * stride + p, stride = padded(province count)). An RGO's goods stay its own until sold.
+    // Saved. Goods waiting to be sold, by where they were made: a matrix of rows by good, each row a province column
+    // (good g of province p at g * stride + p, stride = padded(province count)). An RGO's goods stay its own until
+    // sold.
     struct Stock
     {
         std::uint32_t goods = 0;        // Content::goods size, "none" included
@@ -137,8 +145,8 @@ namespace mc
         float& at(std::size_t good, std::uint32_t province) { return amount[good * stride + province]; }
     };
 
-    // Prices, per market and good: a matrix of rows by good, each row a column of markets (good g on market m at
-    // g * stride + m, stride = padded(market count)), emeralds per unit. The start: goods.csv `price` everywhere;
+    // Saved. Prices, per market and good: a matrix of rows by good, each row a column of markets (good g on market m
+    // at g * stride + m, stride = padded(market count)), emeralds per unit. The start: goods.csv `price` everywhere;
     // the money good stays 1.
     struct MarketPrices
     {
@@ -160,8 +168,8 @@ namespace mc
     };
     inline constexpr std::size_t kFlows = static_cast<std::size_t>(Flow::count);
 
-    // Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts: the pops' cash, the
-    // account of a pop being its place in Pops (t * stride + p); treasuries, buildings and the pool get ranges of
+    // Saved. Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts: the pops' cash,
+    // the account of a pop being its place in Pops (t * stride + p); treasuries, buildings and the pool get ranges of
     // their own when they come. Written only by the ledger (game/economy/ledger.h).
     struct Balances
     {
@@ -171,8 +179,8 @@ namespace mc
         std::array<Money, kFlows> flows{};     // money moved per flow since the start
     };
 
-    // Country state (data/setup/countries.csv at the start), one column per field, indexed like CountryDefinitions,
-    // padded(count) long.
+    // Saved. Country state (data/setup/countries.csv at the start), one column per field, indexed like
+    // CountryDefinitions, padded(count) long.
     struct CountryStates
     {
         std::size_t count = 0;                  // countries, 0 = none included
@@ -186,7 +194,7 @@ namespace mc
     // The money good: the only one no need consumes (docs/ECONOMY.md).
     inline constexpr std::string_view kMoneyGood = "emerald";
 
-    // Pop types (data/common/pop_types.csv): classes of behaviour; what they need, per person a day and tier.
+    // Content. Pop types (data/common/pop_types.csv): classes of behaviour; what they need, per person a day and tier.
     struct PopTypes
     {
         DefinitionList list;                                // index 0 = none
@@ -196,15 +204,15 @@ namespace mc
         [[nodiscard]] std::size_t size() const { return list.size(); }
     };
 
-    // The goods that fill each tier of needs (data/common/needs.csv), interchangeable by weight: 1 meat at 1.5 fills
-    // as much of the tier as 1.5 wheat at 1.
+    // Content. The goods that fill each tier of needs (data/common/needs.csv), interchangeable by weight: 1 meat at
+    // 1.5 fills as much of the tier as 1.5 wheat at 1.
     struct NeedGoods
     {
         std::array<std::vector<std::uint8_t>, kNeedTiers> good;   // Content::goods index
         std::array<std::vector<float>, kNeedTiers> weight;
     };
 
-    // RGO types (data/common/rgo_types.csv): who works there and what one worker makes a day.
+    // Content. RGO types (data/common/rgo_types.csv): who works there and what one worker makes a day.
     struct RgoTypes
     {
         DefinitionList list;                         // index 0 = none
@@ -218,7 +226,7 @@ namespace mc
         [[nodiscard]] std::size_t size() const { return list.size(); }
     };
 
-    // The economy's numbers (data/common/defines.csv; without the file, these defaults).
+    // Content. The economy's numbers (data/common/defines.csv; without the file, these defaults).
     struct Defines
     {
         float price_step = 0.01f;      // the most a price moves in a day, as a share of itself
@@ -226,8 +234,8 @@ namespace mc
         float price_floor = 0.1f;      // the lowest price, as a share of goods.csv `price`
     };
 
-    // What the game is made of (data/common): lists and definitions, no state. Fixed once loaded; strings live here
-    // and only here (UI, editor, logs), never in WorldState.
+    // Content: what the game is made of (data/common and the map): lists and definitions, no state. Fixed once
+    // loaded; strings live here and only here (UI, editor, logs), never in WorldState.
     struct Content
     {
         DefinitionList terrain;
@@ -242,8 +250,8 @@ namespace mc
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
     };
 
-    // The state of the world: SoA columns only (indices into Content, numbers); what the simulation changes. Loaded
-    // from data/setup (the start).
+    // Saved: the state of the world, SoA columns only (indices into Content, numbers); what the simulation changes.
+    // Loaded from data/setup (the start). Every column is listed in game/saved_state.h.
     struct WorldState
     {
         Provinces provinces;

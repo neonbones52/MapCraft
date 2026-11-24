@@ -7,7 +7,7 @@
 #include <imgui_internal.h>   // ImGuiItemFlags_MixedValue: a checkbox for a field the selection disagrees on
 
 #include "app/app.h"
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "game/economy/ledger.h"
 
 namespace mc
@@ -162,7 +162,7 @@ namespace mc
 
     void Editor::map_input(const Input& input, bool ctrl, bool shift, bool alt)
     {
-        const MapData& map = app_.map();
+        const MapView& map = app_.map();
         const std::uint32_t id = app_.hovered();
         const bool land = id != 0 && id < map.count && map.kind[id] == ProvinceKind::land;
         if (app_.map_mode() == MapMode::markets && !ctrl && !shift && !alt) {
@@ -220,11 +220,11 @@ namespace mc
 
     void Editor::focus(std::uint32_t id, float, float)
     {
-        const MapData& map = app_.map();
+        const MapView& map = app_.map();
         if (id == 0 || id >= map.count) {
             return;
         }
-        const MapData::Point at = map.text_position(id);
+        const MapView::Point at = map.text_position(id);
         app_.camera().set_view(at.x, at.y, std::min(app_.camera().scale(), 1.2f));
     }
 
@@ -394,7 +394,7 @@ namespace mc
     void Editor::province_panel()
     {
         GameData& game = game_;
-        const MapData& map = app_.map();
+        const MapView& map = app_.map();
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(420, 620), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("Provinces")) {
@@ -463,7 +463,7 @@ namespace mc
     void Editor::country_panel(float view_width, float view_height)
     {
         GameData& game = game_;
-        const MapData& map = app_.map();
+        const MapView& map = app_.map();
         const CountryDefinitions& countries = game.content.countries;
         CountryStates& states = game.state.countries;
         ImGui::SetNextWindowPos(ImVec2(view_width - 370, 10), ImGuiCond_FirstUseEver);
@@ -560,7 +560,7 @@ namespace mc
     {
         const GameData& game = game_;
         const DefinitionList& markets = game.content.markets;
-        const MapData& map = app_.map();
+        const MapView& map = app_.map();
         ImGui::SetNextWindowPos(ImVec2(440, 10), ImGuiCond_FirstUseEver);
         if (!ImGui::Begin("Markets", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::End();
@@ -631,7 +631,7 @@ namespace mc
     void Editor::status_panel(float view_width, float view_height)
     {
         const GameData& game = game_;
-        const MapData& map = app_.map();
+        const MapView& map = app_.map();
         std::size_t land = 0;
         std::uint32_t first_unfilled = 0;
         std::size_t unfilled = 0;
@@ -687,7 +687,7 @@ namespace mc
     void Editor::hover_tooltip()
     {
         const std::uint32_t id = app_.hovered();
-        const MapData& map = app_.map();
+        const MapView& map = app_.map();
         if (id == 0 || id >= map.count || ImGui::GetIO().WantCaptureMouse) {
             return;
         }

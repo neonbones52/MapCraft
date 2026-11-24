@@ -29,7 +29,7 @@ namespace mc
         }
     }
 
-    UiCommands GameUi::build(const MapData& map, const World& world, const Session& session, const Pace& pace,
+    UiCommands GameUi::build(const MapView& map, const World& world, const Session& session, const Pace& pace,
                              std::uint32_t hovered, std::uint8_t price_good, const Input& input)
     {
         UiCommands commands;

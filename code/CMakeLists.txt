@@ -13,11 +13,12 @@ add_compile_options(/W4 /permissive- /utf-8 /Zc:__cplusplus /Zc:preprocessor /MP
 add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
 
 # The simulation (docs/SIMULATION.md): core/ (CSV, the map's and the game's data, det_math) and game/, strictly
-# deterministic, no graphics, no UI. The game links it; mapcraft_sim will link it alone.
+# deterministic, no graphics, no UI. The game links it; mapcraft_sim links it alone.
 add_library(mc_sim STATIC
     src/core/csv.cpp
     src/core/log.cpp
     src/core/map_data.cpp
+    src/core/map_file.cpp
     src/game/calendar.cpp
     src/game/countries.cpp
     src/game/economy/economy.cpp
@@ -51,6 +52,7 @@ add_custom_target(mc_layers_lint
 add_library(mc_game STATIC
     src/view/camera.cpp
     src/view/labels.cpp
+    src/view/map_view.cpp
     src/minecraft/assets.cpp
     src/minecraft/nbt.cpp
     src/minecraft/blocks.cpp
@@ -103,6 +105,13 @@ add_executable(mapcraft WIN32 src/host/win32/main.cpp)
 target_link_libraries(mapcraft PRIVATE mc_game mc_host_win32)
 target_compile_definitions(mapcraft PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map/world.mcmap"
     MC_DEFAULT_DATA="${MC_ROOT}/data" MC_DEFAULT_FLAGS="${MC_ROOT}/assets/flags")
+
+# The headless simulator (docs/SIMULATION.md, "Headless-симулятор"): mc_sim alone, no window, no graphics.
+add_executable(mapcraft_sim src/headless/main.cpp)
+target_link_libraries(mapcraft_sim PRIVATE mc_sim)
+add_dependencies(mapcraft_sim mc_layers_lint)
+target_compile_definitions(mapcraft_sim PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map/world.mcmap"
+    MC_DEFAULT_DATA="${MC_ROOT}/data")
 
 # Province editor (docs/GAMEDATA.md): the map with Dear ImGui panels over it, edits data/setup.
 add_executable(mapcraft_editor WIN32 src/editor/main.cpp src/editor/editor.cpp)

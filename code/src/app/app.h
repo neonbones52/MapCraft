@@ -9,7 +9,7 @@
 
 #include "view/camera.h"
 #include "app/map_modes.h"
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "render/map_renderer.h"
 
 namespace mc
@@ -41,7 +41,7 @@ namespace mc
 
 
         [[nodiscard]] Camera& camera() { return camera_; }
-        [[nodiscard]] const MapData& map() const { return map_; }
+        [[nodiscard]] const MapView& map() const { return map_; }
         [[nodiscard]] const MapRenderer& renderer() const { return renderer_; }
         void set_map_mode(MapMode mode);
         [[nodiscard]] MapMode map_mode() const { return map_mode_; }
@@ -59,7 +59,7 @@ namespace mc
     private:
         [[nodiscard]] std::uint32_t province_under(const CameraView& view, float screen_x, float screen_y) const;
 
-        MapData map_;
+        MapView map_;
         const GameData* game_ = nullptr;   // not owned
         std::vector<std::uint8_t> selection_;
         bool selection_dirty_ = false;

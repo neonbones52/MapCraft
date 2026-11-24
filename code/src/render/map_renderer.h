@@ -16,7 +16,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
 
     struct FrameView
     {
@@ -54,9 +54,9 @@ namespace mc
     class MapRenderer
     {
     public:
-        bool init(ID3D11Device* device, const MapData& map, const TerrainLook& look, const ModelSet& models,
+        bool init(ID3D11Device* device, const MapView& map, const TerrainLook& look, const ModelSet& models,
                   std::string* error);
-        // Map mode data: one fill per province id, one style per border chain (MapData::border_chains order).
+        // Map mode data: one fill per province id, one style per border chain (MapView::border_chains order).
         void set_colors(ID3D11DeviceContext* context, std::span<const ProvinceFill> fills,
                         std::span<const BorderStyle> styles);
         // Selected provinces (editor), one flag per province id; drawn brighter and hatched.
@@ -64,9 +64,9 @@ namespace mc
         void draw(ID3D11DeviceContext* context, ID3D11RenderTargetView* target, const FrameView& view);
         // Map names of the current map mode (view/labels.h).
         // `keys`: per province the group its names belong to (render/labels.h).
-        void set_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
+        void set_labels(const MapView& map, const LabelFont& font, std::span<const MapLabel> labels,
                         std::span<const std::uint32_t> keys);
-        void set_province_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
+        void set_province_labels(const MapView& map, const LabelFont& font, std::span<const MapLabel> labels,
                                  std::span<const std::uint32_t> keys);
         [[nodiscard]] std::uint32_t terrain_quads() const { return terrain_.quad_count(); }
         [[nodiscard]] const ModelLayer& models() const { return models_; }
@@ -76,7 +76,7 @@ namespace mc
         using ComPtr = Microsoft::WRL::ComPtr<T>;
 
         bool create_shaders(std::string* error);
-        bool create_borders(const MapData& map, std::string* error);
+        bool create_borders(const MapView& map, std::string* error);
         bool create_states(std::string* error);
         bool ensure_depth(ID3D11RenderTargetView* target, UINT* width, UINT* height);
 

@@ -8,7 +8,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
     class GameData;
 
     enum class MapMode : std::uint32_t
@@ -29,7 +29,7 @@ namespace mc
     // What a map mode paints: one fill per province and one border style per border chain. Country borders run
     // between different owners in every mode, as in EU4 (between regions in the regions mode, and while there is no
     // game data). `game` may be null or not loaded. `price_good`: the good the prices mode shows (Content::goods).
-    void map_mode_colors(const MapData& map, const GameData* game, MapMode mode, std::uint8_t price_good,
+    void map_mode_colors(const MapView& map, const GameData* game, MapMode mode, std::uint8_t price_good,
                          std::vector<ProvinceFill>* fills, std::vector<BorderStyle>* styles);
 
     // The map names a mode shows (EU4's SetMapNameMode): the countries (with their capitals) in the terrain and
@@ -39,9 +39,9 @@ namespace mc
     // one key (owner, region, market) joins that key's group when it touches at least two of its pieces. EU4 needs
     // pieces of two provinces; ours bridge single provinces too, so a capital's isle, coastal islets and a region's
     // islands are named with the mainland (the name runs over the water), not as tiny copies.
-    std::vector<MapLabel> map_mode_labels(const MapData& map, const GameData* game, const LabelRaster& raster,
+    std::vector<MapLabel> map_mode_labels(const MapView& map, const GameData* game, const LabelRaster& raster,
                                           const LabelFont& font, MapMode mode);
     // The key (owner, region, market) a mode groups each province's name by, 0 = none: blocks of a name's own group
     // never hide it (render/labels.h).
-    std::vector<std::uint32_t> map_mode_label_keys(const MapData& map, const GameData* game, MapMode mode);
+    std::vector<std::uint32_t> map_mode_label_keys(const MapView& map, const GameData* game, MapMode mode);
 }

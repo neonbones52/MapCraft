@@ -12,8 +12,9 @@
 
 namespace mc
 {
-    // What the day needs besides the state, kept between days (docs/GAMEDATA.md, "Экономика дня"): no state of its
-    // own, so never saved; prepare_economy rebuilds it from the content and the state, deterministically.
+    // Cache (the labels: game/game_data.h). What the day needs besides the state, kept between days (docs/GAMEDATA.md,
+    // "Экономика дня"): no state of its own, so never saved; prepare_economy rebuilds it from the content and the
+    // state, deterministically.
     //   index    what changes only with the data: the markets as flat lists (provinces and pops, market after
     //            market, each by id)
     //   scratch  columns one clearing fills and the next reuses: nothing is allocated once the day runs; the day's

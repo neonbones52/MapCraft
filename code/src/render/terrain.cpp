@@ -4,7 +4,7 @@
 #include <array>
 #include <format>
 
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "render/d3d_util.h"
 #include "render/shaders.h"
 
@@ -76,7 +76,7 @@ namespace mc
         }
     }
 
-    bool TerrainLayer::init(ID3D11Device* device, const MapData& map, const TerrainLook& look, std::string* error)
+    bool TerrainLayer::init(ID3D11Device* device, const MapView& map, const TerrainLook& look, std::string* error)
     {
         ComPtr<ID3D10Blob> vs;
         ComPtr<ID3D10Blob> ps;
@@ -91,7 +91,7 @@ namespace mc
                create_quads(device, map, falls, error) && create_textures(device, map, look, falls, error);
     }
 
-    std::vector<std::uint8_t> TerrainLayer::waterfalls(const MapData& map)
+    std::vector<std::uint8_t> TerrainLayer::waterfalls(const MapView& map)
     {
         // Water next to a higher river or lake gets the higher water flowing down into it: the Face toward the
         // highest such neighbour (its source), 0 = none. Sea and lakes take falls from rivers (mouths) too.
@@ -124,7 +124,7 @@ namespace mc
         return falls;
     }
 
-    bool TerrainLayer::create_quads(ID3D11Device* device, const MapData& map, const std::vector<std::uint8_t>& falls,
+    bool TerrainLayer::create_quads(ID3D11Device* device, const MapView& map, const std::vector<std::uint8_t>& falls,
                                     std::string* error)
     {
         const auto w = static_cast<int>(map.block_width);
@@ -225,7 +225,7 @@ namespace mc
         return structured(device, quads, &quads_, "terrain quads", error);
     }
 
-    bool TerrainLayer::create_textures(ID3D11Device* device, const MapData& map, const TerrainLook& look,
+    bool TerrainLayer::create_textures(ID3D11Device* device, const MapView& map, const TerrainLook& look,
                                        const std::vector<std::uint8_t>& falls, std::string* error)
     {
         const std::size_t blocks = std::size_t{ map.block_width } * map.block_height;

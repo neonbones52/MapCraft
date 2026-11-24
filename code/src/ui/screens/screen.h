@@ -6,7 +6,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
     class Session;
     class Pace;
     class FlagCache;
@@ -16,7 +16,7 @@ namespace mc
     // What every screen reads (the game's state is read-only to the UI) and the few UI services it uses.
     struct ScreenContext
     {
-        const MapData& map;
+        const MapView& map;
         const Content& content;    // the World's, read-only like everything here
         const WorldState& state;
         bool loaded = false;       // the world has its data (else nothing to show but a note)

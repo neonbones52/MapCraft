@@ -5,7 +5,7 @@
 #include <format>
 
 #include "core/csv.h"
-#include "core/map_data.h"
+#include "view/map_view.h"
 
 namespace mc
 {
@@ -101,7 +101,7 @@ namespace mc
         return true;
     }
 
-    bool map_biome_rows(const MapData& map, const std::vector<BiomeRow>& table, const std::filesystem::path& path,
+    bool map_biome_rows(const MapView& map, const std::vector<BiomeRow>& table, const std::filesystem::path& path,
                         std::vector<const BiomeRow*>* out, std::string* error)
     {
         const std::uint32_t count = map.biome_count();

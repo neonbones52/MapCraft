@@ -22,6 +22,7 @@ LAYERS = {
     'app': {'core', 'game', 'view', 'minecraft', 'render', 'ui'},
     'host': {'core', 'view', 'minecraft', 'app'},
     'editor': {'core', 'game', 'view', 'minecraft', 'render', 'ui', 'app', 'host'},   # host: the shared window
+    'headless': {'core', 'game'},   # mapcraft_sim: the simulation alone
 }
 
 # Library headers -> the layers that may include them.

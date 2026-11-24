@@ -6,7 +6,7 @@
 #include <format>
 #include <vector>
 
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "render/shaders.h"
 
 namespace mc
@@ -41,7 +41,7 @@ namespace mc
         }
     }
 
-    bool LabelLayer::init(ID3D11Device* device, const MapData& map, std::string* error)
+    bool LabelLayer::init(ID3D11Device* device, const MapView& map, std::string* error)
     {
         ComPtr<ID3D10Blob> vs_blob, halo_blob, ink_blob;
         if (!shaders::compile(shaders::map_source, "map.hlsl", "vs_label", "vs_5_0", &vs_blob, error) ||
@@ -112,7 +112,7 @@ namespace mc
                check(device->CreateDepthStencilState(&ds, &no_depth_), "depth", error);
     }
 
-    void LabelLayer::set_labels(ID3D11Device* device, const MapData& map, const LabelFont& font,
+    void LabelLayer::set_labels(ID3D11Device* device, const MapView& map, const LabelFont& font,
                                 std::span<const MapLabel> labels, std::span<const std::uint32_t> keys)
     {
         // The keys per province, for the shader to tell a name's own blocks.
@@ -207,7 +207,7 @@ namespace mc
         }
     }
 
-    std::uint32_t LabelLayer::label_group(const MapData& map, const MapLabel& label,
+    std::uint32_t LabelLayer::label_group(const MapView& map, const MapLabel& label,
                                           std::span<const std::uint32_t> keys)
     {
         // The most common key among the provinces under the glyph centres.
@@ -241,7 +241,7 @@ namespace mc
         return best;
     }
 
-    float LabelLayer::plane_height(const MapData& map, const MapLabel& label)
+    float LabelLayer::plane_height(const MapView& map, const MapLabel& label)
     {
         // The tops (ground or water) of the blocks under every glyph's layout quad, sampled every half block.
         const float block = static_cast<float>(map.block_size);

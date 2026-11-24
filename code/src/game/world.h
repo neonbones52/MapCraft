@@ -38,6 +38,8 @@ namespace mc
         [[nodiscard]] const GameData& data() const { return data_; }
         [[nodiscard]] std::uint32_t day() const { return day_; }
         [[nodiscard]] Date date() const { return date_of(day_); }
+        // False once the money invariant has broken since the load or the last restart (mapcraft_sim's exit code).
+        [[nodiscard]] bool money_balanced() const { return !unbalanced_; }
 
     private:
         void tick_day();   // one day of the rules

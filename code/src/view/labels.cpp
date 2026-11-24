@@ -6,7 +6,7 @@
 #include <deque>
 #include <limits>
 
-#include "core/map_data.h"
+#include "view/map_view.h"
 
 // Port of archeologyEU4/Labels/LabelPython (placement/*.py, rendering/font.py layout) and the reverse engineering it
 // implements (LABEL.md). Function and variable names follow the Python; float32 steps are spelled out with F() where
@@ -606,7 +606,7 @@ namespace mc
 
     // ------------------------------------------------------------------------------------------ LabelRaster
 
-    void LabelRaster::build(const MapData& map)
+    void LabelRaster::build(const MapView& map)
     {
         width = static_cast<std::int32_t>(map.width);
         height = static_cast<std::int32_t>(map.height);
@@ -673,12 +673,12 @@ namespace mc
 
     // --------------------------------------------------------------------------------------------- LabelFont
 
-    void LabelFont::build(const MapData& map)
+    void LabelFont::build(const MapView& map)
     {
         line_height = map.font_line_height;
         padding = map.font_padding;
         chars = {};
-        for (const MapData::FontChar& c : map.font_chars) {
+        for (const MapView::FontChar& c : map.font_chars) {
             if (c.code < 0 || c.code > 255) {
                 continue;
             }
@@ -686,7 +686,7 @@ namespace mc
                               c.cell_width, c.cell_height, c.quad_x, c.quad_y };
         }
         kerning_.assign(256 * 256, 0);
-        for (const MapData::FontKerning& k : map.font_kerning) {
+        for (const MapView::FontKerning& k : map.font_kerning) {
             if (k.first >= 0 && k.first < 256 && k.second >= 0 && k.second < 256) {
                 kerning_[std::size_t(k.first) * 256 + k.second] = k.amount;
             }

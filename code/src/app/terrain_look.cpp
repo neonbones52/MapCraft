@@ -6,7 +6,7 @@
 #include <format>
 #include <unordered_map>
 
-#include "core/map_data.h"
+#include "view/map_view.h"
 #include "minecraft/assets.h"
 
 namespace mc
@@ -161,7 +161,7 @@ namespace mc
         };
     }
 
-    bool build_terrain_look(const MapData& map, const std::vector<const BiomeRow*>& biomes,
+    bool build_terrain_look(const MapView& map, const std::vector<const BiomeRow*>& biomes,
                             const minecraft::Assets& assets, TerrainLook* look, std::string* error)
     {
         const std::uint32_t biome_count = map.biome_count();

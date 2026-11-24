@@ -7,7 +7,7 @@
 
 namespace mc
 {
-    class MapData;
+    class MapView;
 
     // A row of data/common/biomes.csv (docs/GAMEDATA.md): what a map biome looks like.
     struct BiomeRow
@@ -25,6 +25,6 @@ namespace mc
     bool read_biome_table(const std::filesystem::path& path, std::vector<BiomeRow>* rows, std::string* error);
 
     // The map's biomes (BKEY order, [0] = null) as rows of the table; an error names a biome the table lacks.
-    bool map_biome_rows(const MapData& map, const std::vector<BiomeRow>& table, const std::filesystem::path& path,
+    bool map_biome_rows(const MapView& map, const std::vector<BiomeRow>& table, const std::filesystem::path& path,
                         std::vector<const BiomeRow*>* out, std::string* error);
 }
