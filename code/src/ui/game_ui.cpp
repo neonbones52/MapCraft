@@ -28,15 +28,15 @@ namespace mc
         }
     }
 
-    UiCommands GameUi::build(const MapData& map, const World& world, const Session& session, std::uint32_t hovered,
-                             const Input& input)
+    UiCommands GameUi::build(const MapData& map, const World& world, const Session& session, const Pace& pace,
+                             std::uint32_t hovered, const Input& input)
     {
         UiCommands commands;
         if (!ready_) {
             return commands;
         }
-        const ScreenContext ui{ map, world.content(), world.state(), world.loaded(), session, flags_, width_,
-                                height_, layer_.scale(), world.date() };
+        const ScreenContext ui{ map,    world.content(), world.state(), world.loaded(), session, pace, flags_,
+                                width_, height_,         layer_.scale(), world.date() };
         switch (session.phase()) {
         case Session::Phase::choose_country:
             country_select_screen(ui, &commands);

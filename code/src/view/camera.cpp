@@ -1,4 +1,4 @@
-#include "core/camera.h"
+#include "view/camera.h"
 
 #include <algorithm>
 #include <cmath>

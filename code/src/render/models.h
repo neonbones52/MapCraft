@@ -8,7 +8,7 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
-#include "core/camera.h"
+#include "view/camera.h"
 
 namespace mc
 {

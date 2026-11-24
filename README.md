@@ -19,7 +19,7 @@
   версии 2 (с высотами, водой и биомами блоков) запекается. Где остановились и что дальше — docs/HANDOFF.md,
   «Где остановились».
 - **Игровых данных нет**: в `data/` только заголовки CSV (кроме таблицы биомов карты `data/common/biomes.csv`).
-- **План**: срезы — docs/ROADMAP.md (M0 «Карта» завершён, сейчас M1 «Решения»); экономика — docs/ECONOMY.md; числа,
+- **План**: срезы — docs/ROADMAP.md (M0 «Карта» завершён, M1 «Решения» сделан, дальше M2); экономика — docs/ECONOMY.md; числа,
   детерминизм, мультиплеер и headless — docs/SIMULATION.md; ближайшие шаги — `NEXT.md`, идеи — `IDEAS.md`.
 
 ## Код (`code/`, C++23, MSVC + CMake/Ninja + vcpkg)
@@ -35,17 +35,21 @@ code/build/release/mapcraft_editor.exe --check  # только проверит�
 ```
 | Папка | Что |
 |---|---|
-| `src/core/` | ввод, камера, загрузка `world.mcmap`, CSV, раскладка названий EU4 (`labels.cpp`), лог; без платформы и без игры |
+| `src/core/` | часть симуляции (`mc_sim`): загрузка `world.mcmap`, CSV, лог, `det_math.h` (математика и MXCSR симуляции); без вида, платформы и игры |
+| `src/view/` | вид: ввод, камера, раскладка названий EU4 (`labels.cpp`), темп времени `pace.h`; правила детерминизма на него не распространяются |
 | `src/minecraft/` | ассеты из jar Майнкрафта игрока: zip, PNG, `.mcmeta`, ванильные биомы, цветовые карты; где искать jar |
 | `src/render/` | D3D11: карта (блоки `terrain`, границы, названия) |
-| `src/game/` | игра без UI и D3D. `GameData` = `Content` (неизменяемые справочники, все строки) + `WorldState` (SoA-столбцы). `World` владеет ими и отдаёт наружу только `const`. `Session` — выбор страны, потом игрок и темп времени (`pace.h`). `calendar.h` — календарь. `countries.cpp` — запросы по странам |
+| `src/game/` | симуляция (`mc_sim`, строго детерминирована) без вида, UI и D3D. `GameData` = `Content` (неизменяемые справочники, все строки) + `WorldState` (SoA-столбцы). `World` владеет ими и отдаёт наружу только `const`; мир продвигает только `World::advance_days`. `Session` — выбор страны, потом игрок. `calendar.h` — календарь. `countries.cpp` — запросы по странам |
 | `src/ui/` | интерфейс игры на Dear ImGui (ввод из `mc::Input`): слой ImGui, флаги, виджеты, экраны `screens/` |
-| `src/app/` | `App` — карта: камера, режимы карты (`map_modes.cpp`), облик блоков (`terrain_look.cpp`), пикинг, отрисовка. `bindings.cpp` — все привязки клавиш. `Shell` — игра для хоста, связывает `World`, `App`, `Session` и `GameUi` |
+| `src/app/` | `App` — карта: камера, режимы карты (`map_modes.cpp`), облик блоков (`terrain_look.cpp`), пикинг, отрисовка. `bindings.cpp` — все привязки клавиш. `Shell` — игра для хоста, связывает `World`, `App`, `Session`, `Pace` и `GameUi` |
 | `src/host/win32/` | хост `mapcraft.exe`: окно, swap chain, ввод |
 | `src/editor/` | `mapcraft_editor`: `App` + свой `GameData` (правит старт, а не живой мир) + панели ImGui |
 
+Библиотеки: `mc_sim` — `core/` и `game/` (флаги детерминизма, линтер `tools/lint/sim_lint.py` первым шагом сборки);
+`mc_game` — всё остальное, линкует `mc_sim`.
+
 Правила слоёв:
-- `game/` не знает UI и D3D; `WorldState` меняют только правила самого `World`.
+- `game/` и `core/` не знают вида, UI и D3D; `WorldState` меняют только правила самого `World`.
 - Экраны `ui/` только читают состояние и возвращают `UiCommands`; выполняет их `Shell`.
 - `App` и `Camera` не знают клавиш: им приходят намерения (`CameraInput`), коды клавиш есть только в
   `app/bindings.cpp`.

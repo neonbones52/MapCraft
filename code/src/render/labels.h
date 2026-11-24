@@ -7,14 +7,14 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
-#include "core/camera.h"
-#include "core/labels.h"
+#include "view/camera.h"
+#include "view/labels.h"
 
 namespace mc
 {
     class MapData;
 
-    // The map names (core/labels.h) as glyph quads lying on the blocks: every name is one flat plane at the median top
+    // The map names (view/labels.h) as glyph quads lying on the blocks: every name is one flat plane at the median top
     // (ground or water) of the blocks under its letters, so it never steps. A name's pixel is hidden where blocks of
     // other groups' provinces stand between it and the eye (a ray march in the pixel shader, docs/RENDER.md); its own
     // land never hides it. Drawn from the SDF atlas of

@@ -6,6 +6,7 @@ namespace mc
 {
     class MapData;
     class Session;
+    class Pace;
     class FlagCache;
     struct Content;
     struct WorldState;
@@ -18,6 +19,7 @@ namespace mc
         const WorldState& state;
         bool loaded = false;       // the world has its data (else nothing to show but a note)
         const Session& session;
+        const Pace& pace;          // the speed and the pause (view/pace.h)
         FlagCache& flags;
         float width = 0.0f;    // viewport px
         float height = 0.0f;
@@ -25,12 +27,13 @@ namespace mc
         Date date;                    // the world's today
     };
 
-    // What the player asked for this frame; app/shell.h carries it out on the Session (screens change nothing).
+    // What the player asked for this frame; app/shell.h carries it out on the Session and the Pace (screens change
+    // nothing).
     struct UiCommands
     {
         bool play = false;       // start as the selected country
         bool new_game = false;   // back to the country selection
-        int set_speed = 0;       // 1..5: that speed (game/pace.h); 0 = leave it
+        int set_speed = 0;       // 1..5: that speed (view/pace.h); 0 = leave it
         bool toggle_pause = false;
     };
 }

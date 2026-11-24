@@ -1,4 +1,4 @@
-#include "core/labels.h"
+#include "view/labels.h"
 
 #include <algorithm>
 #include <cmath>

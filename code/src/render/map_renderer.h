@@ -9,7 +9,7 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
-#include "core/camera.h"
+#include "view/camera.h"
 #include "render/labels.h"
 #include "render/models.h"
 #include "render/terrain.h"
@@ -62,7 +62,7 @@ namespace mc
         // Selected provinces (editor), one flag per province id; drawn brighter and hatched.
         void set_selection(ID3D11DeviceContext* context, std::span<const std::uint8_t> selected);
         void draw(ID3D11DeviceContext* context, ID3D11RenderTargetView* target, const FrameView& view);
-        // Map names of the current map mode (core/labels.h).
+        // Map names of the current map mode (view/labels.h).
         // `keys`: per province the group its names belong to (render/labels.h).
         void set_labels(const MapData& map, const LabelFont& font, std::span<const MapLabel> labels,
                         std::span<const std::uint32_t> keys);

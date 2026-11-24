@@ -10,18 +10,20 @@
 #include "game/session.h"
 #include "game/world.h"
 #include "ui/game_ui.h"
+#include "view/pace.h"
 
 namespace mc
 {
     // The game as its host runs it (mapcraft.exe), wiring layers that do not know each other:
     //   game/World     the game's data and state (owned here, before the App that shows it)
     //   app/App        the map: camera, map modes, picking, drawing; reads the World's data through a pointer
-    //   game/Session   the player's side: country selection, then the player's country and the pace of time
+    //   game/Session   the player's side: country selection, then the player's country
+    //   view/Pace      how fast days go by (speed, pause): decides how many days World::advance_days runs
     //   ui/GameUi      the screens: read the state, return UiCommands
     // Each frame: input goes to the UI first; keys become intents here (app/bindings.h: camera, map modes, speed, Esc),
-    // the map gets only the camera's; Session::advance runs the days the pace lets through on the World; map clicks and
-    // UI commands become Session calls; Session changes become map changes (selection highlight, camera flight). The
-    // editor uses App alone.
+    // the map gets only the camera's; while playing, the Pace's days go to World::advance_days; map clicks and UI
+    // commands become Session and Pace calls; Session changes become map changes (selection highlight, camera
+    // flight). The editor uses App alone.
     class Shell
     {
     public:
@@ -45,10 +47,15 @@ namespace mc
         void select(std::uint16_t country);
         void play();
         void highlight();   // the selected country's provinces hatched while choosing
+        // The player's time controls: only while playing.
+        void set_speed(int speed);
+        void change_speed(int step);
+        void toggle_pause();
 
         World world_;     // before app_: the App holds a pointer into it
         App app_;
         Session session_;
+        Pace pace_;
         GameUi ui_;
         bool fly_ = false;   // play() happened: fly to the player's seat once the camera is set up
         bool exit_requested_ = false;

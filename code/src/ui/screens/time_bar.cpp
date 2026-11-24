@@ -4,9 +4,8 @@
 
 #include <imgui.h>
 
-#include "game/pace.h"
-#include "game/session.h"
 #include "ui/widgets.h"
+#include "view/pace.h"
 
 namespace mc
 {
@@ -19,7 +18,7 @@ namespace mc
 
     void time_bar(const ScreenContext& ui, UiCommands* commands)
     {
-        const Pace& pace = ui.session.pace();
+        const Pace& pace = ui.pace;
         const float margin = kMargin * ui.scale;
         ImGui::SetNextWindowPos(ImVec2(ui.width - margin, margin), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
         if (ImGui::Begin("##time", nullptr, ui::kFixedWindow | ImGuiWindowFlags_NoTitleBar)) {

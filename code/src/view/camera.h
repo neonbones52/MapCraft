@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "core/math.h"
+#include "view/math.h"
 
 namespace mc
 {

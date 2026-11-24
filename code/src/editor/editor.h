@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "game/game_data.h"
-#include "core/input.h"
+#include "view/input.h"
 
 namespace mc
 {

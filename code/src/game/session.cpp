@@ -9,7 +9,6 @@ namespace mc
     {
         phase_ = Phase::choose_country;
         player_ = 0;
-        pace_ = Pace{};
     }
 
     bool Session::select(const World& world, std::uint16_t country)
@@ -29,34 +28,5 @@ namespace mc
         player_ = selected_;
         phase_ = Phase::playing;
         return true;
-    }
-
-    void Session::set_speed(int speed)
-    {
-        if (phase_ == Phase::playing) {
-            pace_.set_speed(speed);
-        }
-    }
-
-    void Session::change_speed(int step)
-    {
-        if (phase_ == Phase::playing) {
-            pace_.change_speed(step);
-        }
-    }
-
-    void Session::toggle_pause()
-    {
-        if (phase_ == Phase::playing) {
-            pace_.toggle_pause();
-        }
-    }
-
-    int Session::advance(World& world, float dt)
-    {
-        if (phase_ != Phase::playing) {
-            return 0;
-        }
-        return pace_.advance(dt, [&world] { world.tick_day(); });
     }
 }

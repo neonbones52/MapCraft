@@ -1,23 +1,28 @@
 #include "game/world.h"
 
-#include <chrono>
-
+#include "core/det_math.h"
 #include "core/log.h"
 
 namespace mc
 {
     bool World::load(const std::filesystem::path& dir, const MapData& map, std::string* error)
     {
-        const auto started = std::chrono::steady_clock::now();
         if (!data_.load(dir, map, error)) {
             return false;
         }
-        log::info("world {}: {}, {:.0f} ms", dir.string(), data_.summary(),
-                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
+        log::info("world {}: {}", dir.string(), data_.summary());
         for (const std::string& w : data_.warnings) {
             log::warn("game data: {}", w);
         }
         return true;
+    }
+
+    void World::advance_days(std::uint32_t days)
+    {
+        det::set_sim_fp_env();
+        for (std::uint32_t d = 0; d < days; ++d) {
+            tick_day();
+        }
     }
 
     void World::tick_day()

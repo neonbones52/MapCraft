@@ -569,7 +569,7 @@ float4 ps_border(BorderOut input) : SV_Target
 }
 
 // ----------------------------------------------------------------------------------------------------- labels
-// Map names (core/labels.cpp places them, render/labels.cpp lays the glyphs on the map): an SDF atlas
+// Map names (view/labels.cpp places them, render/labels.cpp lays the glyphs on the map): an SDF atlas
 // (tools/fonts/mapfont.py) drawn like archeologyEU4/Labels/LabelPython/rendering/text.py: all halos, then all inks.
 
 struct LabelVertex

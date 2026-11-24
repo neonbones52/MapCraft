@@ -2,7 +2,7 @@
 
 #include <d3d11.h>
 
-#include "core/input.h"
+#include "view/input.h"
 
 struct ImGuiContext;
 

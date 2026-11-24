@@ -22,9 +22,10 @@ namespace mc
         // Errors leave the world unloaded (data().loaded false): the map then shows the regions instead.
         bool load(const std::filesystem::path& dir, const MapData& map, std::string* error);
 
-        // One day passes. The only way the state and the date change; Session::advance calls it, at the pace the
-        // player set (game/pace.h). The rules of the simulation will run in here, over the columns.
-        void tick_day();
+        // `days` days pass, one after another: the only way the state and the date change (the game's Shell, at the
+        // pace the player set, app/pace.h; later mapcraft_sim). Sets the simulation's floating-point environment
+        // first (core/det_math.h). The rules of the simulation will run in here, over the columns.
+        void advance_days(std::uint32_t days);
         // Back to the start date. (Once the tick changes the columns, this restores the start state as well.)
         void restart();
 
@@ -37,6 +38,8 @@ namespace mc
         [[nodiscard]] Date date() const { return date_of(day_); }
 
     private:
+        void tick_day();   // one day of the rules
+
         GameData data_;
         std::uint32_t day_ = kStartDay;
     };

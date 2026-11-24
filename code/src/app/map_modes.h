@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "core/labels.h"
+#include "view/labels.h"
 #include "render/map_renderer.h"
 
 namespace mc

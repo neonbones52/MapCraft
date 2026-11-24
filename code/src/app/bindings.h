@@ -3,8 +3,8 @@
 #include <optional>
 
 #include "app/map_modes.h"
-#include "core/camera.h"
-#include "core/input.h"
+#include "view/camera.h"
+#include "view/input.h"
 
 namespace mc
 {

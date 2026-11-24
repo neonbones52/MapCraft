@@ -12,14 +12,36 @@ set(MC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
 add_compile_options(/W4 /permissive- /utf-8 /Zc:__cplusplus /Zc:preprocessor /MP)
 add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
 
-# Game core + renderer + UI: no window, no platform. The hosts below feed input and a D3D11 target.
-add_library(mc_game STATIC
-    src/core/camera.cpp
+# The simulation (docs/SIMULATION.md): core/ (CSV, the map's and the game's data, det_math) and game/, strictly
+# deterministic, no graphics, no UI. The game links it; mapcraft_sim will link it alone.
+add_library(mc_sim STATIC
     src/core/csv.cpp
-    src/game/game_data.cpp
     src/core/log.cpp
     src/core/map_data.cpp
-    src/core/labels.cpp
+    src/game/calendar.cpp
+    src/game/countries.cpp
+    src/game/game_data.cpp
+    src/game/session.cpp
+    src/game/world.cpp
+)
+target_include_directories(mc_sim PUBLIC src)
+# Determinism (CLAUDE.md, rule 1): precise floating point with no contraction into FMA (MSVC's /fp:precise does not
+# contract), and the default x64 instruction set (SSE2) with no /arch: one set for every CPU.
+target_compile_options(mc_sim PRIVATE /fp:precise)
+
+# The linter of mc_sim's sources (tools/lint/sim_lint.py): runs on every build before mc_sim compiles.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_custom_target(mc_sim_lint
+    COMMAND Python3::Interpreter -I "${MC_ROOT}/tools/lint/sim_lint.py" "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    COMMENT "sim_lint: mc_sim sources"
+    VERBATIM)
+add_dependencies(mc_sim mc_sim_lint)
+
+# The view (view/), Minecraft's assets, the renderer, the map and the UI: no window, no platform. The hosts below
+# feed input and a D3D11 target.
+add_library(mc_game STATIC
+    src/view/camera.cpp
+    src/view/labels.cpp
     src/minecraft/assets.cpp
     src/minecraft/nbt.cpp
     src/minecraft/blocks.cpp
@@ -37,10 +59,6 @@ add_library(mc_game STATIC
     src/app/scenery.cpp
     src/app/shell.cpp
     src/app/bindings.cpp
-    src/game/calendar.cpp
-    src/game/countries.cpp
-    src/game/session.cpp
-    src/game/world.cpp
     src/ui/imgui_layer.cpp
     src/ui/image.cpp
     src/ui/flags.cpp
@@ -56,7 +74,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 target_include_directories(mc_game PUBLIC src)
 target_include_directories(mc_game PRIVATE ${Stb_INCLUDE_DIR})
-target_link_libraries(mc_game PUBLIC d3d11 dxgi d3dcompiler windowscodecs imgui::imgui)
+target_link_libraries(mc_game PUBLIC mc_sim d3d11 dxgi d3dcompiler windowscodecs imgui::imgui)
 target_link_libraries(mc_game PRIVATE miniz::miniz nlohmann_json::nlohmann_json)
 
 # The game: a plain window with its own swap chain.

@@ -7,7 +7,7 @@
 
 #include <d3d11.h>
 
-#include "core/camera.h"
+#include "view/camera.h"
 #include "app/map_modes.h"
 #include "core/map_data.h"
 #include "render/map_renderer.h"

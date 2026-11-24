@@ -1,5 +1,6 @@
 #include "app/shell.h"
 
+#include <chrono>
 #include <vector>
 
 #include "app/bindings.h"
@@ -16,7 +17,10 @@ namespace mc
 
     bool Shell::load_world(const std::filesystem::path& dir, std::string* error)
     {
+        const auto started = std::chrono::steady_clock::now();
         const bool loaded = world_.load(dir, app_.map(), error);
+        log::info("world load: {:.0f} ms",
+                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
         app_.set_game(&world_.data());
         return loaded;
     }
@@ -30,6 +34,7 @@ namespace mc
     void Shell::new_game()
     {
         session_.new_game();
+        pace_ = Pace{};   // paused, speed 3
         world_.restart();
         fly_ = false;
         app_.request_camera_reset();
@@ -53,6 +58,27 @@ namespace mc
         highlight();
         const CountryDefinitions& countries = world_.content().countries;
         log::info("playing as {} ({})", countries.tag_text(session_.player()), countries.name[session_.player()]);
+    }
+
+    void Shell::set_speed(int speed)
+    {
+        if (session_.playing()) {
+            pace_.set_speed(speed);
+        }
+    }
+
+    void Shell::change_speed(int step)
+    {
+        if (session_.playing()) {
+            pace_.change_speed(step);
+        }
+    }
+
+    void Shell::toggle_pause()
+    {
+        if (session_.playing()) {
+            pace_.toggle_pause();
+        }
     }
 
     void Shell::highlight()
@@ -87,12 +113,15 @@ namespace mc
         }
         const SpeedInput speed = speed_input(input);
         if (speed.step != 0) {
-            session_.change_speed(speed.step);
+            change_speed(speed.step);
         }
         if (speed.pause) {
-            session_.toggle_pause();
+            toggle_pause();
         }
-        session_.advance(world_, dt);   // before the map and the UI draw: they show today's state
+        // Before the map and the UI draw: they show today's state.
+        if (session_.playing()) {
+            pace_.advance(dt, [this](std::uint32_t days) { world_.advance_days(days); });
+        }
         if (fly_) {
             // After any pending camera reset, or the reset would cancel the flight.
             app_.ensure_camera(view_width, view_height);
@@ -111,16 +140,16 @@ namespace mc
             select(world_.state().provinces.owner[app_.hovered()]);
         }
 
-        const UiCommands commands = ui_.build(app_.map(), world_, session_, app_.hovered(), input);
+        const UiCommands commands = ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), input);
         ui_.render(context, target);
         if (commands.play) {
             play();
         }
         if (commands.set_speed != 0) {
-            session_.set_speed(commands.set_speed);
+            set_speed(commands.set_speed);
         }
         if (commands.toggle_pause) {
-            session_.toggle_pause();
+            toggle_pause();
         }
         if (commands.new_game) {
             new_game();
