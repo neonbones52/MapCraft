@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <span>
 #include <string>
 
 #include "game/calendar.h"
@@ -20,11 +21,13 @@ namespace mc
     class World
     {
     public:
-        // Errors leave the world unloaded (data().loaded false): the map then shows the regions instead.
-        bool load(const std::filesystem::path& dir, const MapData& map, std::string* error);
+        // Errors leave the world unloaded (data().loaded false): the map then shows the regions instead. `patches`:
+        // a scenario's changes to the data files (GameData::load), none in the game.
+        bool load(const std::filesystem::path& dir, const MapData& map, std::string* error,
+                  std::span<const csv::Patch> patches = {});
 
         // `days` days pass, one after another: the only way the state and the date change (the game's Shell, at the
-        // pace the player set, view/pace.h; later mapcraft_sim). Sets the simulation's floating-point environment
+        // pace the player set, view/pace.h; mapcraft_sim). Sets the simulation's floating-point environment
         // first (core/det_math.h). Each day runs the rules over the columns (game/economy/economy.h), then checks the
         // money invariant (game/economy/ledger.h) and logs an error the first time it breaks.
         void advance_days(std::uint32_t days);

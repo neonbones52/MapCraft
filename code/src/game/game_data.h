@@ -5,10 +5,12 @@
 #include <cstdint>
 #include <filesystem>
 #include <new>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "core/csv.h"
 #include "core/money.h"
 
 namespace mc
@@ -167,6 +169,8 @@ namespace mc
         count,
     };
     inline constexpr std::size_t kFlows = static_cast<std::size_t>(Flow::count);
+    // The flows' keys, in Flow's order (reports: mapcraft_sim's money.csv).
+    inline constexpr std::array<std::string_view, kFlows> kFlowKeys = { "mine", "wages", "sales" };
 
     // Saved. Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts: the pops' cash,
     // the account of a pop being its place in Pops (t * stride + p); treasuries, buildings and the pool get ranges of
@@ -271,8 +275,10 @@ namespace mc
     public:
         // Errors (unknown keys, duplicates, bad numbers, a setup row for a province that is not land) fail the load
         // with file:line; inconsistencies an editing session may pass through (a capital its country does not own)
-        // go to `warnings`.
-        bool load(const std::filesystem::path& dir, const MapData& map, std::string* error);
+        // go to `warnings`. `patches` (a scenario's, mapcraft_sim) change fields of the files before they are parsed;
+        // each must hit a file the load reads.
+        bool load(const std::filesystem::path& dir, const MapData& map, std::string* error,
+                  std::span<const csv::Patch> patches = {});
         // Rewrites data/setup/provinces.csv (every land province, by id), regions.csv (every region, by number),
         // pops.csv (every pop of size > 0, by province and type) and countries.csv from `state`.
         bool save_setup(const std::filesystem::path& dir, const MapData& map, std::string* error) const;

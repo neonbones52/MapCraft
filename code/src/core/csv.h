@@ -20,6 +20,22 @@ namespace mc::csv
 
     bool read(const std::filesystem::path& path, Table* table, std::string* error);
 
+    // A change to one field of a data file before it is parsed (mapcraft_sim's scenarios): in `file` (its path under
+    // data/, "common/goods.csv"), the row whose first column is `row`, the column `column`, set to `value`. `origin`
+    // names where the change was written ("scenarios/base.txt:4"), for messages.
+    struct Patch
+    {
+        std::string file;
+        std::string row;
+        std::string column;
+        std::string value;
+        std::string origin;
+    };
+
+    // Applies one patch to a table read from its file; `old_value` gets what the field held. Fails (naming the
+    // patch's origin) when the column is not there, or not exactly one row has that first column.
+    bool apply(const Patch& patch, Table* table, std::string* old_value, std::string* error);
+
     // A field as written: quoted only when it has to be.
     [[nodiscard]] std::string field(std::string_view text);
 

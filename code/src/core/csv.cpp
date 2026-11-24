@@ -107,6 +107,32 @@ namespace mc::csv
         return true;
     }
 
+    bool apply(const Patch& patch, Table* table, std::string* old_value, std::string* error)
+    {
+        const int column = table->column(patch.column);
+        if (column < 0) {
+            *error = std::format("{}: {} has no column {}", patch.origin, patch.file, patch.column);
+            return false;
+        }
+        std::string* found = nullptr;
+        for (std::vector<std::string>& row : table->rows) {
+            if (!row.empty() && row[0] == patch.row) {
+                if (found) {
+                    *error = std::format("{}: {} has more than one row {}", patch.origin, patch.file, patch.row);
+                    return false;
+                }
+                found = &row[static_cast<std::size_t>(column)];
+            }
+        }
+        if (!found) {
+            *error = std::format("{}: {} has no row {}", patch.origin, patch.file, patch.row);
+            return false;
+        }
+        *old_value = std::move(*found);
+        *found = patch.value;
+        return true;
+    }
+
     std::string field(std::string_view text)
     {
         if (text.find_first_of(",\"\r\n") == std::string_view::npos) {

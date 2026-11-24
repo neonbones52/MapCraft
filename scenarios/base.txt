@@ -1,0 +1,3 @@
+# The base: the start as data/ has it, fifty years, nothing changed.
+years = 50
+seed = 1

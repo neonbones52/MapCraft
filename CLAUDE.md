@@ -107,7 +107,7 @@
 | `ui/` | экраны Dear ImGui; читают состояние, возвращают `UiCommands` | как меняется состояние |
 | `app/` | `App` — карта; облик карты из ассетов: блоки (`terrain_look`, `biome_table`), домики, пирсы и деревья (`scenery`); `bindings.cpp` — все коды клавиш игры; `Shell` — тонкая склейка для хоста | — |
 | `host/win32` | всё о платформе — только здесь. Общее для обоих exe (`mc_host_win32`): `Window` — окно, DPI, ввод в `mc::Input`, цикл сообщений; `D3DTarget` — устройство, swap chain, цель кадра; `log_file` — лог рядом с exe. `main.cpp` — `mapcraft.exe` | — |
-| `headless/` | `mapcraft_sim.exe`: `mc_sim` без окна и графики — прогон дней, дамп, контрольная сумма, инвариант денег (docs/SIMULATION.md) | вид, платформу, D3D |
+| `headless/` | `mapcraft_sim.exe`: `mc_sim` без окна и графики — сценарий (`scenarios/`), прогон, контрольная сумма каждого дня, папка прогона (docs/SIMULATION.md) | вид, платформу, D3D |
 | `editor/` | инструмент `mapcraft_editor`: `App` + свой `GameData` + панели; окно — из `host/win32`; свои клавиши (Ctrl+S/Z/Y, Esc) обрабатывает через ImGui сам, мимо `app/bindings.cpp` — инструменту можно | — |
 
 Инварианты:

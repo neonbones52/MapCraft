@@ -7,9 +7,10 @@
 
 namespace mc
 {
-    bool World::load(const std::filesystem::path& dir, const MapData& map, std::string* error)
+    bool World::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
+                     std::span<const csv::Patch> patches)
     {
-        if (!data_.load(dir, map, error)) {
+        if (!data_.load(dir, map, error, patches)) {
             return false;
         }
         start_ = data_.state;

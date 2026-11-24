@@ -6,6 +6,7 @@
 #include <format>
 
 #include "core/csv.h"
+#include "core/log.h"
 #include "core/map_data.h"
 #include "game/economy/ledger.h"
 
@@ -27,6 +28,55 @@ namespace mc
                 *error = std::format("{}:{}: {}", path.string(), table->lines[row], message);
                 return false;
             }
+        };
+
+        // The data files, read with the patches of a scenario (csv::Patch) applied to the files they name.
+        class Source
+        {
+        public:
+            Source(const std::filesystem::path& dir, std::span<const csv::Patch> patches)
+                : dir_(dir), patches_(patches), used_(patches.size(), 0)
+            {
+            }
+
+            bool read(const std::filesystem::path& path, csv::Table* table, std::string* error)
+            {
+                if (!csv::read(path, table, error)) {
+                    return false;
+                }
+                const std::string file = path.lexically_relative(dir_).generic_string();
+                for (std::size_t i = 0; i < patches_.size(); ++i) {
+                    const csv::Patch& p = patches_[i];
+                    if (p.file != file) {
+                        continue;
+                    }
+                    std::string was;
+                    if (!csv::apply(p, table, &was, error)) {
+                        return false;
+                    }
+                    used_[i] = 1;
+                    log::info("{}: {}: {}.{} = {} (was {})", p.origin, p.file, p.row, p.column, p.value, was);
+                }
+                return true;
+            }
+
+            // Every patch named a file the load read.
+            bool all_used(std::string* error) const
+            {
+                for (std::size_t i = 0; i < patches_.size(); ++i) {
+                    if (!used_[i]) {
+                        *error = std::format("{}: {} is not a data file the game reads", patches_[i].origin,
+                                             patches_[i].file);
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+        private:
+            std::filesystem::path dir_;
+            std::span<const csv::Patch> patches_;
+            std::vector<std::uint8_t> used_;
         };
 
         bool parse_color(std::string_view text, std::uint32_t* out)
@@ -58,8 +108,8 @@ namespace mc
 
         // key,name[,color]: `colored` = the colour column is required. `table`, if given, keeps the file for the
         // list's other columns: row r is entry r + 1 (empty when the optional file is absent).
-        bool read_list(const std::filesystem::path& path, bool required, bool colored, DefinitionList* list,
-                       std::string* error, csv::Table* table_out = nullptr)
+        bool read_list(Source& src, const std::filesystem::path& path, bool required, bool colored,
+                       DefinitionList* list, std::string* error, csv::Table* table_out = nullptr)
         {
             list->key.assign(1, "");
             list->name.assign(1, "");
@@ -70,7 +120,7 @@ namespace mc
             if (!required && !std::filesystem::exists(path)) {
                 return true;
             }
-            if (!csv::read(path, &table, error)) {
+            if (!src.read(path, &table, error)) {
                 return false;
             }
             const Context ctx{ path, &table, error };
@@ -159,11 +209,11 @@ namespace mc
         }
 
         // goods.csv: key, name, price (emeralds per unit, > 0; the money good is worth 1 whatever it says).
-        bool read_goods(const std::filesystem::path& path, DefinitionList* goods, std::vector<float>* price,
-                        std::string* error)
+        bool read_goods(Source& src, const std::filesystem::path& path, DefinitionList* goods,
+                        std::vector<float>* price, std::string* error)
         {
             csv::Table table;
-            if (!read_list(path, false, false, goods, error, &table)) {
+            if (!read_list(src, path, false, false, goods, error, &table)) {
                 return false;
             }
             price->assign(goods->size(), 0.0f);
@@ -186,14 +236,14 @@ namespace mc
         }
 
         // defines.csv: key, value; every key of Defines once (no file: the defaults).
-        bool read_defines(const std::filesystem::path& path, Defines* defines, std::string* error)
+        bool read_defines(Source& src, const std::filesystem::path& path, Defines* defines, std::string* error)
         {
             *defines = {};
             if (!std::filesystem::exists(path)) {
                 return true;
             }
             csv::Table table;
-            if (!csv::read(path, &table, error)) {
+            if (!src.read(path, &table, error)) {
                 return false;
             }
             const Context ctx{ path, &table, error };
@@ -246,10 +296,10 @@ namespace mc
 
         // pop_types.csv: key, name, essential, everyday, luxury (per person a day; empty = 0), cash (emeralds per
         // person at the start; empty = 0).
-        bool read_pop_types(const std::filesystem::path& path, PopTypes* types, std::string* error)
+        bool read_pop_types(Source& src, const std::filesystem::path& path, PopTypes* types, std::string* error)
         {
             csv::Table table;
-            if (!read_list(path, false, false, &types->list, error, &table)) {
+            if (!read_list(src, path, false, false, &types->list, error, &table)) {
                 return false;
             }
             types->need.assign(types->size(), {});
@@ -283,15 +333,15 @@ namespace mc
         }
 
         // needs.csv: tier, good, weight.
-        bool read_needs(const std::filesystem::path& path, const DefinitionList& goods, NeedGoods* needs,
-                        std::string* error)
+        bool read_needs(Source& src, const std::filesystem::path& path, const DefinitionList& goods,
+                        NeedGoods* needs, std::string* error)
         {
             *needs = {};
             if (!std::filesystem::exists(path)) {
                 return true;
             }
             csv::Table table;
-            if (!csv::read(path, &table, error)) {
+            if (!src.read(path, &table, error)) {
                 return false;
             }
             const Context ctx{ path, &table, error };
@@ -332,11 +382,11 @@ namespace mc
 
         // rgo_types.csv: key, name, color, workers and owners (pop types), outputs ("meat:1 leather:0.3", per worker a
         // day).
-        bool read_rgo_types(const std::filesystem::path& path, const DefinitionList& goods, const PopTypes& pop_types,
-                            RgoTypes* rgos, std::string* error)
+        bool read_rgo_types(Source& src, const std::filesystem::path& path, const DefinitionList& goods,
+                            const PopTypes& pop_types, RgoTypes* rgos, std::string* error)
         {
             csv::Table table;
-            if (!read_list(path, false, true, &rgos->list, error, &table)) {
+            if (!read_list(src, path, false, true, &rgos->list, error, &table)) {
                 return false;
             }
             rgos->workers.assign(1, 0);
@@ -492,18 +542,21 @@ namespace mc
         fill(&capital, padded(count));
     }
 
-    bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error)
+    bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
+                        std::span<const csv::Patch> patches)
     {
         loaded = false;
+        Source src(dir, patches);
         const auto common = dir / "common";
         const auto setup = dir / "setup";
-        if (!read_list(common / "terrain.csv", true, true, &content.terrain, error) ||
-            !read_goods(common / "goods.csv", &content.goods, &content.goods_price, error) ||
-            !read_pop_types(common / "pop_types.csv", &content.pop_types, error) ||
-            !read_needs(common / "needs.csv", content.goods, &content.needs, error) ||
-            !read_rgo_types(common / "rgo_types.csv", content.goods, content.pop_types, &content.rgo_types, error) ||
-            !read_list(common / "markets.csv", false, true, &content.markets, error) ||
-            !read_defines(common / "defines.csv", &content.defines, error)) {
+        if (!read_list(src, common / "terrain.csv", true, true, &content.terrain, error) ||
+            !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, error) ||
+            !read_pop_types(src, common / "pop_types.csv", &content.pop_types, error) ||
+            !read_needs(src, common / "needs.csv", content.goods, &content.needs, error) ||
+            !read_rgo_types(src, common / "rgo_types.csv", content.goods, content.pop_types, &content.rgo_types,
+                            error) ||
+            !read_list(src, common / "markets.csv", false, true, &content.markets, error) ||
+            !read_defines(src, common / "defines.csv", &content.defines, error)) {
             return false;
         }
 
@@ -516,7 +569,7 @@ namespace mc
         {
             const auto path = common / "countries.csv";
             csv::Table table;
-            if (!csv::read(path, &table, error)) {
+            if (!src.read(path, &table, error)) {
                 return false;
             }
             const Context ctx{ path, &table, error };
@@ -578,7 +631,7 @@ namespace mc
         {
             const auto path = setup / "provinces.csv";
             csv::Table table;
-            if (!csv::read(path, &table, error)) {
+            if (!src.read(path, &table, error)) {
                 return false;
             }
             const Context ctx{ path, &table, error };
@@ -644,7 +697,7 @@ namespace mc
             const auto path = setup / "regions.csv";
             if (std::filesystem::exists(path)) {
                 csv::Table table;
-                if (!csv::read(path, &table, error)) {
+                if (!src.read(path, &table, error)) {
                     return false;
                 }
                 const Context ctx{ path, &table, error };
@@ -678,7 +731,7 @@ namespace mc
             const auto path = setup / "pops.csv";
             if (std::filesystem::exists(path)) {
                 csv::Table table;
-                if (!csv::read(path, &table, error)) {
+                if (!src.read(path, &table, error)) {
                     return false;
                 }
                 const Context ctx{ path, &table, error };
@@ -718,7 +771,7 @@ namespace mc
             const auto path = setup / "countries.csv";
             if (std::filesystem::exists(path)) {
                 csv::Table table;
-                if (!csv::read(path, &table, error)) {
+                if (!src.read(path, &table, error)) {
                     return false;
                 }
                 const Context ctx{ path, &table, error };
@@ -741,6 +794,9 @@ namespace mc
                     state.countries.capital[c] = static_cast<std::uint16_t>(id);
                 }
             }
+        }
+        if (!src.all_used(error)) {
+            return false;
         }
         ledger::start(content, &state);
         warnings = check(map);

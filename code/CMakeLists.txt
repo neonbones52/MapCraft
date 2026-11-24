@@ -107,11 +107,16 @@ target_compile_definitions(mapcraft PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map
     MC_DEFAULT_DATA="${MC_ROOT}/data" MC_DEFAULT_FLAGS="${MC_ROOT}/assets/flags")
 
 # The headless simulator (docs/SIMULATION.md, "Headless-симулятор"): mc_sim alone, no window, no graphics.
-add_executable(mapcraft_sim src/headless/main.cpp)
+add_executable(mapcraft_sim
+    src/headless/main.cpp
+    src/headless/run_record.cpp
+    src/headless/scenario.cpp
+    src/headless/snapshot.cpp
+)
 target_link_libraries(mapcraft_sim PRIVATE mc_sim)
 add_dependencies(mapcraft_sim mc_layers_lint)
 target_compile_definitions(mapcraft_sim PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map/world.mcmap"
-    MC_DEFAULT_DATA="${MC_ROOT}/data")
+    MC_DEFAULT_DATA="${MC_ROOT}/data" MC_ROOT="${MC_ROOT}")
 
 # Province editor (docs/GAMEDATA.md): the map with Dear ImGui panels over it, edits data/setup.
 add_executable(mapcraft_editor WIN32 src/editor/main.cpp src/editor/editor.cpp)

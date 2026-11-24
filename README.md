@@ -18,6 +18,8 @@
   игровых данных. `world.mcmap` версии 2 (с высотами, водой и биомами блоков) запекается.
 - **Игровые данные** (`data/`, черновые, заполняет пользователь): одна страна Dummy, 8 логических terrain, 7 товаров,
   3 типа попов, 6 типов RGO, 23 рынка; RGO, terrain, рынки регионов и базовые попы расставлены по всей карте.
+- **Headless**: `mapcraft_sim.exe` гонит сценарий из `scenarios/` (пока «база», 50 лет) без окна, дважды, сверяет
+  контрольные суммы каждого дня и пишет папку прогона: помесячные цены, попы, деньги, дамп (docs/SIMULATION.md).
 - **План**: срезы — docs/ROADMAP.md (M0–M3 завершены; идёт M4 «Headless»); экономика — docs/ECONOMY.md; числа,
   детерминизм, мультиплеер и headless — docs/SIMULATION.md; ближайшие шаги — `NEXT.md`, идеи — `IDEAS.md`.
 
@@ -31,7 +33,7 @@ code/build.cmd                                  # сборка всего в cod
 code/build/release/mapcraft.exe                 # игра
 code/build/release/mapcraft_editor.exe          # редактор провинций, пишет data/setup
 code/build/release/mapcraft_editor.exe --check  # только проверить data/ (ошибки в mapcraft_editor.log); других флагов у exe нет (отладка — окно «Dev», ниже)
-code/build/release/mapcraft_sim.exe 3600 run    # симуляция без окна: 3600 дней дважды, дамп и контрольная сумма в run/ (docs/SIMULATION.md)
+code/build/release/mapcraft_sim.exe scenarios/base.txt build/runs/base  # симуляция без окна: сценарий дважды, папка прогона (docs/SIMULATION.md)
 ```
 | Папка | Что |
 |---|---|
@@ -43,7 +45,7 @@ code/build/release/mapcraft_sim.exe 3600 run    # симуляция без ок
 | `src/ui/` | интерфейс игры на Dear ImGui (ввод из `mc::Input`): слой ImGui, флаги, виджеты, экраны `screens/` |
 | `src/app/` | `App` — карта: камера, режимы карты (`map_modes.cpp`), облик блоков (`terrain_look.cpp`, таблица биомов `biome_table.cpp`), домики, пирсы и деревья (`scenery.cpp`), пикинг, отрисовка. `bindings.cpp` — все привязки клавиш. `Shell` — игра для хоста, связывает `World`, `App`, `Session`, `Pace` и `GameUi` |
 | `src/host/win32/` | платформа: общие для обоих exe окно и ввод (`window`), D3D11 и swap chain (`d3d_target`), лог рядом с exe (`log_file`) — библиотека `mc_host_win32`; `main.cpp` — хост `mapcraft.exe` |
-| `src/headless/` | `mapcraft_sim.exe` — только `mc_sim`: прогон дней без окна, дамп сохраняемого, контрольная сумма, инвариант денег |
+| `src/headless/` | `mapcraft_sim.exe` — только `mc_sim`: сценарий (`scenario`), прогон без окна, контрольная сумма и дамп (`snapshot`), папка прогона (`run_record`) |
 | `src/editor/` | `mapcraft_editor`: `App` + свой `GameData` (правит старт, а не живой мир) + панели ImGui; окно — из `host/win32` |
 
 Граф слоёв (кто кого включает и где какие библиотеки) проверяет `tools/lint/layers.py` первым шагом каждой сборки;

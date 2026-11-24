@@ -1,31 +1,29 @@
 // mapcraft_sim.exe (docs/SIMULATION.md, "Headless-симулятор"): the simulation with no window, linked on mc_sim alone.
 //
-//     mapcraft_sim <days> <run dir>
+//     mapcraft_sim <scenario file> <run dir>
 //
-// Loads the map's simulation part and data/ twice, into two worlds of their own, runs each `days` days through
-// World::advance_days, and checks that both end bit for bit the same (the state's checksum: here and only here,
-// CLAUDE.md, rule 11) and that the money invariant held every day. Writes the first world's saved state
-// (game/saved_state.h) to <run dir>/state.csv and its checksum to <run dir>/checksum.txt.
+// Loads the scenario (headless/scenario.h), the map's simulation part, and data/ with the scenario's changes twice,
+// into two worlds of their own; runs each the scenario's years a day at a time through World::advance_days, taking
+// the state's checksum (CLAUDE.md, rule 11: here and only here) after every day; checks that both runs match day for
+// day and that the money invariant held every day. The first run's record goes to <run dir> (headless/run_record.h).
 // Exit codes: 0 all held, 1 bad arguments or a load or write failed, 2 the money invariant broke, 3 the runs differ.
 
-#include <charconv>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
-#include <format>
-#include <fstream>
 #include <memory>
-#include <span>
 #include <string>
 #include <string_view>
-#include <type_traits>
+#include <vector>
 
 #include "core/log.h"
 #include "core/map_data.h"
 #include "game/calendar.h"
-#include "game/saved_state.h"
 #include "game/world.h"
+#include "headless/run_record.h"
+#include "headless/scenario.h"
+#include "headless/snapshot.h"
 
 namespace
 {
@@ -40,137 +38,93 @@ namespace
         std::fprintf(stderr, "%s%.*s\n", tag, static_cast<int>(message.size()), message.data());
     }
 
-    // FNV-1a, 64 bits: over each saved column's name, length and raw bytes in for_each_saved's order, then the day.
-    class Checksum
+    struct Run
     {
-    public:
-        void add(std::span<const std::byte> bytes)
-        {
-            for (const std::byte b : bytes) {
-                hash_ = (hash_ ^ static_cast<std::uint64_t>(b)) * 0x100000001b3ull;
-            }
-        }
-        template <class T>
-        void add_value(const T& value)
-        {
-            add(std::as_bytes(std::span(&value, 1)));
-        }
-        [[nodiscard]] std::uint64_t value() const { return hash_; }
-
-    private:
-        std::uint64_t hash_ = 0xcbf29ce484222325ull;
+        std::unique_ptr<mc::World> world;
+        std::vector<std::uint64_t> hashes;   // [0] the loaded state, then one per day
+        double seconds = 0.0;                // in advance_days only
     };
 
-    std::uint64_t checksum(const mc::World& world)
+    // One world from data/ with the scenario's changes, run its years; `record` (if any) gets the months. False if it
+    // does not load.
+    bool simulate(const mc::MapData& map, const mc::headless::Scenario& scenario, mc::headless::RunRecord* record,
+                  Run* run)
     {
-        Checksum sum;
-        mc::for_each_saved(world.state(), [&](std::string_view name, auto column) {
-            sum.add(std::as_bytes(std::span(name)));
-            sum.add_value(static_cast<std::uint64_t>(column.size()));
-            sum.add(std::as_bytes(column));
-        });
-        sum.add_value(world.day());
-        return sum.value();
-    }
-
-    // Every saved column, element by element (padding included, as the checksum sees it): column,index,value. Floats
-    // print in their shortest exact form, so the dump reads back to the same bits.
-    std::string dump(const mc::World& world)
-    {
-        std::string out = "column,index,value\n";
-        out += std::format("day,0,{}\n", world.day());
-        mc::for_each_saved(world.state(), [&](std::string_view name, auto column) {
-            for (std::size_t i = 0; i < column.size(); ++i) {
-                using T = std::remove_cv_t<typename decltype(column)::element_type>;
-                if constexpr (std::is_floating_point_v<T>) {
-                    out += std::format("{},{},{}\n", name, i, column[i]);
-                } else {
-                    out += std::format("{},{},{}\n", name, i, static_cast<std::uint64_t>(column[i]));
-                }
-            }
-        });
-        return out;
-    }
-
-    bool write_file(const std::filesystem::path& path, std::string_view text)
-    {
-        std::ofstream out(path, std::ios::binary);
-        out.write(text.data(), static_cast<std::streamsize>(text.size()));
-        if (!out) {
-            mc::log::error("cannot write {}", path.string());
+        run->world = std::make_unique<mc::World>();
+        mc::World& world = *run->world;
+        std::string error;
+        if (!world.load(MC_DEFAULT_DATA, map, &error, scenario.patches)) {
+            mc::log::error("{}", error);
             return false;
         }
-        return true;
-    }
-
-    // One world from data/, `days` days on; null if it does not load.
-    std::unique_ptr<mc::World> run(const mc::MapData& map, std::uint32_t days, double* seconds)
-    {
-        auto world = std::make_unique<mc::World>();
-        std::string error;
-        if (!world->load(MC_DEFAULT_DATA, map, &error)) {
-            mc::log::error("{}", error);
-            return nullptr;
+        const std::uint32_t days = scenario.years * mc::kDaysPerYear;
+        run->hashes.reserve(std::size_t{ days } + 1);
+        run->hashes.push_back(mc::headless::checksum(world));
+        if (record) {
+            record->month(world);
         }
-        const auto begin = std::chrono::steady_clock::now();
-        world->advance_days(days);
-        *seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
-        return world;
+        for (std::uint32_t d = 0; d < days; ++d) {
+            const auto begin = std::chrono::steady_clock::now();
+            world.advance_days(1);
+            run->seconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
+            run->hashes.push_back(mc::headless::checksum(world));
+            if (record && world.day() % mc::kDaysPerMonth == 0) {
+                record->month(world);
+            }
+        }
+        return true;
     }
 }
 
 int main(int argc, char** argv)
 {
     mc::log::set_sink(&to_stderr);
-    std::uint32_t days = 0;
-    const std::string_view days_text = argc > 1 ? argv[1] : "";
-    const auto parsed = std::from_chars(days_text.data(), days_text.data() + days_text.size(), days);
-    if (argc != 3 || parsed.ec != std::errc{} || parsed.ptr != days_text.data() + days_text.size()) {
-        std::fprintf(stderr, "usage: mapcraft_sim <days> <run dir>\n");
+    if (argc != 3) {
+        std::fprintf(stderr, "usage: mapcraft_sim <scenario file> <run dir>\n");
         return kFailed;
     }
     const std::filesystem::path run_dir = argv[2];
 
-    mc::MapData map;
+    mc::headless::Scenario scenario;
     std::string error;
+    if (!mc::headless::load_scenario(argv[1], &scenario, &error)) {
+        mc::log::error("{}", error);
+        return kFailed;
+    }
+    mc::MapData map;
     if (!map.load(MC_DEFAULT_MAP, &error)) {
         mc::log::error("{}", error);
         return kFailed;
     }
+    mc::log::info("scenario {}: {} years, seed {}, {} data changes", scenario.name, scenario.years, scenario.seed,
+                  scenario.patches.size());
 
-    double seconds_a = 0.0;
-    double seconds_b = 0.0;
-    const auto a = run(map, days, &seconds_a);
-    const auto b = a ? run(map, days, &seconds_b) : nullptr;
-    if (!a || !b) {
+    mc::headless::RunRecord record;
+    Run a;
+    Run b;
+    if (!simulate(map, scenario, &record, &a) || !simulate(map, scenario, nullptr, &b)) {
         return kFailed;
     }
-    const std::uint64_t sum_a = checksum(*a);
-    const std::uint64_t sum_b = checksum(*b);
-    const double years = static_cast<double>(days) / mc::kDaysPerYear;
-    mc::log::info("{} days ({:.1f} years) twice: {:.3f} s and {:.3f} s, {:.4f} s per year", days, years, seconds_a,
-                  seconds_b, years > 0.0 ? (seconds_a + seconds_b) / 2.0 / years : 0.0);
+    mc::log::info("{} years twice: {:.3f} s and {:.3f} s in the rules, {:.4f} s per year", scenario.years,
+                  a.seconds, b.seconds, (a.seconds + b.seconds) / 2.0 / scenario.years);
 
-    std::error_code made;
-    std::filesystem::create_directories(run_dir, made);
-    if (made) {
-        mc::log::error("cannot make {}: {}", run_dir.string(), made.message());
+    if (!record.write(run_dir, MC_ROOT, scenario, *a.world, a.hashes, &error)) {
+        mc::log::error("{}", error);
         return kFailed;
     }
-    const std::string sum_text = std::format("{:016x}\n", sum_a);
-    if (!write_file(run_dir / "state.csv", dump(*a)) || !write_file(run_dir / "checksum.txt", sum_text)) {
-        return kFailed;
-    }
-    mc::log::info("checksum {:016x}, state in {}", sum_a, (run_dir / "state.csv").string());
+    mc::log::info("checksum {:016x}, the run in {}", a.hashes.back(), run_dir.string());
 
-    if (!a->money_balanced() || !b->money_balanced()) {
+    if (!a.world->money_balanced() || !b.world->money_balanced()) {
         mc::log::error("the money invariant broke (the first day is logged above)");
         return kUnbalanced;
     }
-    if (sum_a != sum_b) {
-        mc::log::error("the two runs differ: checksum {:016x} and {:016x}", sum_a, sum_b);
-        return kDiverged;
+    for (std::size_t d = 0; d < a.hashes.size(); ++d) {
+        if (a.hashes[d] != b.hashes[d]) {
+            mc::log::error("the two runs differ from day {} on: checksum {:016x} and {:016x}", mc::kStartDay + d,
+                           a.hashes[d], b.hashes[d]);
+            return kDiverged;
+        }
     }
-    mc::log::info("both runs match bit for bit; the money invariant held every day");
+    mc::log::info("both runs match bit for bit every day; the money invariant held every day");
     return kOk;
 }
