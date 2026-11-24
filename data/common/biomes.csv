@@ -3,7 +3,7 @@ plains,Plains,#8DB360,1.0,plains,grass_block_top,grass_block_side,dirt,stone,san
 savannah,Savannah,#BDB25F,1.0,savanna,grass_block_top,grass_block_side,dirt,stone,sand,,,,acacia,0.05,,savanna
 mountains,Mountains,#606060,1.0,stony_peaks,stone,stone,stone,stone,gravel,snow,snow,14,spruce,0.08,12,taiga
 forest,Forest,#056621,1.0,forest,grass_block_top,grass_block_side,dirt,stone,sand,,,,oak birch,0.65,,plains
-taiga,Taiga,#0B6659,0.6,taiga,grass_block_top,grass_block_side,dirt,stone,gravel,snow,grass_block_snow,8,spruce,0.5,,taiga
+taiga,Taiga,#0B6659,0.6,taiga,grass_block_top,grass_block_side,dirt,stone,gravel,,,,spruce,0.5,,taiga
 desert,Desert,#FA9418,0.5,desert,sand,sand,sandstone,stone,sand,,,,cactus dead_bush,0.08,,desert
 jungle,Jungle,#537B09,1.0,jungle,grass_block_top,grass_block_side,dirt,stone,sand,,,,jungle_tree,0.75,,savanna
 swamp,Swamp,#07F9B2,1.0,swamp,grass_block_top,grass_block_side,dirt,stone,mud,,,,swamp_oak,0.2,,plains

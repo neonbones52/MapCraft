@@ -5,84 +5,84 @@ region,name,market
 4,Powdershire,greattaiga
 5,Pine Hills,frostedrange
 6,The Copper Peaks,greattaiga
-7,Chicken Hundred,
-8,Honey Hundred,
-9,Lily March,
-10,Tulip Hundred,
-11,The Lantern Marches,
-12,Sunflower Hundred,
-13,Wheat Valley,
-14,Sheep Hundred,
-15,Carrot Downs,
-16,Potato Valley,
-17,Potato Weald,
-18,Poppyshire,
-19,Cobweb Downs,
-20,Cow Valley,
-21,The Dandelion Fields,
-22,Beetroot Vale,
-23,Wheat Hundred,
-24,The Copper Crags,
-25,Tulip Vale,
-26,Meadowshire,
+7,Chicken Hundred,saddleplains
+8,Honey Hundred,goldenplains
+9,Lily March,saddleplains
+10,Tulip Hundred,goldenplains
+11,The Lantern Marches,goldenplains
+12,Sunflower Hundred,saddleplains
+13,Wheat Valley,goldenplains
+14,Sheep Hundred,witchwoodweald
+15,Carrot Downs,witchwoodweald
+16,Potato Valley,sunkenfen
+17,Potato Weald,oakheartweald
+18,Poppyshire,pickaxerange
+19,Cobweb Downs,sunkenfen
+20,Cow Valley,pickaxerange
+21,The Dandelion Fields,oakheartweald
+22,Beetroot Vale,pickaxerange
+23,Wheat Hundred,oakheartweald
+24,The Copper Crags,pickaxerange
+25,Tulip Vale,greatmeadows
+26,Meadowshire,witchwoodweald
 27,Sheep Valley,woolplains
-28,The Creeper Marches,
-29,The Villager Marches,
-30,Drowned Weald,
-31,The Spider Fields,
-32,Zombieshire,
-33,Moss Mountains,
-34,The Thorn Crags,
+28,The Creeper Marches,greatmeadows
+29,The Villager Marches,greatmeadows
+30,Drowned Weald,reedlowlands
+31,The Spider Fields,reedlowlands
+32,Zombieshire,reedlowlands
+33,Moss Mountains,ironcrags
+34,The Thorn Crags,ironcrags
 35,The Gold Crags,dunesands
 36,The Sand Marches,frostedrange
 37,The Bone Fields,dunesands
 38,Emeraldshire,dunesands
 39,Rabbitshire,dunesands
-40,The Beetroot Fields,
-41,The Wool Marches,
-42,Mushroom Valley,
-43,Redstone Hills,
-44,Oxeyeshire,
-45,Villager Hundred,
-46,Lily Hundred,
-47,The Oxeye Marches,
-48,Wool March,
+40,The Beetroot Fields,dunesands
+41,The Wool Marches,bloominglowlands
+42,Mushroom Valley,oakheartweald
+43,Redstone Hills,bloominglowlands
+44,Oxeyeshire,bloominglowlands
+45,Villager Hundred,bloominglowlands
+46,Lily Hundred,oakheartweald
+47,The Oxeye Marches,oakheartweald
+48,Wool March,sunkenfen
 49,Oak Vale,sunflowerplains
-50,The Carrot Marches,
+50,The Carrot Marches,saddleplains
 51,Saddleshire,sunflowerplains
-52,Fox March,
+52,Fox March,saddleplains
 53,Pig Weald,sunflowerplains
 54,The Hay Fields,sunflowerplains
-55,Mire Valley,
-56,Witch Hundred,
-57,Witch March,
+55,Mire Valley,creeperwilds
+56,Witch Hundred,creeperwilds
+57,Witch March,creeperwilds
 58,The Bog Fields,woolplains
-59,The Tadpole Marches,
-60,Moss March,
-61,Witch Downs,
-62,The Leaf Fields,
-63,The Oak Crags,
-64,Lantern Hills,
-65,Gravel Vale,
-66,Pickaxe Mountains,
-67,Pumpkinshire,
-68,Poppy Valley,
-69,The Hay Marches,
-70,Bread Hills,
-71,Panda Weald,
+59,The Tadpole Marches,myceliumbasin
+60,Moss March,myceliumbasin
+61,Witch Downs,myceliumbasin
+62,The Leaf Fields,bambooweald
+63,The Oak Crags,gravelwastes
+64,Lantern Hills,ironcrags
+65,Gravel Vale,gravelwastes
+66,Pickaxe Mountains,gravelwastes
+67,Pumpkinshire,villagerheartland
+68,Poppy Valley,villagerheartland
+69,The Hay Marches,greatmeadows
+70,Bread Hills,villagerheartland
+71,Panda Weald,honeycombbasin
 72,Saddle Valley,woolplains
-73,The Bloom Marches,
-74,Wheat Downs,
-75,Horseshire,
-76,Bloom Weald,
-77,Horse Vale,
-78,Sunbaked Mountains,
-79,Scute Valley,
-80,Dune March,
-81,Armadillo Mountains,
-82,Dust Hills,
-83,Emerald Valley,
-84,Llama Hills,
-85,Fernshire,
-86,Leaf Valley,
-87,Liana Vale,
+73,The Bloom Marches,honeycombbasin
+74,Wheat Downs,honeycombbasin
+75,Horseshire,honeycombbasin
+76,Bloom Weald,lianaweald
+77,Horse Vale,sunbakedbarrens
+78,Sunbaked Mountains,lianaweald
+79,Scute Valley,sunbakedbarrens
+80,Dune March,sunbakedbarrens
+81,Armadillo Mountains,pickaxerange
+82,Dust Hills,sunbakedbarrens
+83,Emerald Valley,lianaweald
+84,Llama Hills,sunbakedbarrens
+85,Fernshire,bambooweald
+86,Leaf Valley,bambooweald
+87,Liana Vale,bambooweald
