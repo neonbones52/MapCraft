@@ -39,8 +39,8 @@ code/build/release/mapcraft_editor.exe --check  # только проверит�
 | `src/game/` | симуляция (`mc_sim`, строго детерминирована) без вида, UI и D3D. `GameData` = `Content` (неизменяемые справочники, все строки) + `WorldState` (SoA-столбцы). `World` владеет ими и отдаёт наружу только `const`; мир продвигает только `World::advance_days`. `Session` — выбор страны, потом игрок. `calendar.h` — календарь. `countries.cpp` — запросы по странам |
 | `src/ui/` | интерфейс игры на Dear ImGui (ввод из `mc::Input`): слой ImGui, флаги, виджеты, экраны `screens/` |
 | `src/app/` | `App` — карта: камера, режимы карты (`map_modes.cpp`), облик блоков (`terrain_look.cpp`, таблица биомов `biome_table.cpp`), домики, пирсы и деревья (`scenery.cpp`), пикинг, отрисовка. `bindings.cpp` — все привязки клавиш. `Shell` — игра для хоста, связывает `World`, `App`, `Session`, `Pace` и `GameUi` |
-| `src/host/win32/` | хост `mapcraft.exe`: окно, swap chain, ввод |
-| `src/editor/` | `mapcraft_editor`: `App` + свой `GameData` (правит старт, а не живой мир) + панели ImGui |
+| `src/host/win32/` | платформа: общие для обоих exe окно и ввод (`window`), D3D11 и swap chain (`d3d_target`), лог рядом с exe (`log_file`) — библиотека `mc_host_win32`; `main.cpp` — хост `mapcraft.exe` |
+| `src/editor/` | `mapcraft_editor`: `App` + свой `GameData` (правит старт, а не живой мир) + панели ImGui; окно — из `host/win32` |
 
 Граф слоёв (кто кого включает и где какие библиотеки) проверяет `tools/lint/layers.py` первым шагом каждой сборки;
 таблица графа — CLAUDE.md, «Архитектура».
@@ -56,9 +56,7 @@ code/build/release/mapcraft_editor.exe --check  # только проверит�
 - В `Shell` объект `World` объявлен раньше `App`, потому что карта держит указатель на его данные.
 
 Известные долги:
-- `mapcraft.exe` и `mapcraft_editor.exe` дублируют Win32-код окна и ввода.
 - `MapData` в `mc_sim` грузит и данные вида; разделить при `mapcraft_sim` (M4).
-- `edit_provinces.py` при перенумерации не переписывает `data/setup/provinces.csv` (раздел «Правка провинций»).
 
 ### Отладочное (`DevOptions`)
 Отладочное в exe разрешено в рамке (CLAUDE.md, «Как работать»), чтобы флаги и их разбор не расползались по коду:
@@ -216,9 +214,8 @@ python tools/mapgen/edit_provinces.py split-islands | give-island X Y NAME | isl
 `islands-apart`: остров, входящий в провинцию на другом массиве суши, становится своей провинцией (новый id после
 последнего, тот же регион, новое название и цвет); номера остальных не меняются.
 `sync-lakes`: озеро, у которого в `land.png` стало меньше воды, оставляет себе самый большой кусок; высохшее дно делят
-соседи; озеро без воды удаляется, номера после него сдвигаются. **Внимание:** `edit_provinces.py` пока не трогает
-`data/setup/provinces.csv`. После перенумерации старые id в нём указывают не на те провинции. Это долг: исправить до
-первой правки карты с заполненными данными. Потом `labels/provinces.py` → `positions.py` → `bake.py`. Названия
+соседи; озеро без воды удаляется, номера после него сдвигаются — и id провинций в `data/setup` переписываются на
+новые (docs/GAMEDATA.md, «ссылка на провинцию»). Потом `labels/provinces.py` → `positions.py` → `bake.py`. Названия
 правятся в корневых `provinces.csv` и `regions.csv`, затем те же три скрипта. Генератор держать в согласии с правками:
 его правила (острова, связность морей) должны давать ту же карту.
 

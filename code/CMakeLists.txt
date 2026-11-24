@@ -85,14 +85,24 @@ target_link_libraries(mc_game PUBLIC mc_sim d3d11 dxgi d3dcompiler imgui::imgui)
 add_dependencies(mc_game mc_layers_lint)
 target_link_libraries(mc_game PRIVATE miniz::miniz nlohmann_json::nlohmann_json)
 
+# The Win32 platform both exes share (host/win32): the window and its input, the D3D11 device and swap chain, the log
+# file.
+add_library(mc_host_win32 STATIC
+    src/host/win32/window.cpp
+    src/host/win32/d3d_target.cpp
+    src/host/win32/log_file.cpp
+)
+target_link_libraries(mc_host_win32 PUBLIC mc_sim d3d11 dxgi)
+add_dependencies(mc_host_win32 mc_layers_lint)
+
 # The game: a plain window with its own swap chain.
 add_executable(mapcraft WIN32 src/host/win32/main.cpp)
-target_link_libraries(mapcraft PRIVATE mc_game)
+target_link_libraries(mapcraft PRIVATE mc_game mc_host_win32)
 target_compile_definitions(mapcraft PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map/world.mcmap"
     MC_DEFAULT_DATA="${MC_ROOT}/data" MC_DEFAULT_FLAGS="${MC_ROOT}/assets/flags")
 
 # Province editor (docs/GAMEDATA.md): the map with Dear ImGui panels over it, edits data/setup.
 add_executable(mapcraft_editor WIN32 src/editor/main.cpp src/editor/editor.cpp)
-target_link_libraries(mapcraft_editor PRIVATE mc_game imgui::imgui)
+target_link_libraries(mapcraft_editor PRIVATE mc_game mc_host_win32 imgui::imgui)
 target_compile_definitions(mapcraft_editor PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map/world.mcmap"
     MC_DEFAULT_DATA="${MC_ROOT}/data")

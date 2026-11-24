@@ -11,7 +11,11 @@ with the next free id, the same region, a new name (names.py) and a new colour; 
 
 Everything is on the block grid (one pixel per block). An edit rewrites provinces.png, regions.png (moved blocks take
 the region of their new province), provinces.csv (area, centroid, pieces) and adjacency.csv. Afterwards run
-positions.py, bake.py.
+labels/provinces.py, positions.py, bake.py.
+
+The game data follows a renumbering: every province id in data/setup (the columns in SETUP_COLUMNS, and a `province`
+column in any other file there) is rewritten to the new id, rows of data/setup/provinces.csv in the new order. A
+removed province's own row there is dropped; any other reference to it stops the edit before anything is written.
 
 sync-lakes: where land.png has less lake than a lake province, the province keeps its largest piece of lake; the dried
 bed and the smaller pieces cut off from it (decorative lakes from now on) are shared among the land
@@ -37,6 +41,11 @@ from names import Namer  # noqa: E402
 from palette import distinct_colors  # noqa: E402
 from skimage.segmentation import watershed  # noqa: E402
 from validate_land import LAKE, LAND, SEA  # noqa: E402
+
+SETUP = ROOT / 'data' / 'setup'
+# Columns of data/setup holding a province id (docs/GAMEDATA.md); any other file there names it `province`.
+SETUP_COLUMNS = {'provinces.csv': ('id',), 'countries.csv': ('capital',)}
+PROVINCE_COLUMN = 'province'
 
 SMALL_ISLAND = 1250     # blocks
 BED_NOISE = 3.5         # blocks: how far the borders across a dried lake bed wander from the straight Voronoi line
@@ -97,6 +106,57 @@ def write(ids, old_ids, provinces):
             writer.writerow([a, b, provinces[a]['type'] + '-' + provinces[b]['type'], length])
     for a, b in sorted(set(before) ^ set(after)):
         print(f'adjacency {"new" if (a, b) in after else "lost"}: {provinces[a]["name"]} - {provinces[b]["name"]}')
+
+
+def renumbered_setup(new_id, removed):
+    """data/setup with province ids renumbered (`new_id`: old id -> new id of every kept province; `removed`: old ids
+    gone): [(path, header, rows)] of the files that change. Exits (nothing written yet) on an id that is not a number,
+    not a province, or a removed province anywhere but its own row of provinces.csv."""
+    changed = []
+    for path in sorted(SETUP.glob('*.csv')):
+        with open(path, encoding='utf-8-sig', newline='') as file:
+            table = list(csv.reader(file))
+        if not table:
+            continue
+        header, rows = table[0], table[1:]
+        names = SETUP_COLUMNS.get(path.name, ()) + ((PROVINCE_COLUMN,) if PROVINCE_COLUMN in header else ())
+        columns = [header.index(name) for name in names if name in header]
+        if not columns or not rows:
+            continue
+        kept = []
+        for line, row in enumerate(rows, 2):
+            drop = False
+            for c in columns:
+                value = row[c].strip() if c < len(row) else ''
+                if not value:
+                    continue
+                if not value.isdigit():
+                    sys.exit(f'{path}:{line}: {header[c]} {value!r} is not a province id; nothing written')
+                old = int(value)
+                if old in removed:
+                    if path.name == 'provinces.csv' and header[c] == 'id':
+                        print(f'{path.name}: row of removed province {old} dropped')
+                        drop = True
+                        continue
+                    sys.exit(f'{path}:{line}: {header[c]} {old} is a removed province; nothing written')
+                if old not in new_id:
+                    sys.exit(f'{path}:{line}: {header[c]} {old} is not a province of the map; nothing written')
+                row[c] = str(new_id[old])
+            if not drop:
+                kept.append(row)
+        if path.name == 'provinces.csv':
+            kept.sort(key=lambda r: int(r[columns[0]]))
+        changed.append((path, header, kept))
+    return changed
+
+
+def write_setup(changed):
+    for path, header, rows in changed:
+        with open(path, 'w', newline='', encoding='utf-8') as file:     # as the editor writes: UTF-8, LF, no BOM
+            writer = csv.writer(file, lineterminator='\n')
+            writer.writerow(header)
+            writer.writerows(rows)
+        print(f'{path.relative_to(ROOT)}: province ids renumbered')
 
 
 def give_island(ids, provinces, classes, x, y, name):
@@ -191,7 +251,10 @@ def sync_lakes(ids, provinces, classes):
     renumbered = {}
     for new, pid in enumerate(keep, 1):
         renumbered[new] = dict(provinces[pid], id=str(new))
+    setup = (renumbered_setup({pid: new for new, pid in enumerate(keep, 1)}, set(removed))   # checked before writing
+             if removed else [])
     write(remap[ids], remap[old_ids], renumbered)
+    write_setup(setup)
     print(f'{len(removed)} lake provinces removed, {len(keep)} provinces left')
 
 

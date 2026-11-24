@@ -21,7 +21,7 @@ LAYERS = {
     'ui': {'core', 'game', 'view', 'minecraft'},
     'app': {'core', 'game', 'view', 'minecraft', 'render', 'ui'},
     'host': {'core', 'view', 'minecraft', 'app'},
-    'editor': {'core', 'game', 'view', 'minecraft', 'render', 'ui', 'app'},
+    'editor': {'core', 'game', 'view', 'minecraft', 'render', 'ui', 'app', 'host'},   # host: the shared window
 }
 
 # Library headers -> the layers that may include them.

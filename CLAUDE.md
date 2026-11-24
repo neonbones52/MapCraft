@@ -99,8 +99,8 @@
 | `game/` | (`mc_sim`) `GameData` = `Content` (неизменяемые справочники, все строки) + `WorldState` (только SoA-столбцы); `World`; `Session` | вид, UI, D3D |
 | `ui/` | экраны Dear ImGui; читают состояние, возвращают `UiCommands` | как меняется состояние |
 | `app/` | `App` — карта; облик карты из ассетов: блоки (`terrain_look`, `biome_table`), домики, пирсы и деревья (`scenery`); `bindings.cpp` — все коды клавиш игры; `Shell` — тонкая склейка для хоста | — |
-| `host/win32` | `mapcraft.exe`: окно, swap chain, ввод; всё о платформе — только здесь (долг: копия кода окна в `editor/main.cpp`) | — |
-| `editor/` | инструмент: `App` + свой `GameData` + панели | — |
+| `host/win32` | всё о платформе — только здесь. Общее для обоих exe (`mc_host_win32`): `Window` — окно, DPI, ввод в `mc::Input`, цикл сообщений; `D3DTarget` — устройство, swap chain, цель кадра; `log_file` — лог рядом с exe. `main.cpp` — `mapcraft.exe` | — |
+| `editor/` | инструмент `mapcraft_editor`: `App` + свой `GameData` + панели; окно — из `host/win32`; свои клавиши (Ctrl+S/Z/Y, Esc) обрабатывает через ImGui сам, мимо `app/bindings.cpp` — инструменту можно | — |
 
 Инварианты:
 - `World` владеет `GameData` и отдаёт наружу только `const`. `WorldState` меняют только правила самого `World`.
@@ -110,7 +110,7 @@
   граф, новая папка или новое ребро — решение, которое правится в нём и здесь вместе. Разрешено включать:
   `core` → ничего; `game` → `core`; `view` → `core`, `game`; `minecraft` → ничего; `render` → `core`, `view`;
   `ui` → `core`, `game`, `view`, `minecraft` (PNG, позже спрайты Майнкрафта); `app` → всё, кроме `host` и `editor`;
-  `host` → `core`, `view`, `minecraft`, `app`; `editor` → всё, кроме `host`. Библиотеки: D3D — `render`, `ui`, `app`,
+  `host` → `core`, `view`, `minecraft`, `app`; `editor` → всё (из `host` — общее окно). Библиотеки: D3D — `render`, `ui`, `app`,
   `host`, `editor`; ImGui — `ui`, `editor`; Windows и бэкенд ImGui Win32 — `host`, `editor`; miniz, JSON и stb —
   `minecraft`.
 - Время: дата — скаляр в `World`, не в `WorldState`. **Мир продвигается только `World::advance_days(n)`** —
@@ -206,8 +206,4 @@
   оттуда не переносить без решения пользователя.
 
 ## Известные долги
-- `edit_provinces.py` при перенумерации не переписывает `data/setup/provinces.csv`, и данные съедут на чужие
-  провинции. Исправить до первой правки карты с заполненными данными.
-- `mapcraft.exe` и `mapcraft_editor.exe` дублируют Win32-код окна и ввода; редактор обрабатывает свои клавиши ImGui в
-  `editor/`, мимо `app/bindings.cpp`.
 - `MapData` в `mc_sim` грузит и данные вида (шрифт, глифы, геометрию границ и рек); разделить при `mapcraft_sim` (M4).
