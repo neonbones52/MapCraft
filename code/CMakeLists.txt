@@ -35,7 +35,14 @@ add_custom_target(mc_sim_lint
     COMMAND Python3::Interpreter -I "${MC_ROOT}/tools/lint/sim_lint.py" "${CMAKE_CURRENT_SOURCE_DIR}/src"
     COMMENT "sim_lint: mc_sim sources"
     VERBATIM)
-add_dependencies(mc_sim mc_sim_lint)
+add_dependencies(mc_sim mc_sim_lint mc_layers_lint)
+
+# The linter of the layer graph over all of src (tools/lint/layers.py): runs on every build, before mc_sim and mc_game
+# compile.
+add_custom_target(mc_layers_lint
+    COMMAND Python3::Interpreter -I "${MC_ROOT}/tools/lint/layers.py" "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    COMMENT "layers: the layer graph of src"
+    VERBATIM)
 
 # The view (view/), Minecraft's assets, the renderer, the map and the UI: no window, no platform. The hosts below
 # feed input and a D3D11 target.
@@ -74,7 +81,8 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 target_include_directories(mc_game PUBLIC src)
 target_include_directories(mc_game PRIVATE ${Stb_INCLUDE_DIR})
-target_link_libraries(mc_game PUBLIC mc_sim d3d11 dxgi d3dcompiler windowscodecs imgui::imgui)
+target_link_libraries(mc_game PUBLIC mc_sim d3d11 dxgi d3dcompiler imgui::imgui)
+add_dependencies(mc_game mc_layers_lint)
 target_link_libraries(mc_game PRIVATE miniz::miniz nlohmann_json::nlohmann_json)
 
 # The game: a plain window with its own swap chain.

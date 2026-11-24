@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <format>
+#include <fstream>
+#include <iterator>
 
 #include <miniz.h>
 #include <nlohmann/json.hpp>
@@ -14,6 +16,10 @@
 #pragma warning(push)
 #pragma warning(disable : 4244 4456 4457 4701)
 #include <stb_image.h>
+#pragma warning(pop)
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#pragma warning(push, 0)
+#include <stb_image_resize2.h>
 #pragma warning(pop)
 
 namespace mc::minecraft
@@ -294,5 +300,30 @@ namespace mc::minecraft
         }
         const std::uint32_t p = map.pixel(x, y);
         return ((p & 0xFF) << 16) | (p & 0xFF00) | ((p >> 16) & 0xFF);
+    }
+
+    bool read_png(const std::filesystem::path& path, Image* out)
+    {
+        std::ifstream in(path, std::ios::binary);
+        if (!in) {
+            return false;
+        }
+        const std::vector<std::uint8_t> bytes{ std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>() };
+        return !bytes.empty() && decode_png(bytes, out);
+    }
+
+    Image resized(const Image& image, std::uint32_t width, std::uint32_t height)
+    {
+        Image out;
+        out.width = width;
+        out.height = height;
+        out.rgba.resize(std::size_t{ width } * height * 4);
+        if (image.width == 0 || image.height == 0 || width == 0 || height == 0 ||
+            !stbir_resize_uint8_srgb(image.rgba.data(), static_cast<int>(image.width), static_cast<int>(image.height),
+                                     0, out.rgba.data(), static_cast<int>(width), static_cast<int>(height), 0,
+                                     STBIR_RGBA)) {
+            return Image{};
+        }
+        return out;
     }
 }

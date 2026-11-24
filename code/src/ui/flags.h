@@ -12,7 +12,7 @@ namespace mc
     struct CountryDefinitions;
 
     // Country flags as ImGui images: <dir>/<TAG>.png (assets/flags), each
-    // loaded once per drawn size (scaled down by WIC, so it is crisp 1:1). A country without a flag file is drawn as
+    // loaded once per drawn size (scaled down on the CPU, so it is crisp 1:1). A country without a flag file is drawn as
     // a square of its colour.
     class FlagCache
     {

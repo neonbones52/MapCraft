@@ -79,6 +79,11 @@ namespace mc::minecraft
     // The first candidate that exists, else empty.
     [[nodiscard]] std::filesystem::path find_jar();
 
+    // A PNG file on disk, outside the jar (country flags), decoded by the same stb_image as the jar's textures.
+    bool read_png(const std::filesystem::path& path, Image* out);
+    // `image` scaled to width x height px (stb_image_resize2: sRGB, alpha-weighted).
+    [[nodiscard]] Image resized(const Image& image, std::uint32_t width, std::uint32_t height);
+
     // Minecraft's colour map lookup (GrassColor / FoliageColor): temperature and downfall clamped to 0..1, downfall
     // scaled by temperature, then the 256 x 256 map at ((1 - t) * 255, (1 - d) * 255). -> 0xRRGGBB.
     [[nodiscard]] std::uint32_t colormap_color(const Image& map, float temperature, float downfall);
