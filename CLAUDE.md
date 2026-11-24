@@ -205,7 +205,6 @@
   `editor/`, мимо `app/bindings.cpp`.
 - `ui/image.cpp` декодирует PNG флагов через WIC (Windows) — платформа вне `host/`; в `minecraft/` уже есть декодер PNG
   на stb.
-- Загрузчик `world.mcmap` проверяет размеры не всех секций (docs/MAPFORMAT.md).
 - Границы слоёв внутри `mc_game` (`view`, `minecraft`, `render`, `ui`, `app`) держатся дисциплиной: линтер проверяет
   только `mc_sim`.
 - `MapData` в `mc_sim` грузит и данные вида (шрифт, глифы, геометрию границ и рек); разделить при `mapcraft_sim` (M4).

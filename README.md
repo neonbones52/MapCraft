@@ -55,7 +55,6 @@ code/build/release/mapcraft_editor.exe --check  # только проверит�
 Известные долги:
 - `mapcraft.exe` и `mapcraft_editor.exe` дублируют Win32-код окна и ввода.
 - `ui/image.cpp` декодирует PNG флагов через WIC (Windows), хотя платформа — только в `host/`.
-- Загрузчик `world.mcmap` проверяет размеры не всех секций (docs/MAPFORMAT.md).
 - Границы слоёв внутри `mc_game` держатся дисциплиной (линтер проверяет только `mc_sim`).
 - `MapData` в `mc_sim` грузит и данные вида; разделить при `mapcraft_sim` (M4).
 - `edit_provinces.py` при перенумерации не переписывает `data/setup/provinces.csv` (раздел «Правка провинций»).

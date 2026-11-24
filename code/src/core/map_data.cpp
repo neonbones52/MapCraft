@@ -78,58 +78,133 @@ namespace mc
         if (file_.size() < sizeof(Header) + std::size_t{ header.sections } * sizeof(Section)) {
             return fail("truncated section table");
         }
+        if (header.width == 0 || header.height == 0 || header.count < 2 || header.count > 0x10000) {
+            return fail(std::format("bad header: {}x{} px, {} province slots (rebuild with tools/mapbake/bake.py)",
+                                    header.width, header.height, header.count));
+        }
         width = header.width;
         height = header.height;
         count = header.count;
 
+        // Every check below records only the first problem; the load fails with it at the end. The file is ours
+        // (bake.py), so a problem means a stale or broken bake: the message names the section and asks for a rebuild.
+        std::string problem;
+        auto bad = [&](std::string message) {
+            if (problem.empty()) {
+                problem = std::move(message);
+            }
+        };
+        // The table's entries must lie inside the file, 16-aligned (the spans below are cast in place).
+        for (std::uint32_t i = 0; i < header.sections; ++i) {
+            Section s;
+            std::memcpy(&s, file_.data() + sizeof(Header) + i * sizeof(Section), sizeof(s));
+            if (s.offset % 16 != 0 || s.offset > file_.size() || s.size > file_.size() - s.offset) {
+                bad(std::format("section {} lies outside the file or is misaligned", std::string_view(s.tag, 4)));
+            }
+        }
+        if (!problem.empty()) {
+            return fail(std::format("malformed map: {} (rebuild with tools/mapbake/bake.py)", problem));
+        }
         auto section = [&](const char* tag) -> std::span<const std::byte> {
             for (std::uint32_t i = 0; i < header.sections; ++i) {
                 Section s;
                 std::memcpy(&s, file_.data() + sizeof(Header) + i * sizeof(Section), sizeof(s));
-                if (std::memcmp(s.tag, tag, 4) == 0 && s.offset + s.size <= file_.size()) {
+                if (std::memcmp(s.tag, tag, 4) == 0) {
                     return { file_.data() + s.offset, s.size };
                 }
             }
             return {};
         };
+        // A section of exactly `bytes` bytes.
+        auto exact = [&](const char* tag, std::size_t bytes) {
+            const auto s = section(tag);
+            if (s.size() != bytes) {
+                bad(std::format("section {} has {} bytes, expected {}", tag, s.size(), bytes));
+            }
+            return s;
+        };
+        // A section of whole elements of `unit` bytes (it may be empty only where `may_be_empty`).
+        auto whole = [&](const char* tag, std::size_t unit, bool may_be_empty) {
+            const auto s = section(tag);
+            if (s.size() % unit != 0 || (s.empty() && !may_be_empty)) {
+                bad(std::format("section {} has {} bytes, not a{} multiple of {}", tag, s.size(),
+                                may_be_empty ? "" : " non-empty", unit));
+            }
+            return s;
+        };
+        // A string table of `strings` strings (bake.py `strings`): offsets rising from 0, the last within the blob.
+        auto table = [&](const char* tag, std::size_t strings, std::span<const std::uint32_t>* offsets,
+                         std::span<const char>* blob) {
+            const auto s = section(tag);
+            const std::size_t head = (strings + 1) * sizeof(std::uint32_t);
+            if (s.size() < head) {
+                bad(std::format("section {} has {} bytes, too few for {} strings", tag, s.size(), strings));
+                return;
+            }
+            const auto o = view<std::uint32_t>(s.first(head));
+            const auto b = view<char>(s.subspan(head));
+            if (o[0] != 0 || !std::ranges::is_sorted(o) || o.back() > b.size()) {
+                bad(std::format("section {}: string offsets out of order or past the end", tag));
+                return;
+            }
+            *offsets = o;
+            *blob = b;
+        };
 
+        const std::size_t n = count;
         const std::size_t pixels = std::size_t{ width } * height;
-        pixel_province = view<std::uint16_t>(section("PIDM"));
-        pixel_class = view<std::uint8_t>(section("CLAS"));
-        kind = view<ProvinceKind>(section("PTYP"));
-        region = view<std::uint16_t>(section("PREG"));
-        color = view<std::uint32_t>(section("PCOL"));
-        positions = view<float>(section("PPOS"));
-        sites = view<std::uint16_t>(section("PSIT"));
-        adjacency_offsets = view<std::uint32_t>(section("ADJO"));
-        adjacency_ids = view<std::uint16_t>(section("ADJI"));
 
-        const auto block_dims = view<std::uint32_t>(section("BDIM"));
-        std::uint32_t biome_keys = 0;
-        if (block_dims.size() >= 4) {
+        // Provinces.
+        pixel_province = view<std::uint16_t>(exact("PIDM", pixels * 2));
+        pixel_class = view<std::uint8_t>(exact("CLAS", pixels));
+        kind = view<ProvinceKind>(exact("PTYP", n));
+        region = view<std::uint16_t>(exact("PREG", n * 2));
+        color = view<std::uint32_t>(exact("PCOL", n * 4));
+        positions = view<float>(exact("PPOS", n * 8 * 4));
+        sites = view<std::uint16_t>(exact("PSIT", n * 6 * 2));
+        adjacency_offsets = view<std::uint32_t>(exact("ADJO", (n + 1) * 4));
+        adjacency_ids = view<std::uint16_t>(whole("ADJI", 2, false));
+        table("PNAM", n, &name_offsets_, &name_blob_);
+
+        // Regions and lands: RPAR has a byte per region and [0]; the lands are what RPAR points to.
+        region_parent = view<std::uint8_t>(whole("RPAR", 1, false));
+        region_count_ = static_cast<std::uint32_t>(region_parent.size());
+        land_count_ = 0;
+        for (const std::uint8_t l : region_parent) {
+            land_count_ = std::max<std::uint32_t>(land_count_, l + 1u);
+        }
+        table("RNAM", region_count_, &region_name_offsets_, &region_name_blob_);
+        table("LNAM", land_count_, &land_name_offsets_, &land_name_blob_);
+
+        // Blocks.
+        const auto block_dims = view<std::uint32_t>(exact("BDIM", 16));
+        if (block_dims.size() == 4) {
             block_width = block_dims[0];
             block_height = block_dims[1];
             block_size = block_dims[2];
-            biome_keys = block_dims[3];
+            biome_count_ = block_dims[3];
         }
-        block_class = view<BlockClass>(section("BCLS"));
-        block_ground = view<std::uint8_t>(section("BHGT"));
-        block_water = view<std::uint8_t>(section("BWTR"));
-        block_biome = view<std::uint8_t>(section("BBIO"));
-        const auto biome_table = section("BKEY");
-        const std::size_t biome_offsets = (std::size_t{ biome_keys } + 1) * sizeof(std::uint32_t);
-        if (biome_keys > 0 && biome_table.size() >= biome_offsets) {
-            biome_key_offsets_ = view<std::uint32_t>(biome_table.first(biome_offsets));
-            biome_key_blob_ = view<char>(biome_table.subspan(biome_offsets));
-            biome_count_ = biome_keys;
+        if (block_size == 0 || std::size_t{ block_width } * block_size != width ||
+            std::size_t{ block_height } * block_size != height || biome_count_ == 0) {
+            bad(std::format("section BDIM: {}x{} blocks of {} px do not cover the {}x{} px map, or no biomes",
+                            block_width, block_height, block_size, width, height));
         }
+        const std::size_t blocks = std::size_t{ block_width } * block_height;
+        block_class = view<BlockClass>(exact("BCLS", blocks));
+        block_ground = view<std::uint8_t>(exact("BHGT", blocks));
+        block_water = view<std::uint8_t>(exact("BWTR", blocks));
+        block_biome = view<std::uint8_t>(exact("BBIO", blocks));
+        table("BKEY", biome_count_, &biome_key_offsets_, &biome_key_blob_);
 
-        border_points = view<float>(section("BVTX"));
-        border_chains = view<std::uint32_t>(section("BSEG"));
-        river_points = view<float>(section("RVTX"));
-        river_chains = view<std::uint32_t>(section("RSEG"));
-        const auto font_params = view<std::int32_t>(section("FPAR"));
-        if (font_params.size() >= 8) {
+        // Borders and rivers (rivers may be empty: a map without rivers.png).
+        border_points = view<float>(whole("BVTX", 8, false));
+        border_chains = view<std::uint32_t>(whole("BSEG", 16, false));
+        river_points = view<float>(whole("RVTX", 12, true));
+        river_chains = view<std::uint32_t>(whole("RSEG", 16, true));
+
+        // The names' font and the baked province names.
+        const auto font_params = view<std::int32_t>(exact("FPAR", 32));
+        if (font_params.size() == 8) {
             font_line_height = font_params[0];
             font_base = font_params[1];
             font_padding = font_params[2];
@@ -139,54 +214,91 @@ namespace mc
             font_atlas_height = font_params[6];
             font_spread = font_params[7];
         }
-        font_chars = view<FontChar>(section("FCHR"));
-        font_kerning = view<FontKerning>(section("FKRN"));
-        font_atlas = view<std::uint8_t>(section("FATL"));
-        province_glyphs = view<float>(section("NGLY"));
-        province_glyph_owner = view<std::uint16_t>(section("NGLP"));
-        const auto region_names = section("RNAM");
-        const std::size_t region_names_count = section("RPAR").size();   // u8 per region, [0] = none
-        const std::size_t region_table = (region_names_count + 1) * sizeof(std::uint32_t);
-        if (region_names_count > 0 && region_names.size() >= region_table) {
-            region_name_offsets_ = view<std::uint32_t>(region_names.first(region_table));
-            region_name_blob_ = view<char>(region_names.subspan(region_table));
+        if (font_line_height <= 0 || font_atlas_width <= 0 || font_atlas_height <= 0) {
+            bad("section FPAR: no line height or atlas size");
         }
-        // Lands: each region's parent, the names as RNAM, '' + one per land.
-        region_parent = view<std::uint8_t>(section("RPAR"));
-        for (const std::uint8_t l : region_parent) {
-            land_count_ = std::max<std::uint32_t>(land_count_, l + 1u);
-        }
-        const auto land_names = section("LNAM");
-        const std::size_t land_table = (std::size_t{ land_count_ } + 1) * sizeof(std::uint32_t);
-        if (land_count_ > 0 && land_names.size() >= land_table) {
-            land_name_offsets_ = view<std::uint32_t>(land_names.first(land_table));
-            land_name_blob_ = view<char>(land_names.subspan(land_table));
-        }
-        const auto names = section("PNAM");
-        const std::size_t name_table = (std::size_t{ count } + 1) * sizeof(std::uint32_t);
-        if (names.size() >= name_table) {
-            name_offsets_ = view<std::uint32_t>(names.first(name_table));
-            name_blob_ = view<char>(names.subspan(name_table));
+        font_chars = view<FontChar>(whole("FCHR", sizeof(FontChar), false));
+        font_kerning = view<FontKerning>(whole("FKRN", sizeof(FontKerning), true));
+        font_atlas = view<std::uint8_t>(
+            exact("FATL", std::size_t(std::max(font_atlas_width, 0)) * std::size_t(std::max(font_atlas_height, 0))));
+        province_glyphs = view<float>(whole("NGLY", 7 * 4, true));
+        province_glyph_owner = view<std::uint16_t>(exact("NGLP", province_glyphs.size() / 7 * 2));
+        if (!problem.empty()) {
+            return fail(std::format("malformed map: {} (rebuild with tools/mapbake/bake.py)", problem));
         }
 
-        const std::size_t blocks = std::size_t{ block_width } * block_height;
-        if (block_size == 0 || std::size_t{ block_width } * block_size != width ||
-            std::size_t{ block_height } * block_size != height || block_class.size() != blocks ||
-            block_ground.size() != blocks || block_water.size() != blocks || block_biome.size() != blocks ||
-            biome_count_ == 0) {
-            return fail("missing or malformed block sections (rebuild with tools/mapbake/bake.py)");
+        // Values that index other arrays: ids within their tables, so nothing downstream reads out of bounds.
+        auto below = [](auto values, std::size_t limit) {
+            return std::ranges::all_of(values, [limit](auto v) { return std::size_t(v) < limit; });
+        };
+        if (!below(pixel_province, n)) {
+            bad("section PIDM: a pixel's province is past the province count");
         }
-        if (pixel_province.size() != pixels || pixel_class.size() != pixels || kind.size() != count ||
-            color.size() != count || positions.size() != std::size_t{ count } * 8 || sites.size() != std::size_t{ count } * 6 ||
-            name_offsets_.empty() ||
-            border_chains.size() % 4 != 0 || river_points.size() % 3 != 0 || river_chains.size() % 4 != 0 ||
-            font_chars.empty() || font_line_height <= 0 || region_name_offsets_.empty() || land_name_offsets_.empty() ||
-            province_glyphs.size() % 7 != 0 || province_glyph_owner.size() * 7 != province_glyphs.size() ||
-            font_atlas.size() != std::size_t(font_atlas_width) * std::size_t(font_atlas_height)) {
-            return fail("missing or malformed sections (rebuild with tools/mapbake/bake.py)");
+        if (!below(pixel_class, 4)) {
+            bad("section CLAS: unknown pixel class");
         }
-        for (const std::uint16_t r : region) {
-            region_count_ = std::max<std::uint32_t>(region_count_, r + 1u);
+        if (!below(kind, 5)) {
+            bad("section PTYP: unknown province kind");
+        }
+        if (!below(region, region_count_)) {
+            bad("section PREG: a province's region is past the regions of RPAR");
+        }
+        if (adjacency_offsets[0] != 0 || !std::ranges::is_sorted(adjacency_offsets) ||
+            adjacency_offsets.back() != adjacency_ids.size()) {
+            bad("section ADJO: neighbour offsets out of order or not ending at ADJI's size");
+        }
+        if (!std::ranges::all_of(adjacency_ids, [n](std::uint16_t id) { return id != 0 && id < n; })) {
+            bad("section ADJI: a neighbour id is 0 or past the province count");
+        }
+        for (std::size_t id = 0; id < n; ++id) {
+            const std::uint16_t* s = &sites[id * 6];
+            const bool house = s[0] == kNoSite ||
+                               (s[0] + 1u < block_width && s[1] + 1u < block_height && s[2] < 4);
+            const bool pier = s[3] == kNoSite || (s[3] < block_width && s[4] < block_height && s[5] < 4);
+            if (!house || !pier) {
+                bad(std::format("section PSIT: province {} has its house or pier off the block grid", id));
+                break;
+            }
+        }
+        if (!below(block_class, 5)) {
+            bad("section BCLS: unknown block class");
+        }
+        if (!below(block_biome, biome_count_)) {
+            bad("section BBIO: a block's biome is past the keys of BKEY");
+        }
+        const std::size_t border_point_count = border_points.size() / 2;
+        for (std::size_t c = 0; c + 3 < border_chains.size(); c += 4) {
+            const std::uint32_t pair = border_chains[c + 2];
+            if (std::size_t{ border_chains[c] } + border_chains[c + 1] > border_point_count || (pair & 0xFFFF) >= n ||
+                (pair >> 16) >= n) {
+                bad(std::format("section BSEG: chain {} reaches past BVTX or names a province past the count", c / 4));
+                break;
+            }
+        }
+        const std::size_t river_point_count = river_points.size() / 3;
+        const std::size_t river_count = river_chains.size() / 4;
+        for (std::size_t r = 0; r < river_count; ++r) {
+            const std::uint32_t* chain = &river_chains[r * 4];
+            if (std::size_t{ chain[0] } + chain[1] > river_point_count ||
+                (chain[3] != 0xFFFFFFFFu && chain[3] >= river_count)) {
+                bad(std::format("section RSEG: river {} reaches past RVTX or flows into no river", r));
+                break;
+            }
+        }
+        auto cp1252 = [](std::int32_t code) { return code >= 0 && code < 256; };
+        if (!std::ranges::all_of(font_chars, [&](const FontChar& c) { return cp1252(c.code); }) ||
+            !std::ranges::all_of(font_kerning, [&](const FontKerning& k) { return cp1252(k.first) && cp1252(k.second); })) {
+            bad("section FCHR or FKRN: a character code outside cp1252");
+        }
+        for (std::size_t g = 0; g < province_glyph_owner.size(); ++g) {
+            const float code = province_glyphs[g * 7 + 6];
+            if (province_glyph_owner[g] >= n || !(code >= 0.0f && code < 256.0f) || code != std::floor(code)) {
+                bad(std::format("section NGLY or NGLP: glyph {} names a province past the count or is no cp1252 code", g));
+                break;
+            }
+        }
+        if (!problem.empty()) {
+            return fail(std::format("malformed map: {} (rebuild with tools/mapbake/bake.py)", problem));
         }
         return true;
     }
