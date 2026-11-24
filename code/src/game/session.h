@@ -8,7 +8,7 @@ namespace mc
 
     // One game from the player's side: the country selection, then playing as the chosen country. Pure state and
     // rules: no rendering, no UI, no camera, no clock (app/shell.h turns its changes into those). Days pass only in
-    // the playing phase, at the pace (app/pace.h) the Shell keeps.
+    // the playing phase, at the pace (view/pace.h) the Shell keeps.
     class Session
     {
     public:

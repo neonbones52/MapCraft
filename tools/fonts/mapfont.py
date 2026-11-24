@@ -1,7 +1,7 @@
 """Map label font: EU4's Mapfont.fnt layout metrics and an SDF glyph atlas, made from blockyfont.otf (a blocky font in
 the spirit of Minecraft's, in the project root; not in git) instead of EU4's bitmap Trajan Pro Bold.
 
-The label placement (code/src/core/labels.cpp, archeologyEU4/Labels) measures names with these metrics exactly as
+The label placement (code/src/view/labels.cpp, archeologyEU4/Labels) measures names with these metrics exactly as
 EU4 measures them with gfx/fonts/Mapfont.fnt: per byte (cp1252) xadvance, glyph quad xoffset/yoffset/width/height
 including an 8 px padding, kerning pairs, lineHeight 100. Mapfont is Trajan Pro Bold at size 100 with the capitals'
 ink from 18 to 78 px below the line top (A: yoffset 10 + padding 8, height 76 - 16). The font is scaled so that its

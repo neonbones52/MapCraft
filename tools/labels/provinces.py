@@ -1,5 +1,5 @@
 """Province names, baked: EU4's map-name placement (archeologyEU4/Labels/LabelPython, the verified reference of
-code/src/core/labels.cpp) with every province as its own group, the way SetMapNameMode's keyed modes build groups:
+code/src/view/labels.cpp) with every province as its own group, the way SetMapNameMode's keyed modes build groups:
 one pass over the provinces with pixels in ascending id, the identifier being the province itself, named after it.
 The engine shows these names instead of the map mode's names from the 10th zoom level on.
 

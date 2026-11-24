@@ -23,7 +23,7 @@ namespace mc
         bool load(const std::filesystem::path& dir, const MapData& map, std::string* error);
 
         // `days` days pass, one after another: the only way the state and the date change (the game's Shell, at the
-        // pace the player set, app/pace.h; later mapcraft_sim). Sets the simulation's floating-point environment
+        // pace the player set, view/pace.h; later mapcraft_sim). Sets the simulation's floating-point environment
         // first (core/det_math.h). The rules of the simulation will run in here, over the columns.
         void advance_days(std::uint32_t days);
         // Back to the start date. (Once the tick changes the columns, this restores the start state as well.)
