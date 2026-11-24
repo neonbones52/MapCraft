@@ -1,6 +1,7 @@
 #include "game/game_data.h"
 
 #include <charconv>
+#include <algorithm>
 #include <cmath>
 #include <format>
 
@@ -179,6 +180,65 @@ namespace mc
                     (*price)[r + 1] = 1.0f;
                 } else if (!parse_number(table.rows[r][column], &(*price)[r + 1], false, true)) {
                     return ctx.fail(r, std::format("price \"{}\": emeralds per unit, > 0", table.rows[r][column]));
+                }
+            }
+            return true;
+        }
+
+        // defines.csv: key, value; every key of Defines once (no file: the defaults).
+        bool read_defines(const std::filesystem::path& path, Defines* defines, std::string* error)
+        {
+            *defines = {};
+            if (!std::filesystem::exists(path)) {
+                return true;
+            }
+            csv::Table table;
+            if (!csv::read(path, &table, error)) {
+                return false;
+            }
+            const Context ctx{ path, &table, error };
+            int key = 0;
+            int value = 0;
+            if (!need_column(path, table, "key", &key, error) || !need_column(path, table, "value", &value, error)) {
+                return false;
+            }
+            // A price must never reach 0 (it would stay there, and free goods break the clearing): the floor above 0,
+            // the step under 1.
+            const struct
+            {
+                const char* key;
+                float* out;
+                bool above_zero;
+                const char* range;
+            } fields[] = {
+                { "price_step", &defines->price_step, false, "from 0 to under 1" },
+                { "price_epsilon", &defines->price_epsilon, false, "from 0 to under 1" },
+                { "price_floor", &defines->price_floor, true, "above 0, up to 1" },
+            };
+            std::vector<std::uint8_t> seen(std::size(fields), 0);
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                const auto& row = table.rows[r];
+                std::size_t f = 0;
+                while (f < std::size(fields) && row[key] != fields[f].key) {
+                    ++f;
+                }
+                if (f == std::size(fields)) {
+                    return ctx.fail(r, std::format("unknown define \"{}\"", row[key]));
+                }
+                if (seen[f]++) {
+                    return ctx.fail(r, std::format("define {} repeated", row[key]));
+                }
+                float& v = *fields[f].out;
+                const bool ok = parse_number(row[value], &v, false, fields[f].above_zero) &&
+                                (fields[f].above_zero ? v <= 1.0f : v < 1.0f);
+                if (!ok) {
+                    return ctx.fail(r, std::format("{} \"{}\": {}", row[key], row[value], fields[f].range));
+                }
+            }
+            for (std::size_t f = 0; f < std::size(fields); ++f) {
+                if (!seen[f]) {
+                    *error = std::format("{}: no {}", path.string(), fields[f].key);
+                    return false;
                 }
             }
             return true;
@@ -442,7 +502,8 @@ namespace mc
             !read_pop_types(common / "pop_types.csv", &content.pop_types, error) ||
             !read_needs(common / "needs.csv", content.goods, &content.needs, error) ||
             !read_rgo_types(common / "rgo_types.csv", content.goods, content.pop_types, &content.rgo_types, error) ||
-            !read_list(common / "markets.csv", false, true, &content.markets, error)) {
+            !read_list(common / "markets.csv", false, true, &content.markets, error) ||
+            !read_defines(common / "defines.csv", &content.defines, error)) {
             return false;
         }
 
@@ -494,6 +555,13 @@ namespace mc
         state.regions.resize(map.region_count());
         content.province_region.assign(map.region.begin(), map.region.end());
         state.stock.resize(map.count, static_cast<std::uint32_t>(content.goods.size()));
+        state.prices.goods = static_cast<std::uint32_t>(content.goods.size());
+        state.prices.stride = padded(content.markets.size());
+        state.prices.price.assign(state.prices.goods * state.prices.stride, 0.0f);
+        for (std::size_t good = 0; good < content.goods.size(); ++good) {
+            float* row = &state.prices.price[good * state.prices.stride];
+            std::fill_n(row, state.prices.stride, content.goods_price[good]);
+        }
         state.pops.resize(map.count, static_cast<std::uint32_t>(content.pop_types.size()));
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {

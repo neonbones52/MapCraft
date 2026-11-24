@@ -599,6 +599,35 @@ namespace mc
         ImGui::End();
     }
 
+    void Editor::price_panel()
+    {
+        const DefinitionList& goods = game_.content.goods;
+        ImGui::SetNextWindowPos(ImVec2(440, 10), ImGuiCond_FirstUseEver);
+        if (!ImGui::Begin("Prices", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::End();
+            return;
+        }
+        ImGui::TextDisabled("The start: every market at goods.csv price (they move in the game)");
+        if (app_.price_good() == 0) {
+            for (std::size_t g = 1; g < goods.size(); ++g) {
+                if (goods.key[g] != kMoneyGood) {
+                    app_.set_price_good(static_cast<std::uint8_t>(g));
+                    break;
+                }
+            }
+        }
+        for (std::size_t g = 1; g < goods.size(); ++g) {
+            if (goods.key[g] == kMoneyGood) {
+                continue;
+            }
+            const std::string label = std::format("{} ({:g})", goods.name[g], game_.content.goods_price[g]);
+            if (ImGui::RadioButton(label.c_str(), app_.price_good() == g)) {
+                app_.set_price_good(static_cast<std::uint8_t>(g));
+            }
+        }
+        ImGui::End();
+    }
+
     void Editor::status_panel(float view_width, float view_height)
     {
         const GameData& game = game_;
@@ -711,6 +740,9 @@ namespace mc
         map_mode_panel();
         if (app_.map_mode() == MapMode::markets) {
             market_panel();
+        }
+        if (app_.map_mode() == MapMode::prices) {
+            price_panel();
         }
         status_panel(view_width, view_height);
         hover_tooltip();

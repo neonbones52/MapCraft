@@ -75,6 +75,7 @@ add_library(mc_game STATIC
     src/ui/game_ui.cpp
     src/ui/screens/country_select.cpp
     src/ui/screens/player_hud.cpp
+    src/ui/screens/prices_panel.cpp
     src/ui/screens/time_bar.cpp
 )
 find_package(imgui CONFIG REQUIRED)

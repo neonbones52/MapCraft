@@ -50,6 +50,7 @@ namespace mc
         void country_panel(float view_width, float view_height);
         void map_mode_panel();
         void market_panel();        // the Markets map mode: the market to paint regions with
+        void price_panel();         // the Prices map mode: the good it shows
         void status_panel(float view_width, float view_height);
         void hover_tooltip();
 

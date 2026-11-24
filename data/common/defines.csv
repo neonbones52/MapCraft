@@ -1,0 +1,4 @@
+key,value
+price_step,0.01
+price_epsilon,0.05
+price_floor,0.1

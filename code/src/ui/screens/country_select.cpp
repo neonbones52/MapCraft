@@ -102,6 +102,16 @@ namespace mc
             ImGui::TextUnformatted(ui.content.countries.name[owner].c_str());
             ImGui::TextDisabled("%s", std::string(ui.map.province_name(province)).c_str());
             ImGui::Text("Money: %.2f emeralds", to_emeralds(ledger::province_cash(ui.state, province)));
+            const std::uint16_t region = province < ui.content.province_region.size()
+                                             ? ui.content.province_region[province] : 0;
+            const std::uint8_t market = region < ui.state.regions.count ? ui.state.regions.market[region] : 0;
+            if (ui.price_good != 0 && market != 0) {
+                const float price = ui.state.prices.at(ui.price_good, market);
+                const float start = ui.content.goods_price[ui.price_good];
+                const float percent = start > 0.0f ? price / start * 100.0f : 0.0f;
+                ImGui::Text("%s on %s: %.5f (%.0f%% of the start)", ui.content.goods.name[ui.price_good].c_str(),
+                            ui.content.markets.name[market].c_str(), price, percent);
+            }
             for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
                 const float filled = needs_filled(ui.content, ui.state, province, tier);
                 if (filled >= 0.0f) {

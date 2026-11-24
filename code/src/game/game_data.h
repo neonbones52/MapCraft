@@ -104,7 +104,10 @@ namespace mc
         std::array<Column<float>, kNeedTiers> filled;
 
         void resize(std::uint32_t province_count, std::uint32_t type_count);
-        [[nodiscard]] float at(std::size_t type, std::uint32_t province) const { return size[type * stride + province]; }
+        [[nodiscard]] float at(std::size_t type, std::uint32_t province) const
+        {
+            return size[type * stride + province];
+        }
         float& at(std::size_t type, std::uint32_t province) { return size[type * stride + province]; }
     };
 
@@ -127,8 +130,24 @@ namespace mc
         Column<float> amount;
 
         void resize(std::uint32_t province_count, std::uint32_t good_count);
-        [[nodiscard]] float at(std::size_t good, std::uint32_t province) const { return amount[good * stride + province]; }
+        [[nodiscard]] float at(std::size_t good, std::uint32_t province) const
+        {
+            return amount[good * stride + province];
+        }
         float& at(std::size_t good, std::uint32_t province) { return amount[good * stride + province]; }
+    };
+
+    // Prices, per market and good: a matrix of rows by good, each row a column of markets (good g on market m at
+    // g * stride + m, stride = padded(market count)), emeralds per unit. The start: goods.csv `price` everywhere;
+    // the money good stays 1.
+    struct MarketPrices
+    {
+        std::uint32_t goods = 0;        // Content::goods size, "none" included
+        std::size_t stride = 0;
+        Column<float> price;
+
+        [[nodiscard]] float at(std::size_t good, std::size_t market) const { return price[good * stride + market]; }
+        float& at(std::size_t good, std::size_t market) { return price[good * stride + market]; }
     };
 
     // What money moved for: the ledger's counters, one per rule that moves money (docs/ECONOMY.md).
@@ -191,12 +210,20 @@ namespace mc
         DefinitionList list;                         // index 0 = none
         std::vector<std::uint8_t> workers;           // PopTypes index
         std::vector<std::uint8_t> owners;            // PopTypes index: the pop of the province its earnings go to
-        std::vector<float> wages;                    // the workers' share of its earnings, 0..1; the owners keep the rest
+        std::vector<float> wages;                    // the workers' share of its earnings, 0..1 (owners: the rest)
         std::vector<std::uint32_t> output_first;     // type t makes outputs [output_first[t], output_first[t + 1])
         std::vector<std::uint8_t> output_good;       // Content::goods index
         std::vector<float> output_amount;
 
         [[nodiscard]] std::size_t size() const { return list.size(); }
+    };
+
+    // The economy's numbers (data/common/defines.csv; without the file, these defaults).
+    struct Defines
+    {
+        float price_step = 0.01f;      // the most a price moves in a day, as a share of itself
+        float price_epsilon = 0.05f;   // imbalances (D - S) / max(D, S) this small leave the price
+        float price_floor = 0.1f;      // the lowest price, as a share of goods.csv `price`
     };
 
     // What the game is made of (data/common): lists and definitions, no state. Fixed once loaded; strings live here
@@ -211,6 +238,7 @@ namespace mc
         RgoTypes rgo_types;
         DefinitionList markets;           // data/common/markets.csv: a market is made of whole regions
         CountryDefinitions countries;
+        Defines defines;
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
     };
 
@@ -222,6 +250,7 @@ namespace mc
         Regions regions;
         Pops pops;
         Stock stock;
+        MarketPrices prices;
         Balances money;
         CountryStates countries;
     };

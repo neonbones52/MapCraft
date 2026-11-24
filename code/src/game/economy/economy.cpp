@@ -2,9 +2,15 @@
 
 #include <algorithm>
 #include <cmath>
-#include <numeric>
 
 #include "game/economy/ledger.h"
+
+// Phase -> what it writes (docs/ECONOMY.md, "Код"); the order is economy_day's, at the end of this file.
+//   mine            Balances::cash (owners mint, workers' wages), minted, flows[mine, wages]
+//   produce         Stock::amount
+//   measure_supply  EconomyCache::market_supply, market_demand (cleared)
+//   clear_tier      Pops::filled, Stock::amount, Balances::cash, flows[sales], EconomyCache::market_demand, scratch
+//   move_prices     MarketPrices::price
 
 namespace mc
 {
@@ -58,46 +64,71 @@ namespace mc
             }
         }
 
-        // Buys `fill` units of a tier from its goods in `order`, cheapest first, out of `supply`: what each good gives
-        // goes to `taken`; returns the fill got and the emeralds it costs in `spent`.
-        double walk(const Content& content, std::size_t tier, const std::vector<std::uint8_t>& order,
-                    const std::vector<double>& supply, double fill, std::vector<double>* taken, double* spent)
+        // Buys `fill` units of a tier from its goods in the order of c->order, cheapest first, out of c->supply at
+        // c->unit: what each good gives goes to c->taken, c->used_up marks the goods it took whole; returns the fill
+        // got and the emeralds it costs in `spent`.
+        double walk(const Content& content, std::size_t tier, EconomyCache* c, double fill, double* spent)
         {
-            const std::vector<std::uint8_t>& goods = content.needs.good[tier];
             const std::vector<float>& weights = content.needs.weight[tier];
-            std::fill(taken->begin(), taken->end(), 0.0);
+            std::fill(c->taken.begin(), c->taken.end(), 0.0);
+            std::fill(c->used_up.begin(), c->used_up.end(), std::uint8_t{ 0 });
             *spent = 0.0;
             double got = 0.0;
-            for (const std::uint8_t i : order) {
-                const double take = std::min(supply[i] * weights[i], fill - got);
+            for (const std::uint8_t i : c->order) {
+                const double whole = c->supply[i] * weights[i];
+                const double take = std::min(whole, fill - got);
+                c->used_up[i] = take >= whole ? 1 : 0;
                 if (take <= 0.0) {
                     continue;
                 }
-                (*taken)[i] = take / weights[i];
-                *spent += (*taken)[i] * content.goods_price[goods[i]];
+                c->taken[i] = take / weights[i];
+                *spent += c->taken[i] * c->unit[i];
                 got += take;
             }
             return got;
         }
 
         // One tier of needs on one market (docs/GAMEDATA.md, "Экономика дня"): the market buys its pops' demand of
-        // the tier from the goods that fill it, cheapest per unit of the tier first, at fixed prices; short supply
-        // gives every pop the same share, min(1, S/D); a pop short of cash buys what its cash pays for. Each RGO
-        // sells the same share of its stock of a good; the money goes to its workers and owners by its wage share.
+        // the tier from the goods that fill it, cheapest per unit of the tier first, at the market's prices; short
+        // supply gives every pop the same share, min(1, S/D); a pop short of cash buys what its cash pays for. Each
+        // RGO sells the same share of its stock of a good; the money goes to its workers and owners by its wage
+        // share. What the pops wanted of each good with their money goes to the day's demand for the price pass.
         // Every step is a pass over the market's columns in the cache.
         void clear_tier(const Content& content, WorldState* state, EconomyCache* c, std::size_t market,
                         std::size_t tier)
         {
             const std::vector<std::uint8_t>& goods = content.needs.good[tier];
-            const std::vector<std::uint8_t>& order = c->tier_order[tier];
+            const std::vector<float>& weights = content.needs.weight[tier];
+            const std::size_t n = goods.size();
             const std::uint32_t p0 = c->province_first[market];
             const std::uint32_t p1 = c->province_first[market + 1];
             const std::uint32_t e0 = c->pop_first[market];
             const std::uint32_t e1 = c->pop_first[market + 1];
             const std::size_t pops = e1 - e0;
+            const std::size_t mstride = state->prices.stride;
             Column<float>& filled = state->pops.filled[tier];
 
-            // Demand, per pop and in all.
+            // The tier's goods on this market: price, supply, order cheapest per unit of the tier (then by good).
+            c->unit.resize(n);
+            c->supply.assign(n, 0.0);
+            c->taken.assign(n, 0.0);
+            c->used_up.assign(n, 0);
+            c->order.resize(n);
+            for (std::size_t i = 0; i < n; ++i) {
+                c->unit[i] = state->prices.at(goods[i], market);
+                const float* row = &state->stock.amount[goods[i] * state->stock.stride];
+                for (std::uint32_t k = p0; k < p1; ++k) {
+                    c->supply[i] += row[c->province[k]];
+                }
+                c->order[i] = static_cast<std::uint8_t>(i);
+            }
+            std::sort(c->order.begin(), c->order.end(), [&](std::uint8_t a, std::uint8_t b) {
+                const double ca = c->unit[a] / weights[a];
+                const double cb = c->unit[b] / weights[b];
+                return ca != cb ? ca < cb : goods[a] < goods[b];
+            });
+
+            // Demand, per pop and in all; what of it the pops' money reaches at the cheapest price on offer.
             c->want.resize(pops);
             double demand = 0.0;
             for (std::size_t e = 0; e < pops; ++e) {
@@ -105,17 +136,41 @@ namespace mc
                              state->pops.size[c->pop_account[e0 + e]];
                 demand += c->want[e];
             }
-            // Supply: the stock of each good of the tier over the market's provinces.
-            c->supply.assign(goods.size(), 0.0);
-            c->taken.assign(goods.size(), 0.0);
-            for (std::size_t i = 0; i < goods.size(); ++i) {
-                const float* row = &state->stock.amount[goods[i] * state->stock.stride];
-                for (std::uint32_t k = p0; k < p1; ++k) {
-                    c->supply[i] += row[c->province[k]];
+            if (demand <= 0.0) {
+                for (std::size_t e = 0; e < pops; ++e) {
+                    filled[c->pop_account[e0 + e]] = 0.0f;
+                }
+                return;
+            }
+            double cheapest = 0.0;
+            for (const std::uint8_t i : c->order) {
+                if (c->supply[i] > 0.0) {
+                    cheapest = c->unit[i] / weights[i];
+                    break;
                 }
             }
             double spent = 0.0;
-            const double got = demand > 0.0 ? walk(content, tier, order, c->supply, demand, &c->taken, &spent) : 0.0;
+            if (cheapest > 0.0) {
+                double affordable = 0.0;
+                for (std::size_t e = 0; e < pops; ++e) {
+                    const double cash = to_emeralds(state->money.cash[c->pop_account[e0 + e]]);
+                    affordable += std::min(c->want[e], cash / cheapest);
+                }
+                // What the market could not give is shared among the goods that ran out, by how much of the tier
+                // each held (counted once in all, not once per good).
+                const double unmet = affordable - walk(content, tier, c, affordable, &spent);
+                double held = 0.0;
+                for (std::size_t i = 0; i < n; ++i) {
+                    held += c->used_up[i] ? c->supply[i] * weights[i] : 0.0;
+                }
+                for (std::size_t i = 0; i < n; ++i) {
+                    const double part = c->used_up[i] && held > 0.0 ? c->supply[i] * weights[i] / held : 0.0;
+                    const double extra = unmet * part / weights[i];
+                    c->market_demand[goods[i] * mstride + market] += static_cast<float>(c->taken[i] + extra);
+                }
+            }
+
+            const double got = walk(content, tier, c, demand, &spent);
             if (got <= 0.0) {
                 for (std::size_t e = 0; e < pops; ++e) {
                     filled[c->pop_account[e0 + e]] = 0.0f;
@@ -133,7 +188,13 @@ namespace mc
                 c->fill[e] = std::min(share * c->want[e], cash / cost);
                 bought += c->fill[e];
             }
-            const double paid = bought > 0.0 ? walk(content, tier, order, c->supply, bought, &c->taken, &spent) : 0.0;
+            if (bought <= 0.0) {
+                for (std::size_t e = 0; e < pops; ++e) {
+                    filled[c->pop_account[e0 + e]] = 0.0f;   // nobody can pay: nothing is sold
+                }
+                return;
+            }
+            const double paid = walk(content, tier, c, bought, &spent);
             const double price = paid > 0.0 ? spent / paid : 0.0;
             c->pay.resize(pops);
             for (std::size_t e = 0; e < pops; ++e) {
@@ -146,12 +207,11 @@ namespace mc
             const RgoTypes& rgos = content.rgo_types;
             c->payee.clear();
             c->weight.clear();
-            for (std::size_t i = 0; i < goods.size(); ++i) {
+            for (std::size_t i = 0; i < n; ++i) {
                 if (c->taken[i] <= 0.0 || c->supply[i] <= 0.0) {
                     continue;
                 }
                 const double part = std::min(c->taken[i] / c->supply[i], 1.0);
-                const double unit = content.goods_price[goods[i]];
                 float* row = &state->stock.amount[goods[i] * state->stock.stride];
                 for (std::uint32_t k = p0; k < p1; ++k) {
                     const std::uint32_t p = c->province[k];
@@ -163,12 +223,60 @@ namespace mc
                     row[p] = part >= 1.0 ? 0.0f : static_cast<float>(row[p] - sold);
                     const double wages = rgos.wages[rgo];
                     c->payee.push_back(account(state->pops, rgos.workers[rgo], p));
-                    c->weight.push_back(sold * unit * wages);
+                    c->weight.push_back(sold * c->unit[i] * wages);
                     c->payee.push_back(account(state->pops, rgos.owners[rgo], p));
-                    c->weight.push_back(sold * unit * (1.0 - wages));
+                    c->weight.push_back(sold * c->unit[i] * (1.0 - wages));
                 }
             }
-            ledger::settle(&state->money, { c->pop_account.data() + e0, pops }, c->pay, c->payee, c->weight, Flow::sales);
+            ledger::settle(&state->money, { c->pop_account.data() + e0, pops }, c->pay, c->payee, c->weight,
+                           Flow::sales);
+        }
+
+        // Every market's stock of every good before it trades (rows by good, a column of markets).
+        void measure_supply(const Content& content, const WorldState& state, EconomyCache* c)
+        {
+            const std::size_t mstride = state.prices.stride;
+            std::fill(c->market_supply.begin(), c->market_supply.end(), 0.0f);
+            std::fill(c->market_demand.begin(), c->market_demand.end(), 0.0f);
+            if (c->province_first.size() < 2) {
+                return;
+            }
+            const std::size_t markets = c->province_first.size() - 1;
+            for (std::size_t g = 1; g < content.goods.size(); ++g) {
+                const float* stock = &state.stock.amount[g * state.stock.stride];
+                float* supply = &c->market_supply[g * mstride];
+                for (std::size_t m = 1; m < markets; ++m) {
+                    float sum = 0.0f;
+                    for (std::uint32_t k = c->province_first[m]; k < c->province_first[m + 1]; ++k) {
+                        sum += stock[c->province[k]];
+                    }
+                    supply[m] = sum;
+                }
+            }
+        }
+
+        // Prices: each moves by the day's imbalance (D - S) / max(D, S), at most price_step of itself and not when
+        // the imbalance is within price_epsilon, never under price_floor of its start; a good not on a market at
+        // all (S = 0) keeps its price there. The money good stays 1. One dense pass per good over its markets.
+        void move_prices(const Content& content, WorldState* state, const EconomyCache& c)
+        {
+            const Defines& d = content.defines;
+            const std::size_t mstride = state->prices.stride;
+            for (std::size_t g = 1; g < content.goods.size(); ++g) {
+                if (static_cast<int>(g) == c.money_good) {
+                    continue;
+                }
+                const float floor = content.goods_price[g] * d.price_floor;
+                float* price = &state->prices.price[g * mstride];
+                const float* supply = &c.market_supply[g * mstride];
+                const float* demand = &c.market_demand[g * mstride];
+                for (std::size_t m = 0; m < mstride; ++m) {
+                    const float s = supply[m];
+                    const float imbalance = s > 0.0f ? (demand[m] - s) / std::max(demand[m], s) : 0.0f;
+                    const float step = std::fabs(imbalance) > d.price_epsilon ? d.price_step * imbalance : 0.0f;
+                    price[m] = std::max(price[m] * (1.0f + step), floor);
+                }
+            }
         }
     }
 
@@ -213,30 +321,22 @@ namespace mc
             }
         }
 
-        // The goods of each tier by price per unit of the tier (prices are fixed), then by good: a full order.
-        for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
-            const std::vector<std::uint8_t>& goods = content.needs.good[tier];
-            const std::vector<float>& weights = content.needs.weight[tier];
-            std::vector<std::uint8_t>& order = c->tier_order[tier];
-            order.resize(goods.size());
-            std::iota(order.begin(), order.end(), std::uint8_t{ 0 });
-            std::sort(order.begin(), order.end(), [&](std::uint8_t a, std::uint8_t b) {
-                const float ca = content.goods_price[goods[a]] / weights[a];
-                const float cb = content.goods_price[goods[b]] / weights[b];
-                return ca != cb ? ca < cb : goods[a] < goods[b];
-            });
-        }
+        const std::size_t cells = state.prices.price.size();
+        c->market_supply.assign(cells, 0.0f);
+        c->market_demand.assign(cells, 0.0f);
     }
 
     void economy_day(const Content& content, WorldState* state, EconomyCache* cache)
     {
         mine(content, state, cache->money_good);
         produce(content, state, cache->money_good);
+        measure_supply(content, *state, cache);
         for (std::size_t m = 1; m + 1 < cache->province_first.size(); ++m) {
             for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
                 clear_tier(content, state, cache, m, tier);
             }
         }
+        move_prices(content, state, *cache);
     }
 
     float needs_filled(const Content& content, const WorldState& state, std::uint32_t province, std::size_t tier)

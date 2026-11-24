@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "game/calendar.h"
 
 namespace mc
@@ -25,6 +27,7 @@ namespace mc
         float height = 0.0f;
         float scale = 1.0f;    // UI scale (ImGuiLayer::scale)
         Date date;                    // the world's today
+        std::uint8_t price_good = 0;  // the good the Prices map mode shows, 0 = that mode is off
     };
 
     // What the player asked for this frame; app/shell.h carries it out on the Session and the Pace (screens change
@@ -35,5 +38,6 @@ namespace mc
         bool new_game = false;   // back to the country selection
         int set_speed = 0;       // 1..5: that speed (view/pace.h); 0 = leave it
         bool toggle_pause = false;
+        int show_prices = -1;    // a good: the Prices map mode with it; 0: back to the political map; -1: leave it
     };
 }
