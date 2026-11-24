@@ -99,7 +99,7 @@ DLC). Значит, сумма всех счетов должна сходить
   |---|---|---|---|
   | Cattle Ranch | meat 1.0, leather 0.3 | farmers | 3D-корова |
   | Horse Breeding | horses 1.0, meat 0.35 | farmers | 3D-конь |
-  | Wheat Farm | wheat 2.0 | farmers | wheat |
+  | Wheat Farm | wheat 1.0 | farmers | wheat |
   | Creeper Trapping | gunpowder 1.0 | farmers | 3D-крипер |
   | Emerald Mine | emerald 0.1 | workers | emerald |
   | Fishing | fish 1.0 | farmers | raw cod |
