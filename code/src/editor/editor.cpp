@@ -45,6 +45,15 @@ namespace mc
             return true;
         }
 
+        double population(const Pops& pops, std::uint32_t province)
+        {
+            double people = 0.0;
+            for (std::size_t t = 1; t < pops.types; ++t) {
+                people += pops.at(t, province);
+            }
+            return people;
+        }
+
         std::string country_label(const CountryDefinitions& countries, std::size_t c)
         {
             return c == 0 ? std::string("-") : std::format("{}  {}", countries.tag_text(c), countries.name[c]);
@@ -68,6 +77,15 @@ namespace mc
             undo_.pop_front();
         }
         redo_.clear();
+    }
+
+    void Editor::begin_typing()
+    {
+        const ImGuiID item = ImGui::GetItemID();
+        if (item != typing_item_) {
+            begin_edit();
+            typing_item_ = item;
+        }
     }
 
     void Editor::changed()
@@ -285,6 +303,64 @@ namespace mc
         ImGui::EndTable();
     }
 
+    void Editor::rgo_info()
+    {
+        const GameData& game = game_;
+        const RgoTypes& rgos = game.content.rgo_types;
+        std::uint8_t rgo = 0;
+        if (!shared(game.state.provinces.rgo, selection_, &rgo) || rgo == 0) {
+            return;
+        }
+        std::string makes;
+        for (std::uint32_t o = rgos.output_first[rgo]; o < rgos.output_first[rgo + 1]; ++o) {
+            makes += std::format("{}{} {:g}", makes.empty() ? "" : ", ", game.content.goods.name[rgos.output_good[o]],
+                                 rgos.output_amount[o]);
+        }
+        ImGui::TextDisabled("worked by %s; a worker a day: %s",
+                            game.content.pop_types.list.name[rgos.workers[rgo]].c_str(), makes.c_str());
+    }
+
+    void Editor::edit_pops()
+    {
+        GameData& game = game_;
+        const DefinitionList& types = game.content.pop_types.list;
+        Pops& pops = game.state.pops;
+        if (types.size() <= 1) {
+            ImGui::TextDisabled("No pop types in data/common/pop_types.csv");
+            return;
+        }
+        double total = 0.0;
+        for (std::size_t t = 1; t < types.size(); ++t) {
+            double sum = 0.0;
+            bool same = true;
+            const float first = pops.at(t, selection_[0]);
+            for (const std::uint32_t id : selection_) {
+                sum += pops.at(t, id);
+                same = same && pops.at(t, id) == first;
+            }
+            total += sum;
+            ImGui::PushID(static_cast<int>(t));
+            // Typed: every selected province gets the number.
+            int typed = static_cast<int>(first);
+            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+            if (ImGui::InputInt("##size", &typed, 0, 0)) {
+                begin_typing();
+                for (const std::uint32_t id : selection_) {
+                    pops.at(t, id) = static_cast<float>(std::max(typed, 0));
+                }
+                changed();
+            }
+            ImGui::SameLine();
+            ImGui::TextUnformatted(types.name[t].c_str());
+            if (!same) {
+                ImGui::SameLine();
+                ImGui::TextDisabled("%s, %.0f in all", kMixed, sum);
+            }
+            ImGui::PopID();
+        }
+        ImGui::TextDisabled("Population: %.0f", total);
+    }
+
     // ------------------------------------------------------------------------------------------------ panels
 
     void Editor::province_panel()
@@ -348,7 +424,11 @@ namespace mc
 
         ImGui::SeparatorText("Land");
         pick_listed("Terrain", game.content.terrain, game.state.provinces.terrain);
-        pick_listed("Resource", game.content.goods, game.state.provinces.resource);
+        pick_listed("RGO", game.content.rgo_types.list, game.state.provinces.rgo);
+        rgo_info();
+
+        ImGui::SeparatorText("Pops");
+        edit_pops();
         ImGui::End();
     }
 
@@ -387,7 +467,11 @@ namespace mc
                 owned.push_back(id);
             }
         }
-        ImGui::Text("%zu provinces", owned.size());
+        double people = 0.0;
+        for (const std::uint32_t id : owned) {
+            people += population(game.state.pops, id);
+        }
+        ImGui::Text("%zu provinces, population %.0f", owned.size(), people);
         const std::uint16_t capital = states.capital[country_];
         ImGui::Text("Capital: %s", capital ? std::string(map.province_name(capital)).c_str() : "-");
         ImGui::BeginDisabled(owned.empty());
@@ -457,7 +541,7 @@ namespace mc
                 continue;
             }
             ++land;
-            const bool missing = !p.owner[id] || !p.controller[id] || !p.terrain[id];
+            const bool missing = !p.owner[id] || !p.controller[id] || !p.terrain[id] || !p.rgo[id];
             if (missing) {
                 ++unfilled;
                 if (first_unfilled == 0) {
@@ -515,7 +599,8 @@ namespace mc
             ImGui::TextDisabled("%s", std::string(map.region_name(map.region[id])).c_str());
             ImGui::Text("Owner: %s", country_label(game.content.countries, p.owner[id]).c_str());
             ImGui::Text("Terrain: %s", p.terrain[id] ? game.content.terrain.name[p.terrain[id]].c_str() : "-");
-            ImGui::Text("Resource: %s", p.resource[id] ? game.content.goods.name[p.resource[id]].c_str() : "-");
+            ImGui::Text("RGO: %s", p.rgo[id] ? game.content.rgo_types.list.name[p.rgo[id]].c_str() : "-");
+            ImGui::Text("Population: %.0f", population(game.state.pops, id));
         }
         ImGui::EndTooltip();
     }
@@ -523,6 +608,9 @@ namespace mc
     void Editor::ui(float view_width, float view_height)
     {
         const ImGuiIO& io = ImGui::GetIO();
+        if (!ImGui::IsAnyItemActive()) {
+            typing_item_ = 0;
+        }
         if (!io.WantTextInput) {
             if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_S)) {
                 save();

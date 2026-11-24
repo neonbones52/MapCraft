@@ -18,8 +18,8 @@ namespace mc
         provinces = 2,      // every province in its own debug colour
         regions = 3,        // the map's regions (holds, counties), no capitals
         terrain_type = 4,   // logical terrain (data/common/terrain.csv), not the look of the map
-        resource = 5,       // the RGO's good (data/common/goods.csv)
-        unfilled = 6,       // editing aid: red where owner, controller or terrain is missing
+        rgo = 5,            // the RGO type (data/common/rgo_types.csv)
+        unfilled = 6,       // editing aid: red where owner, controller, terrain or RGO is missing
     };
     inline constexpr std::uint32_t kMapModeCount = 7;
     [[nodiscard]] const char* map_mode_name(MapMode mode);

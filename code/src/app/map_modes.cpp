@@ -51,10 +51,10 @@ namespace mc
 
         bool has_game(const GameData* game) { return game != nullptr && game->loaded; }
 
-        constexpr int kRequiredFields = 3;
+        constexpr int kRequiredFields = 4;
         int missing_fields(const Provinces& p, std::uint32_t id)
         {
-            return (p.owner[id] == 0) + (p.controller[id] == 0) + (p.terrain[id] == 0);
+            return (p.owner[id] == 0) + (p.controller[id] == 0) + (p.terrain[id] == 0) + (p.rgo[id] == 0);
         }
 
         // EU4's impassable provinces: the wastelands, land that no realm takes and names do not cross.
@@ -152,7 +152,7 @@ namespace mc
         case MapMode::provinces: return "Provinces";
         case MapMode::regions: return "Regions";
         case MapMode::terrain_type: return "Terrain (logical)";
-        case MapMode::resource: return "Resources";
+        case MapMode::rgo: return "RGO";
         case MapMode::unfilled: return "Unfilled";
         }
         return "?";
@@ -226,7 +226,7 @@ namespace mc
             case MapMode::terrain: f = political; f.a = 0.0f; break;
             case MapMode::political: f = political; break;
             case MapMode::terrain_type: f = listed(game->content.terrain, p.terrain[id]); break;
-            case MapMode::resource: f = listed(game->content.goods, p.resource[id]); break;
+            case MapMode::rgo: f = listed(game->content.rgo_types.list, p.rgo[id]); break;
             case MapMode::unfilled: {
                 const int missing = missing_fields(p, id);
                 f = missing == 0 ? ProvinceFill{ 0.30f, 0.62f, 0.32f, 1.0f }

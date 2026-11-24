@@ -1,6 +1,7 @@
 #include "game/game_data.h"
 
 #include <charconv>
+#include <cmath>
 #include <format>
 
 #include "core/csv.h"
@@ -53,17 +54,20 @@ namespace mc
             return true;
         }
 
-        // key,name[,color]: `colored` = the colour column is required.
+        // key,name[,color]: `colored` = the colour column is required. `table`, if given, keeps the file for the
+        // list's other columns: row r is entry r + 1 (empty when the optional file is absent).
         bool read_list(const std::filesystem::path& path, bool required, bool colored, DefinitionList* list,
-                       std::string* error)
+                       std::string* error, csv::Table* table_out = nullptr)
         {
             list->key.assign(1, "");
             list->name.assign(1, "");
             list->color.assign(1, 0);
+            csv::Table local;
+            csv::Table& table = table_out ? *table_out : local;
+            table = {};
             if (!required && !std::filesystem::exists(path)) {
                 return true;
             }
-            csv::Table table;
             if (!csv::read(path, &table, error)) {
                 return false;
             }
@@ -122,10 +126,172 @@ namespace mc
             return ec == std::errc{} && ptr == text.data() + text.size();
         }
 
+        // A finite number >= 0 (`positive`: > 0); empty is 0 when `empty_zero`.
+        bool parse_number(std::string_view text, float* out, bool empty_zero = false, bool positive = false)
+        {
+            if (text.empty()) {
+                *out = 0.0f;
+                return empty_zero && !positive;
+            }
+            const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), *out);
+            return ec == std::errc{} && ptr == text.data() + text.size() && std::isfinite(*out) &&
+                   (positive ? *out > 0.0f : *out >= 0.0f);
+        }
+
+        // The column, or an error naming the file and the column.
+        bool need_column(const std::filesystem::path& path, const csv::Table& table, const char* name, int* out,
+                         std::string* error)
+        {
+            *out = table.column(name);
+            if (*out < 0) {
+                *error = std::format("{}: no column {}", path.string(), name);
+                return false;
+            }
+            return true;
+        }
+
         template <class T>
         void fill(Column<T>* column, std::size_t n)
         {
             column->assign(n, T{});
+        }
+
+        // pop_types.csv: key, name, essential, everyday, luxury (per person a day; empty = 0).
+        bool read_pop_types(const std::filesystem::path& path, PopTypes* types, std::string* error)
+        {
+            csv::Table table;
+            if (!read_list(path, false, false, &types->list, error, &table)) {
+                return false;
+            }
+            types->need.assign(types->size(), {});
+            if (table.header.empty()) {
+                return true;
+            }
+            const Context ctx{ path, &table, error };
+            int tier[kNeedTiers];
+            for (std::size_t t = 0; t < kNeedTiers; ++t) {
+                if (!need_column(path, table, kNeedTierKeys[t], &tier[t], error)) {
+                    return false;
+                }
+            }
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                for (std::size_t t = 0; t < kNeedTiers; ++t) {
+                    if (!parse_number(table.rows[r][tier[t]], &types->need[r + 1][t], true)) {
+                        return ctx.fail(r, std::format("{} \"{}\": a number >= 0 or empty", kNeedTierKeys[t],
+                                                       table.rows[r][tier[t]]));
+                    }
+                }
+            }
+            return true;
+        }
+
+        // needs.csv: tier, good, weight.
+        bool read_needs(const std::filesystem::path& path, const DefinitionList& goods, NeedGoods* needs,
+                        std::string* error)
+        {
+            *needs = {};
+            if (!std::filesystem::exists(path)) {
+                return true;
+            }
+            csv::Table table;
+            if (!csv::read(path, &table, error)) {
+                return false;
+            }
+            const Context ctx{ path, &table, error };
+            int tier = 0;
+            int good = 0;
+            int weight = 0;
+            if (!need_column(path, table, "tier", &tier, error) || !need_column(path, table, "good", &good, error) ||
+                !need_column(path, table, "weight", &weight, error)) {
+                return false;
+            }
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                const auto& row = table.rows[r];
+                std::size_t t = 0;
+                while (t < kNeedTiers && row[tier] != kNeedTierKeys[t]) {
+                    ++t;
+                }
+                if (t == kNeedTiers) {
+                    return ctx.fail(r, std::format("tier \"{}\": essential, everyday or luxury", row[tier]));
+                }
+                const int g = goods.find(row[good]);
+                if (g <= 0) {
+                    return ctx.fail(r, std::format("unknown good \"{}\"", row[good]));
+                }
+                for (const std::uint8_t other : needs->good[t]) {
+                    if (other == g) {
+                        return ctx.fail(r, std::format("{} {} repeated", row[tier], row[good]));
+                    }
+                }
+                float w = 0.0f;
+                if (!parse_number(row[weight], &w, false, true)) {
+                    return ctx.fail(r, std::format("weight \"{}\": a number > 0", row[weight]));
+                }
+                needs->good[t].push_back(static_cast<std::uint8_t>(g));
+                needs->weight[t].push_back(w);
+            }
+            return true;
+        }
+
+        // rgo_types.csv: key, name, color, workers (a pop type), outputs ("meat:1 leather:0.3", per worker a day).
+        bool read_rgo_types(const std::filesystem::path& path, const DefinitionList& goods, const PopTypes& pop_types,
+                            RgoTypes* rgos, std::string* error)
+        {
+            csv::Table table;
+            if (!read_list(path, false, true, &rgos->list, error, &table)) {
+                return false;
+            }
+            rgos->workers.assign(1, 0);
+            rgos->output_first.assign(2, 0);   // "none" makes nothing
+            rgos->output_good.clear();
+            rgos->output_amount.clear();
+            if (table.header.empty()) {
+                return true;
+            }
+            const Context ctx{ path, &table, error };
+            int workers = 0;
+            int outputs = 0;
+            if (!need_column(path, table, "workers", &workers, error) ||
+                !need_column(path, table, "outputs", &outputs, error)) {
+                return false;
+            }
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                const auto& row = table.rows[r];
+                const int w = pop_types.list.find(row[workers]);
+                if (w <= 0) {
+                    return ctx.fail(r, std::format("workers \"{}\": a pop type of pop_types.csv", row[workers]));
+                }
+                rgos->workers.push_back(static_cast<std::uint8_t>(w));
+                const std::size_t first = rgos->output_good.size();
+                std::string_view text = row[outputs];
+                while (!text.empty()) {
+                    const std::size_t space = text.find(' ');
+                    const std::string_view item = text.substr(0, space);
+                    text = space == std::string_view::npos ? std::string_view{} : text.substr(space + 1);
+                    if (item.empty()) {
+                        continue;
+                    }
+                    const std::size_t colon = item.find(':');
+                    const int g = colon == std::string_view::npos ? -1 : goods.find(item.substr(0, colon));
+                    float amount = 0.0f;
+                    if (g <= 0 || !parse_number(item.substr(colon + 1), &amount, false, true)) {
+                        return ctx.fail(r, std::format("output \"{}\": good:amount, a good of goods.csv and an "
+                                                       "amount > 0", item));
+                    }
+                    for (std::size_t o = first; o < rgos->output_good.size(); ++o) {
+                        if (rgos->output_good[o] == g) {
+                            return ctx.fail(r, std::format("output {} repeated", item.substr(0, colon)));
+                        }
+                    }
+                    rgos->output_good.push_back(static_cast<std::uint8_t>(g));
+                    rgos->output_amount.push_back(amount);
+                }
+                if (rgos->output_good.size() == first) {
+                    return ctx.fail(r, "no outputs");
+                }
+                rgos->output_first.push_back(static_cast<std::uint32_t>(rgos->output_good.size()));
+            }
+            return true;
         }
     }
 
@@ -175,12 +341,19 @@ namespace mc
         fill(&owner, n);
         fill(&controller, n);
         fill(&terrain, n);
-        fill(&resource, n);
+        fill(&rgo, n);
         core_words = static_cast<std::uint32_t>((country_count + 63) / 64);
         if (core_words == 0) {
             core_words = 1;
         }
         cores.assign(n * core_words, 0);
+    }
+
+    void Pops::resize(std::uint32_t province_count, std::uint32_t type_count)
+    {
+        types = type_count;
+        stride = padded(province_count);
+        size.assign(stride * types, 0.0f);
     }
 
     void CountryStates::resize(std::size_t country_count)
@@ -195,7 +368,10 @@ namespace mc
         const auto common = dir / "common";
         const auto setup = dir / "setup";
         if (!read_list(common / "terrain.csv", true, true, &content.terrain, error) ||
-            !read_list(common / "goods.csv", false, true, &content.goods, error)) {
+            !read_list(common / "goods.csv", false, false, &content.goods, error) ||
+            !read_pop_types(common / "pop_types.csv", &content.pop_types, error) ||
+            !read_needs(common / "needs.csv", content.goods, &content.needs, error) ||
+            !read_rgo_types(common / "rgo_types.csv", content.goods, content.pop_types, &content.rgo_types, error)) {
             return false;
         }
 
@@ -244,6 +420,7 @@ namespace mc
         }
         state.countries.resize(content.countries.size());
         state.provinces.resize(map.count, content.countries.size());
+        state.pops.resize(map.count, static_cast<std::uint32_t>(content.pop_types.size()));
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
             const int c = content.countries.find(text);
@@ -263,7 +440,7 @@ namespace mc
                 return false;
             }
             const Context ctx{ path, &table, error };
-            const char* names[] = { "id", "owner", "controller", "cores", "terrain", "resource" };
+            const char* names[] = { "id", "owner", "controller", "cores", "terrain", "rgo" };
             int col[std::size(names)];
             for (std::size_t i = 0; i < std::size(names); ++i) {
                 col[i] = table.column(names[i]);
@@ -307,7 +484,7 @@ namespace mc
                     const char* what;
                 } keyed[] = {
                     { col[4], &content.terrain, &state.provinces.terrain, "terrain" },
-                    { col[5], &content.goods, &state.provinces.resource, "resource" },
+                    { col[5], &content.rgo_types.list, &state.provinces.rgo, "RGO" },
                 };
                 for (const auto& k : keyed) {
                     const int index = k.list->find(row[k.column]);
@@ -315,6 +492,46 @@ namespace mc
                         return ctx.fail(r, std::format("unknown {} \"{}\"", k.what, row[k.column]));
                     }
                     (*k.out)[id] = static_cast<std::uint8_t>(index);
+                }
+            }
+        }
+
+        // Pops (optional: no file = nobody lives anywhere). province, pop_type, size; name only for people.
+        {
+            const auto path = setup / "pops.csv";
+            if (std::filesystem::exists(path)) {
+                csv::Table table;
+                if (!csv::read(path, &table, error)) {
+                    return false;
+                }
+                const Context ctx{ path, &table, error };
+                int province = 0;
+                int type = 0;
+                int size = 0;
+                if (!need_column(path, table, "province", &province, error) ||
+                    !need_column(path, table, "pop_type", &type, error) ||
+                    !need_column(path, table, "size", &size, error)) {
+                    return false;
+                }
+                std::vector<std::uint8_t> seen(state.pops.size.size(), 0);
+                for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                    const auto& row = table.rows[r];
+                    std::uint32_t id = 0;
+                    if (!parse_uint(row[province], &id) || !land(id)) {
+                        return ctx.fail(r, std::format("province \"{}\" is not a land province of the map",
+                                                       row[province]));
+                    }
+                    const int t = content.pop_types.list.find(row[type]);
+                    if (t <= 0) {
+                        return ctx.fail(r, std::format("unknown pop type \"{}\"", row[type]));
+                    }
+                    const std::size_t at = static_cast<std::size_t>(t) * state.pops.stride + id;
+                    if (seen[at]++) {
+                        return ctx.fail(r, std::format("province {} {} repeated", id, row[type]));
+                    }
+                    if (!parse_number(row[size], &state.pops.size[at])) {
+                        return ctx.fail(r, std::format("size \"{}\": a number >= 0", row[size]));
+                    }
                 }
             }
         }
@@ -355,8 +572,13 @@ namespace mc
 
     std::string GameData::summary() const
     {
-        return std::format("{} countries, {} terrain, {} goods", content.countries.size() - 1,
-                           content.terrain.size() - 1, content.goods.size() - 1);
+        double people = 0.0;
+        for (const float s : state.pops.size) {
+            people += s;
+        }
+        return std::format("{} countries, {} terrain, {} goods, {} pop types, {} RGO types, {:.0f} people",
+                           content.countries.size() - 1, content.terrain.size() - 1, content.goods.size() - 1,
+                           content.pop_types.size() - 1, content.rgo_types.size() - 1, people);
     }
 
     std::vector<std::string> GameData::check(const MapData& map) const
@@ -369,6 +591,39 @@ namespace mc
                                           map.province_name(capital)));
             }
         }
+
+        // Orphan goods: nothing makes them, or no need takes them (money is wanted by everyone without a need).
+        const RgoTypes& rgos = content.rgo_types;
+        for (std::size_t g = 1; g < content.goods.size(); ++g) {
+            bool made = false;
+            for (const std::uint8_t o : rgos.output_good) {
+                made = made || o == g;
+            }
+            bool taken = content.goods.key[g] == kMoneyGood;
+            for (const auto& tier : content.needs.good) {
+                for (const std::uint8_t n : tier) {
+                    taken = taken || n == g;
+                }
+            }
+            if (!made) {
+                out.push_back(std::format("good {}: orphan, no RGO makes it (rgo_types.csv)", content.goods.key[g]));
+            }
+            if (!taken) {
+                out.push_back(std::format("good {}: orphan, no need takes it (needs.csv)", content.goods.key[g]));
+            }
+        }
+        // A tier some pop type needs but no good fills.
+        for (std::size_t t = 0; t < kNeedTiers; ++t) {
+            if (!content.needs.good[t].empty()) {
+                continue;
+            }
+            for (std::size_t p = 1; p < content.pop_types.size(); ++p) {
+                if (content.pop_types.need[p][t] > 0.0f) {
+                    out.push_back(std::format("{} needs {}, but no good fills it (needs.csv)",
+                                              content.pop_types.list.key[p], kNeedTierKeys[t]));
+                }
+            }
+        }
         return out;
     }
 
@@ -376,7 +631,7 @@ namespace mc
     {
         const Provinces& p = state.provinces;
         const CountryDefinitions& countries = content.countries;
-        std::string text = "id,name,owner,controller,cores,terrain,resource\n";
+        std::string text = "id,name,owner,controller,cores,terrain,rgo\n";
         for (std::uint32_t id = 1; id < map.count; ++id) {
             if (map.kind[id] != ProvinceKind::land) {
                 continue;
@@ -392,9 +647,25 @@ namespace mc
             }
             text += std::format("{},{},{},{},{},{},{}\n", id, csv::field(map.province_name(id)),
                                 countries.tag_text(p.owner[id]), countries.tag_text(p.controller[id]), cores_text,
-                                content.terrain.key[p.terrain[id]], content.goods.key[p.resource[id]]);
+                                content.terrain.key[p.terrain[id]], content.rgo_types.list.key[p.rgo[id]]);
         }
         if (!csv::write_file(dir / "setup" / "provinces.csv", text, error)) {
+            return false;
+        }
+        std::string pops_text = "province,name,pop_type,size\n";
+        for (std::uint32_t id = 1; id < map.count; ++id) {
+            if (map.kind[id] != ProvinceKind::land) {
+                continue;
+            }
+            for (std::size_t t = 1; t < state.pops.types; ++t) {
+                const float size = state.pops.at(t, id);
+                if (size > 0.0f) {
+                    pops_text += std::format("{},{},{},{}\n", id, csv::field(map.province_name(id)),
+                                             content.pop_types.list.key[t], size);
+                }
+            }
+        }
+        if (!csv::write_file(dir / "setup" / "pops.csv", pops_text, error)) {
             return false;
         }
         std::string countries_text = "tag,capital\n";
