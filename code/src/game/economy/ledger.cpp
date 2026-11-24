@@ -1,5 +1,7 @@
 #include "game/economy/ledger.h"
 
+#include <cmath>
+
 namespace mc::ledger
 {
     void start(const Content& content, WorldState* state)
@@ -36,6 +38,34 @@ namespace mc::ledger
         money->cash[to] += amount;
         money->flows[static_cast<std::size_t>(flow)] += amount;
         return true;
+    }
+
+    void settle(Balances* money, std::span<const Payment> payers, std::span<const Share> payees, Flow flow)
+    {
+        double weight = 0.0;
+        std::size_t largest = 0;
+        for (std::size_t i = 0; i < payees.size(); ++i) {
+            weight += payees[i].weight;
+            if (payees[i].weight > payees[largest].weight) {
+                largest = i;
+            }
+        }
+        if (payees.empty() || weight <= 0.0) {
+            return;
+        }
+        Money total = 0;
+        for (const Payment& p : payers) {
+            money->cash[p.account] -= p.amount;
+            total += p.amount;
+        }
+        Money given = 0;
+        for (const Share& s : payees) {
+            const Money part = static_cast<Money>(std::floor(static_cast<double>(total) * (s.weight / weight)));
+            money->cash[s.account] += part;
+            given += part;
+        }
+        money->cash[payees[largest].account] += total - given;
+        money->flows[static_cast<std::size_t>(flow)] += total;
     }
 
     Money total(const Balances& money)

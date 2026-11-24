@@ -8,6 +8,7 @@
 #include "game/game_data.h"
 #include "core/map_data.h"
 #include "game/countries.h"
+#include "game/economy/economy.h"
 #include "game/economy/ledger.h"
 #include "game/session.h"
 #include "ui/flags.h"
@@ -101,6 +102,12 @@ namespace mc
             ImGui::TextUnformatted(ui.content.countries.name[owner].c_str());
             ImGui::TextDisabled("%s", std::string(ui.map.province_name(province)).c_str());
             ImGui::Text("Money: %.2f emeralds", to_emeralds(ledger::province_cash(ui.state, province)));
+            for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
+                const float filled = needs_filled(ui.content, ui.state, province, tier);
+                if (filled >= 0.0f) {
+                    ImGui::Text("%s needs: %.0f%%", kNeedTierNames[tier], filled * 100.0f);
+                }
+            }
             ImGui::EndTooltip();
         }
     }

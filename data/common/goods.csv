@@ -1,8 +1,8 @@
-key,name,icon
-wheat,Wheat,wheat
-meat,Meat,beef
-leather,Leather,leather
-horses,Horses,
-fish,Fish,cod
-gunpowder,Gunpowder,gunpowder
-emerald,Emerald,emerald
+key,name,price,icon
+wheat,Wheat,0.001,wheat
+meat,Meat,0.0015,beef
+leather,Leather,0.005,leather
+horses,Horses,0.05,
+fish,Fish,0.001,cod
+gunpowder,Gunpowder,0.002,gunpowder
+emerald,Emerald,1,emerald

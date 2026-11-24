@@ -113,7 +113,7 @@
   `host` → `core`, `view`, `minecraft`, `app`; `editor` → всё (из `host` — общее окно). Библиотеки: D3D — `render`, `ui`, `app`,
   `host`, `editor`; ImGui — `ui`, `editor`; Windows и бэкенд ImGui Win32 — `host`, `editor`; miniz, JSON и stb —
   `minecraft`.
-- **Деньги меняет только `ledger`** (`game/economy/ledger.h`): `mint` (шахта) и `transfer`; после каждого дня
+- **Деньги меняет только `ledger`** (`game/economy/ledger.h`): `mint` (шахта), `transfer` и пакетный `settle`; после каждого дня
   `World` проверяет инвариант «сумма балансов = старт + добыто» и при первом нарушении пишет ошибку в лог.
 - Время: дата — скаляр в `World`, не в `WorldState`. **Мир продвигается только `World::advance_days(n)`** —
   единственный путь: игра зовёт её из `Shell::frame` (до карты и UI, только в фазе `playing`), `mapcraft_sim` позже

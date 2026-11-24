@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 #include "core/money.h"
 #include "game/game_data.h"
@@ -20,6 +21,21 @@ namespace mc::ledger
     void mint(Balances* money, std::size_t account, Money amount, Flow flow);
     // Moves `amount` >= 0 from one account to another; false (and nothing moves) if `from` has less.
     bool transfer(Balances* money, std::size_t from, std::size_t to, Money amount, Flow flow);
+
+    struct Payment
+    {
+        std::size_t account;
+        Money amount;        // >= 0, at most what the account holds
+    };
+    struct Share
+    {
+        std::size_t account;
+        double weight;       // >= 0
+    };
+    // A batch: every payer pays exactly its amount, and the total is shared among the payees by weight, each the
+    // floor of its share; the grains the division leaves go to the payee of the largest weight (the first of equals),
+    // so not one is lost. Payees of no weight at all: nobody pays.
+    void settle(Balances* money, std::span<const Payment> payers, std::span<const Share> payees, Flow flow);
 
     // The sum of every balance.
     [[nodiscard]] Money total(const Balances& money);

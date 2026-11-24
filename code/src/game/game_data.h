@@ -89,6 +89,9 @@ namespace mc
         }
     };
 
+    // The tiers of a pop's needs, in the order they are met (Pops::filled has one column per tier).
+    inline constexpr std::size_t kNeedTiers = 3;
+
     // Pops (data/setup/pops.csv at the start): one per province and pop type, a matrix of rows by type, each row a
     // province column: type t of province p at t * stride + p, stride = padded(province count), so each row is
     // 64-byte aligned. A pop's place (t, p) is its id, stable; size 0 = no pop. Row 0 ("none") stays empty.
@@ -97,6 +100,8 @@ namespace mc
         std::uint32_t types = 0;        // PopTypes size, "none" included
         std::size_t stride = 0;
         Column<float> size;             // people
+        // How much of each tier of needs the pop got on the last day, 0..1 (same layout as size).
+        std::array<Column<float>, kNeedTiers> filled;
 
         void resize(std::uint32_t province_count, std::uint32_t type_count);
         [[nodiscard]] float at(std::size_t type, std::uint32_t province) const { return size[type * stride + province]; }
@@ -113,10 +118,25 @@ namespace mc
         void resize(std::uint32_t region_count);
     };
 
+    // Goods waiting to be sold, by where they were made: a matrix of rows by good, each row a province column (good g
+    // of province p at g * stride + p, stride = padded(province count)). An RGO's goods stay its own until sold.
+    struct Stock
+    {
+        std::uint32_t goods = 0;        // Content::goods size, "none" included
+        std::size_t stride = 0;
+        Column<float> amount;
+
+        void resize(std::uint32_t province_count, std::uint32_t good_count);
+        [[nodiscard]] float at(std::size_t good, std::uint32_t province) const { return amount[good * stride + province]; }
+        float& at(std::size_t good, std::uint32_t province) { return amount[good * stride + province]; }
+    };
+
     // What money moved for: the ledger's counters, one per rule that moves money (docs/ECONOMY.md).
     enum class Flow : std::uint8_t
     {
         mine,    // emeralds minted by an RGO
+        wages,   // a mine's owners pay its workers their share of the minted emeralds
+        sales,   // pops buy goods; the RGOs that made them are paid (workers and owners by their shares)
         count,
     };
     inline constexpr std::size_t kFlows = static_cast<std::size_t>(Flow::count);
@@ -142,8 +162,6 @@ namespace mc
         void resize(std::size_t country_count);
     };
 
-    // The tiers of a pop's needs, in the order they are met.
-    inline constexpr std::size_t kNeedTiers = 3;
     inline constexpr std::array<const char*, kNeedTiers> kNeedTierKeys = { "essential", "everyday", "luxury" };
     inline constexpr std::array<const char*, kNeedTiers> kNeedTierNames = { "Essential", "Everyday", "Luxury" };
     // The money good: the only one no need consumes (docs/ECONOMY.md).
@@ -173,6 +191,7 @@ namespace mc
         DefinitionList list;                         // index 0 = none
         std::vector<std::uint8_t> workers;           // PopTypes index
         std::vector<std::uint8_t> owners;            // PopTypes index: the pop of the province its earnings go to
+        std::vector<float> wages;                    // the workers' share of its earnings, 0..1; the owners keep the rest
         std::vector<std::uint32_t> output_first;     // type t makes outputs [output_first[t], output_first[t + 1])
         std::vector<std::uint8_t> output_good;       // Content::goods index
         std::vector<float> output_amount;
@@ -186,11 +205,13 @@ namespace mc
     {
         DefinitionList terrain;
         DefinitionList goods;
+        std::vector<float> goods_price;   // emeralds per unit, fixed for now (the money good: 1)
         PopTypes pop_types;
         NeedGoods needs;
         RgoTypes rgo_types;
         DefinitionList markets;           // data/common/markets.csv: a market is made of whole regions
         CountryDefinitions countries;
+        std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
     };
 
     // The state of the world: SoA columns only (indices into Content, numbers); what the simulation changes. Loaded
@@ -200,6 +221,7 @@ namespace mc
         Provinces provinces;
         Regions regions;
         Pops pops;
+        Stock stock;
         Balances money;
         CountryStates countries;
     };

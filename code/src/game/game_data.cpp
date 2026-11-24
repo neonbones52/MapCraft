@@ -157,6 +157,33 @@ namespace mc
             column->assign(n, T{});
         }
 
+        // goods.csv: key, name, price (emeralds per unit, > 0; the money good is worth 1 whatever it says).
+        bool read_goods(const std::filesystem::path& path, DefinitionList* goods, std::vector<float>* price,
+                        std::string* error)
+        {
+            csv::Table table;
+            if (!read_list(path, false, false, goods, error, &table)) {
+                return false;
+            }
+            price->assign(goods->size(), 0.0f);
+            if (table.header.empty()) {
+                return true;
+            }
+            const Context ctx{ path, &table, error };
+            int column = 0;
+            if (!need_column(path, table, "price", &column, error)) {
+                return false;
+            }
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                if (goods->key[r + 1] == kMoneyGood) {
+                    (*price)[r + 1] = 1.0f;
+                } else if (!parse_number(table.rows[r][column], &(*price)[r + 1], false, true)) {
+                    return ctx.fail(r, std::format("price \"{}\": emeralds per unit, > 0", table.rows[r][column]));
+                }
+            }
+            return true;
+        }
+
         // pop_types.csv: key, name, essential, everyday, luxury (per person a day; empty = 0), cash (emeralds per
         // person at the start; empty = 0).
         bool read_pop_types(const std::filesystem::path& path, PopTypes* types, std::string* error)
@@ -254,6 +281,7 @@ namespace mc
             }
             rgos->workers.assign(1, 0);
             rgos->owners.assign(1, 0);
+            rgos->wages.assign(1, 0.0f);
             rgos->output_first.assign(2, 0);   // "none" makes nothing
             rgos->output_good.clear();
             rgos->output_amount.clear();
@@ -263,9 +291,11 @@ namespace mc
             const Context ctx{ path, &table, error };
             int workers = 0;
             int owners = 0;
+            int wages = 0;
             int outputs = 0;
             if (!need_column(path, table, "workers", &workers, error) ||
                 !need_column(path, table, "owners", &owners, error) ||
+                !need_column(path, table, "wages", &wages, error) ||
                 !need_column(path, table, "outputs", &outputs, error)) {
                 return false;
             }
@@ -281,6 +311,11 @@ namespace mc
                     return ctx.fail(r, std::format("owners \"{}\": a pop type of pop_types.csv", row[owners]));
                 }
                 rgos->owners.push_back(static_cast<std::uint8_t>(owner));
+                float share = 0.0f;
+                if (!parse_number(row[wages], &share) || share > 1.0f) {
+                    return ctx.fail(r, std::format("wages \"{}\": the workers' share, 0 to 1", row[wages]));
+                }
+                rgos->wages.push_back(share);
                 const std::size_t first = rgos->output_good.size();
                 std::string_view text = row[outputs];
                 while (!text.empty()) {
@@ -379,6 +414,16 @@ namespace mc
         types = type_count;
         stride = padded(province_count);
         size.assign(stride * types, 0.0f);
+        for (Column<float>& tier : filled) {
+            tier.assign(stride * types, 0.0f);
+        }
+    }
+
+    void Stock::resize(std::uint32_t province_count, std::uint32_t good_count)
+    {
+        goods = good_count;
+        stride = padded(province_count);
+        amount.assign(stride * goods, 0.0f);
     }
 
     void CountryStates::resize(std::size_t country_count)
@@ -393,7 +438,7 @@ namespace mc
         const auto common = dir / "common";
         const auto setup = dir / "setup";
         if (!read_list(common / "terrain.csv", true, true, &content.terrain, error) ||
-            !read_list(common / "goods.csv", false, false, &content.goods, error) ||
+            !read_goods(common / "goods.csv", &content.goods, &content.goods_price, error) ||
             !read_pop_types(common / "pop_types.csv", &content.pop_types, error) ||
             !read_needs(common / "needs.csv", content.goods, &content.needs, error) ||
             !read_rgo_types(common / "rgo_types.csv", content.goods, content.pop_types, &content.rgo_types, error) ||
@@ -447,6 +492,8 @@ namespace mc
         state.countries.resize(content.countries.size());
         state.provinces.resize(map.count, content.countries.size());
         state.regions.resize(map.region_count());
+        content.province_region.assign(map.region.begin(), map.region.end());
+        state.stock.resize(map.count, static_cast<std::uint32_t>(content.goods.size()));
         state.pops.resize(map.count, static_cast<std::uint32_t>(content.pop_types.size()));
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
