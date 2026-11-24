@@ -38,7 +38,7 @@ id,color,name,parent,provinces
 37,#912241,The Bone Fields,The Burning Shires,10
 38,#3B6F94,Emeraldshire,The Burning Shires,7
 39,#96A24C,Rabbitshire,The Burning Shires,6
-40,#851F99,The Beetroot Fields,The Burning Shires,5
+40,#851F99,The Beetroot Fields,The Burning Shires,6
 41,#52BE8D,The Wool Marches,The Fair Reaches,9
 42,#EE6232,Mushroom Valley,The Fair Reaches,7
 43,#2B2FA2,Redstone Hills,The Fair Reaches,8
@@ -52,7 +52,7 @@ id,color,name,parent,provinces
 51,#497FDB,Saddleshire,The Sunny Wilds,10
 52,#708E37,Fox March,The Sunny Wilds,8
 53,#A1369B,Pig Weald,The Sunny Wilds,7
-54,#2DB393,The Hay Fields,The Sunny Wilds,9
+54,#2DB393,The Hay Fields,The Sunny Wilds,8
 55,#E99D5C,Mire Valley,The Mossy Marches,6
 56,#5745AF,Witch Hundred,The Mossy Marches,5
 57,#5ABD4D,Witch March,The Mossy Marches,10

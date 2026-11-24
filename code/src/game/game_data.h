@@ -103,6 +103,16 @@ namespace mc
         float& at(std::size_t type, std::uint32_t province) { return size[type * stride + province]; }
     };
 
+    // Region state (data/setup/regions.csv at the start), indexed by the map's region (1-based, 0 = none),
+    // padded(count) long.
+    struct Regions
+    {
+        std::uint32_t count = 0;          // MapData::region_count(): regions 0..count-1
+        Column<std::uint8_t> market;      // Content::markets index, 0 = none
+
+        void resize(std::uint32_t region_count);
+    };
+
     // What money moved for: the ledger's counters, one per rule that moves money (docs/ECONOMY.md).
     enum class Flow : std::uint8_t
     {
@@ -179,6 +189,7 @@ namespace mc
         PopTypes pop_types;
         NeedGoods needs;
         RgoTypes rgo_types;
+        DefinitionList markets;           // data/common/markets.csv: a market is made of whole regions
         CountryDefinitions countries;
     };
 
@@ -187,6 +198,7 @@ namespace mc
     struct WorldState
     {
         Provinces provinces;
+        Regions regions;
         Pops pops;
         Balances money;
         CountryStates countries;
@@ -202,11 +214,12 @@ namespace mc
         // with file:line; inconsistencies an editing session may pass through (a capital its country does not own)
         // go to `warnings`.
         bool load(const std::filesystem::path& dir, const MapData& map, std::string* error);
-        // Rewrites data/setup/provinces.csv (every land province, by id), pops.csv (every pop of size > 0, by
-        // province and type) and countries.csv from `state`.
+        // Rewrites data/setup/provinces.csv (every land province, by id), regions.csv (every region, by number),
+        // pops.csv (every pop of size > 0, by province and type) and countries.csv from `state`.
         bool save_setup(const std::filesystem::path& dir, const MapData& map, std::string* error) const;
         // The checks that are warnings at load, for the current state: a capital its country does not own, an orphan
-        // good (nothing makes it, or no need takes it; money excepted), a tier some pop type needs but no good fills.
+        // good (nothing makes it, or no need takes it; money excepted), a tier some pop type needs but no good fills;
+        // once there are markets, a region without one and a market without regions.
         [[nodiscard]] std::vector<std::string> check(const MapData& map) const;
         // "11 countries, 5 terrain, ..." for the logs.
         [[nodiscard]] std::string summary() const;

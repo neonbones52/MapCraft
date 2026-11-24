@@ -681,7 +681,7 @@ id,color,type,region,region_name,parent,name,area,x,y,pieces,biome,height
 680,#51B975,land,44,Oxeyeshire,The Fair Reaches,Hay Mill,45,1005,339,1,plains,0
 681,#EB736C,land,48,Wool March,The Sunny Shires,Meadowglen,75,730,285,1,plains,0
 682,#435DB3,land,48,Wool March,The Sunny Shires,Poppyhaven,47,662,227,1,plains,0
-683,#88DD29,land,54,The Hay Fields,The Sunny Wilds,Leafcrest,19,207,427,1,jungle,0
+683,#88DD29,land,40,The Beetroot Fields,The Burning Shires,Leafcrest,19,207,427,1,jungle,0
 684,#E938C9,land,62,The Leaf Fields,The Mossy Marches,Parrotwood,36,561,469,1,jungle,0
 685,#2BAB9D,land,71,Panda Weald,The Fair Wilds,Parrot Hearth,39,417,427,1,jungle,0
 686,#8F5F17,land,71,Panda Weald,The Fair Wilds,Melonpoint,50,446,459,1,jungle,0

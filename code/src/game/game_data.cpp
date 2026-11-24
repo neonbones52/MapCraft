@@ -368,6 +368,12 @@ namespace mc
         cores.assign(n * core_words, 0);
     }
 
+    void Regions::resize(std::uint32_t region_count)
+    {
+        count = region_count;
+        fill(&market, padded(region_count));
+    }
+
     void Pops::resize(std::uint32_t province_count, std::uint32_t type_count)
     {
         types = type_count;
@@ -390,7 +396,8 @@ namespace mc
             !read_list(common / "goods.csv", false, false, &content.goods, error) ||
             !read_pop_types(common / "pop_types.csv", &content.pop_types, error) ||
             !read_needs(common / "needs.csv", content.goods, &content.needs, error) ||
-            !read_rgo_types(common / "rgo_types.csv", content.goods, content.pop_types, &content.rgo_types, error)) {
+            !read_rgo_types(common / "rgo_types.csv", content.goods, content.pop_types, &content.rgo_types, error) ||
+            !read_list(common / "markets.csv", false, true, &content.markets, error)) {
             return false;
         }
 
@@ -439,6 +446,7 @@ namespace mc
         }
         state.countries.resize(content.countries.size());
         state.provinces.resize(map.count, content.countries.size());
+        state.regions.resize(map.region_count());
         state.pops.resize(map.count, static_cast<std::uint32_t>(content.pop_types.size()));
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
@@ -511,6 +519,41 @@ namespace mc
                         return ctx.fail(r, std::format("unknown {} \"{}\"", k.what, row[k.column]));
                     }
                     (*k.out)[id] = static_cast<std::uint8_t>(index);
+                }
+            }
+        }
+
+        // Region setup (optional: no file = no region in a market). region (the map's number), market; name only for
+        // people.
+        {
+            const auto path = setup / "regions.csv";
+            if (std::filesystem::exists(path)) {
+                csv::Table table;
+                if (!csv::read(path, &table, error)) {
+                    return false;
+                }
+                const Context ctx{ path, &table, error };
+                int region = 0;
+                int market = 0;
+                if (!need_column(path, table, "region", &region, error) ||
+                    !need_column(path, table, "market", &market, error)) {
+                    return false;
+                }
+                std::vector<std::uint8_t> seen(state.regions.count, 0);
+                for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                    const auto& row = table.rows[r];
+                    std::uint32_t id = 0;
+                    if (!parse_uint(row[region], &id) || id == 0 || id >= state.regions.count) {
+                        return ctx.fail(r, std::format("region \"{}\": not a region of the map", row[region]));
+                    }
+                    if (seen[id]++) {
+                        return ctx.fail(r, std::format("region {} repeated", id));
+                    }
+                    const int m = content.markets.find(row[market]);
+                    if (m < 0) {
+                        return ctx.fail(r, std::format("unknown market \"{}\"", row[market]));
+                    }
+                    state.regions.market[id] = static_cast<std::uint8_t>(m);
                 }
             }
         }
@@ -596,9 +639,10 @@ namespace mc
         for (const float s : state.pops.size) {
             people += s;
         }
-        return std::format("{} countries, {} terrain, {} goods, {} pop types, {} RGO types, {:.0f} people",
+        return std::format("{} countries, {} terrain, {} goods, {} pop types, {} RGO types, {} markets, {:.0f} people",
                            content.countries.size() - 1, content.terrain.size() - 1, content.goods.size() - 1,
-                           content.pop_types.size() - 1, content.rgo_types.size() - 1, people);
+                           content.pop_types.size() - 1, content.rgo_types.size() - 1, content.markets.size() - 1,
+                           people);
     }
 
     std::vector<std::string> GameData::check(const MapData& map) const
@@ -630,6 +674,22 @@ namespace mc
             }
             if (!taken) {
                 out.push_back(std::format("good {}: orphan, no need takes it (needs.csv)", content.goods.key[g]));
+            }
+        }
+        // Markets: every region in one, no market empty (once there are markets at all).
+        if (content.markets.size() > 1) {
+            std::vector<std::size_t> regions_of(content.markets.size(), 0);
+            for (std::uint32_t r = 1; r < state.regions.count; ++r) {
+                const std::uint8_t m = state.regions.market[r];
+                ++regions_of[m];
+                if (m == 0) {
+                    out.push_back(std::format("region {} ({}): no market", r, map.region_name(r)));
+                }
+            }
+            for (std::size_t m = 1; m < content.markets.size(); ++m) {
+                if (regions_of[m] == 0) {
+                    out.push_back(std::format("market {}: no regions", content.markets.key[m]));
+                }
             }
         }
         // A tier some pop type needs but no good fills.
@@ -670,6 +730,14 @@ namespace mc
                                 content.terrain.key[p.terrain[id]], content.rgo_types.list.key[p.rgo[id]]);
         }
         if (!csv::write_file(dir / "setup" / "provinces.csv", text, error)) {
+            return false;
+        }
+        std::string regions_text = "region,name,market\n";
+        for (std::uint32_t r = 1; r < state.regions.count; ++r) {
+            regions_text += std::format("{},{},{}\n", r, csv::field(map.region_name(r)),
+                                        content.markets.key[state.regions.market[r]]);
+        }
+        if (!csv::write_file(dir / "setup" / "regions.csv", regions_text, error)) {
             return false;
         }
         std::string pops_text = "province,name,pop_type,size\n";

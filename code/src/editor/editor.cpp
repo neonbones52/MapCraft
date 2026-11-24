@@ -165,6 +165,28 @@ namespace mc
         const MapData& map = app_.map();
         const std::uint32_t id = app_.hovered();
         const bool land = id != 0 && id < map.count && map.kind[id] == ProvinceKind::land;
+        if (app_.map_mode() == MapMode::markets && !ctrl && !shift && !alt) {
+            // One stroke (press, drag, release) is one undo step, taken at its first change.
+            if ((input.pressed & mouse_left) != 0) {
+                last_painted_region_ = 0;
+                stroke_edited_ = false;
+            }
+            if ((input.buttons & mouse_left) != 0 && land) {
+                const std::uint16_t region = map.region[id];
+                Regions& regions = game_.state.regions;
+                if (region != last_painted_region_ && region < regions.count &&
+                    regions.market[region] != paint_market_) {
+                    if (!stroke_edited_) {
+                        begin_edit();
+                        stroke_edited_ = true;
+                    }
+                    regions.market[region] = static_cast<std::uint8_t>(paint_market_);
+                    changed();
+                }
+                last_painted_region_ = region;
+            }
+            return;
+        }
         if (input.pressed & mouse_left) {
             last_painted_ = 0;
             if (!land) {
@@ -534,6 +556,49 @@ namespace mc
         ImGui::End();
     }
 
+    void Editor::market_panel()
+    {
+        const GameData& game = game_;
+        const DefinitionList& markets = game.content.markets;
+        const MapData& map = app_.map();
+        ImGui::SetNextWindowPos(ImVec2(440, 10), ImGuiCond_FirstUseEver);
+        if (!ImGui::Begin("Markets", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::End();
+            return;
+        }
+        if (markets.size() <= 1) {
+            ImGui::TextDisabled("No markets in data/common/markets.csv");
+            ImGui::End();
+            return;
+        }
+        paint_market_ = std::clamp(paint_market_, 0, static_cast<int>(markets.size()) - 1);
+        std::vector<std::size_t> regions_of(markets.size(), 0);
+        for (std::uint32_t r = 1; r < game.state.regions.count; ++r) {
+            ++regions_of[game.state.regions.market[r]];
+        }
+        ImGui::TextUnformatted("Click or drag on the map: the regions go to");
+        for (std::size_t m = 0; m < markets.size(); ++m) {
+            ImGui::PushID(static_cast<int>(m));
+            if (m != 0) {
+                swatch(markets.color[m]);
+            }
+            const std::string label = std::format("{} ({} regions)", m == 0 ? "none" : markets.name[m], regions_of[m]);
+            if (ImGui::RadioButton(label.c_str(), paint_market_ == static_cast<int>(m))) {
+                paint_market_ = static_cast<int>(m);
+            }
+            ImGui::PopID();
+        }
+        const std::uint32_t id = app_.hovered();
+        if (id != 0 && id < map.count && map.kind[id] == ProvinceKind::land) {
+            ImGui::Separator();
+            const std::uint16_t region = map.region[id];
+            const std::uint8_t m = region < game.state.regions.count ? game.state.regions.market[region] : 0;
+            ImGui::TextDisabled("%s: %s", std::string(map.region_name(region)).c_str(),
+                                m == 0 ? "no market" : markets.name[m].c_str());
+        }
+        ImGui::End();
+    }
+
     void Editor::status_panel(float view_width, float view_height)
     {
         const GameData& game = game_;
@@ -644,6 +709,9 @@ namespace mc
         province_panel();
         country_panel(view_width, view_height);
         map_mode_panel();
+        if (app_.map_mode() == MapMode::markets) {
+            market_panel();
+        }
         status_panel(view_width, view_height);
         hover_tooltip();
     }

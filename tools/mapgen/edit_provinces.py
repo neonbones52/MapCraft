@@ -5,6 +5,7 @@
   python tools/mapgen/edit_provinces.py islands-apart            # islands that are part of a province elsewhere
                                                                  #   become provinces of their own
   python tools/mapgen/edit_provinces.py sync-lakes               # lake provinces follow lakes shrunk or removed in land.png
+  python tools/mapgen/edit_provinces.py set-region ID REGION     # land province ID moves to the region named REGION
 
 islands-apart: every piece of a land province on another landmass than its largest piece becomes a new land province
 with the next free id, the same region, a new name (names.py) and a new colour; no id changes.
@@ -16,6 +17,9 @@ labels/provinces.py, positions.py, bake.py.
 The game data follows a renumbering: every province id in data/setup (the columns in SETUP_COLUMNS, and a `province`
 column in any other file there) is rewritten to the new id, rows of data/setup/provinces.csv in the new order. A
 removed province's own row there is dropped; any other reference to it stops the edit before anything is written.
+
+set-region: only the province's region changes (provinces.csv region, region_name, parent; its blocks in regions.png;
+the province counts of regions.csv); no block and no id moves, so data/setup stays as it is.
 
 sync-lakes: where land.png has less lake than a lake province, the province keeps its largest piece of lake; the dried
 bed and the smaller pieces cut off from it (decorative lakes from now on) are shared among the land
@@ -69,7 +73,8 @@ def split_islands(ids, provinces, classes):
             print(f'island at ({xs[0] + box[1].start}, {ys[0] + box[0].start}), {mask.sum()} blocks: {parts}')
 
 
-def write(ids, old_ids, provinces):
+def write(ids, old_ids, provinces, recolor=()):
+    """`recolor`: land provinces whose region changed, so all their blocks take its colour in regions.png."""
     lut = np.zeros((ids.max() + 1, 3), np.uint8)
     for pid, row in provinces.items():
         lut[pid] = [int(row['color'][i:i + 2], 16) for i in (1, 3, 5)]
@@ -83,6 +88,8 @@ def write(ids, old_ids, provinces):
     for pid in np.unique(ids[changed]):
         if provinces[pid]['type'] == 'land':
             regions[changed & (ids == pid)] = region_color[provinces[pid]['region']]
+    for pid in recolor:
+        regions[ids == pid] = region_color[provinces[pid]['region']]
     Image.fromarray(regions).save(ROOT / 'regions.png', optimize=True)
 
     total = ids.max()
@@ -258,6 +265,33 @@ def sync_lakes(ids, provinces, classes):
     print(f'{len(removed)} lake provinces removed, {len(keep)} provinces left')
 
 
+def set_region(ids, provinces, pid, name):
+    """Moves land province `pid` to the region named `name`: its row, its blocks in regions.png, the region counts."""
+    if pid not in provinces or provinces[pid]['type'] != 'land':
+        sys.exit(f'{pid} is not a land province')
+    with open(ROOT / 'regions.csv', encoding='utf-8-sig', newline='') as file:
+        regions = list(csv.DictReader(file))
+    matches = [row for row in regions if row['name'] == name]
+    if len(matches) != 1:
+        sys.exit(f'{len(matches)} regions named {name!r}')
+    region, row = matches[0], provinces[pid]
+    if row['region'] == region['id']:
+        sys.exit(f'{row["name"]} is in {name} already')
+    print(f'{row["name"]} ({pid}): {row["region_name"]} -> {name}')
+    row.update(region=region['id'], region_name=region['name'], parent=region['parent'])
+    write(ids, ids.copy(), provinces, recolor=(pid,))
+    counts = {}
+    for p in provinces.values():
+        if p['type'] == 'land':
+            counts[p['region']] = counts.get(p['region'], 0) + 1
+    for r in regions:
+        r['provinces'] = str(counts.get(r['id'], 0))
+    with open(ROOT / 'regions.csv', 'w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=list(regions[0]), lineterminator='\n')
+        writer.writeheader()
+        writer.writerows(regions)
+
+
 def provinces_kind(ids, provinces):
     kinds = np.array([''] + [provinces[pid]['type'] for pid in range(1, ids.max() + 1)], object)
     return kinds[ids]
@@ -275,6 +309,8 @@ def main():
         sync_lakes(ids, provinces, classes)
     elif command == ['give-island'] and len(sys.argv) == 5:
         give_island(ids, provinces, classes, int(sys.argv[2]), int(sys.argv[3]), sys.argv[4])
+    elif command == ['set-region'] and len(sys.argv) == 4:
+        set_region(ids, provinces, int(sys.argv[2]), sys.argv[3])
     else:
         sys.exit(__doc__)
 
