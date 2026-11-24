@@ -24,7 +24,7 @@ namespace mc
         float time = 0.0f;
         std::uint32_t hovered = 0;
         std::uint32_t map_mode = 0;  // 0 terrain: no fill; otherwise the fills colour the land (EU4 formula)
-        float mode_names_alpha = 1.0f;       // the map mode's names (countries, cultures, ...)
+        float mode_names_alpha = 1.0f;       // the map mode's names (countries, regions)
         float province_names_alpha = 0.0f;   // the provinces' names, instead of those when zoomed in
         std::array<float, ModelSet::kGroups> model_fades{};   // per model group: 0 hidden, 1 whole (zoomed in)
     };

@@ -73,7 +73,7 @@ namespace mc
     };
 
     // MAPNAME_REALMS input (SetMapNameMode, docs/label/groups.md §4-5). Countries are indices; any "country" works:
-    // owners, and regions, cultures and religions as capital-less countries (app/map_modes.cpp).
+    // owners, and regions as capital-less countries (app/map_modes.cpp).
     struct RealmNames
     {
         std::vector<std::int32_t> owner;          // per province: country or -1

@@ -36,7 +36,6 @@ namespace mc
         using Snapshot = WorldState;   // undo keeps the whole start state (content never changes here)
 
         void begin_edit();          // before a change: remember the state for undo
-        void begin_typing();        // the same, once per text field activation (typing is one undo step)
         void changed();             // after a change: redraw the map mode, mark unsaved
         void undo();
         void redo();
@@ -54,9 +53,6 @@ namespace mc
         // Field editing over the whole selection.
         void pick_country(const char* label, Column<std::uint16_t>& column, bool owner);
         void pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column);
-        // A country's own field (the country panel's country).
-        void pick_country_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column);
-        void edit_amount(const char* label, Column<float>& column);
         void edit_cores();
 
         App& app_;
@@ -72,6 +68,5 @@ namespace mc
         int country_ = 1;                          // country panel's country
         std::string message_;                      // last save / load message
         std::uint32_t last_painted_ = 0;
-        unsigned typing_item_ = 0;                 // ImGui id of the field being typed into, 0 = none
     };
 }

@@ -51,23 +51,10 @@ namespace mc
 
         bool has_game(const GameData* game) { return game != nullptr && game->loaded; }
 
-        // EU4's development mode: red for the least developed, through yellow, to green for the most.
-        ProvinceFill development(float total, float most)
-        {
-            if (total <= 0.0f) {
-                return { 0.35f, 0.08f, 0.08f, 1.0f };
-            }
-            const float t = most > 0.0f ? std::clamp(total / most, 0.0f, 1.0f) : 0.0f;
-            const ProvinceFill red{ 0.78f, 0.16f, 0.12f, 1.0f };
-            const ProvinceFill yellow{ 0.90f, 0.80f, 0.22f, 1.0f };
-            const ProvinceFill green{ 0.20f, 0.66f, 0.22f, 1.0f };
-            return t < 0.5f ? mix(red, yellow, t * 2.0f) : mix(yellow, green, t * 2.0f - 1.0f);
-        }
-
+        constexpr int kRequiredFields = 3;
         int missing_fields(const Provinces& p, std::uint32_t id)
         {
-            return (p.owner[id] == 0) + (p.controller[id] == 0) + (p.terrain[id] == 0) + (p.culture[id] == 0) +
-                   (p.religion[id] == 0) + (p.tax[id] + p.production[id] + p.manpower[id] <= 0.0f);
+            return (p.owner[id] == 0) + (p.controller[id] == 0) + (p.terrain[id] == 0);
         }
 
         // EU4's impassable provinces: the wastelands, land that no realm takes and names do not cross.
@@ -80,7 +67,7 @@ namespace mc
             return out;
         }
 
-        // Names of province groups without capitals (regions, cultures, religions): each key a "country" of EU4's
+        // Names of province groups without capitals (regions): each key a "country" of EU4's
         // realm names, so every mode joins its pieces across straits and lakes the same way as the countries.
         std::vector<MapLabel> group_names(const MapData& map, const LabelRaster& raster, const LabelFont& font,
                                           std::vector<std::int32_t> owner, std::vector<std::string> names)
@@ -155,18 +142,6 @@ namespace mc
             }
             return generate_names(raster, font, realm_records(raster, realms));
         }
-
-        std::vector<MapLabel> keyed_names(const MapData& map, const LabelRaster& raster, const LabelFont& font,
-                                          const Column<std::uint8_t>& field, const DefinitionList& list)
-        {
-            std::vector<std::int32_t> owner(map.count, -1);
-            for (std::uint32_t id = 1; id < map.count; ++id) {
-                if (map.kind[id] == ProvinceKind::land && field[id] != 0 && field[id] < list.size()) {
-                    owner[id] = field[id];
-                }
-            }
-            return group_names(map, raster, font, std::move(owner), list.name);
-        }
     }
 
     const char* map_mode_name(MapMode mode)
@@ -177,10 +152,7 @@ namespace mc
         case MapMode::provinces: return "Provinces";
         case MapMode::regions: return "Regions";
         case MapMode::terrain_type: return "Terrain (logical)";
-        case MapMode::culture: return "Culture";
-        case MapMode::religion: return "Religion";
-        case MapMode::development: return "Development";
-        case MapMode::trade_goods: return "Trade goods";
+        case MapMode::resource: return "Resources";
         case MapMode::unfilled: return "Unfilled";
         }
         return "?";
@@ -195,12 +167,6 @@ namespace mc
             return has_game(game) ? country_names(map, *game, raster, font) : region_names(map, raster, font);
         case MapMode::regions:
             return region_names(map, raster, font);
-        case MapMode::culture:
-            return has_game(game) ? keyed_names(map, raster, font, game->state.provinces.culture, game->content.cultures)
-                                  : std::vector<MapLabel>{};
-        case MapMode::religion:
-            return has_game(game) ? keyed_names(map, raster, font, game->state.provinces.religion, game->content.religions)
-                                  : std::vector<MapLabel>{};
         default:
             return {};
         }
@@ -220,8 +186,6 @@ namespace mc
                 keys[id] = data ? game->state.provinces.owner[id] : map.region[id];
                 break;
             case MapMode::regions: keys[id] = map.region[id]; break;
-            case MapMode::culture: keys[id] = data ? game->state.provinces.culture[id] : 0; break;
-            case MapMode::religion: keys[id] = data ? game->state.provinces.religion[id] : 0; break;
             default: break;
             }
         }
@@ -233,13 +197,6 @@ namespace mc
     {
         const bool data = has_game(game);
         const bool by_region = !data || mode == MapMode::regions;
-        float most = 0.0f;
-        if (data && mode == MapMode::development) {
-            const Provinces& p = game->state.provinces;
-            for (std::uint32_t id = 1; id < map.count; ++id) {
-                most = std::max(most, p.tax[id] + p.production[id] + p.manpower[id]);
-            }
-        }
 
         fills->assign(map.count, ProvinceFill{});
         for (std::uint32_t id = 1; id < map.count; ++id) {
@@ -269,15 +226,12 @@ namespace mc
             case MapMode::terrain: f = political; f.a = 0.0f; break;
             case MapMode::political: f = political; break;
             case MapMode::terrain_type: f = listed(game->content.terrain, p.terrain[id]); break;
-            case MapMode::culture: f = listed(game->content.cultures, p.culture[id]); break;
-            case MapMode::religion: f = listed(game->content.religions, p.religion[id]); break;
-            case MapMode::trade_goods: f = listed(game->content.trade_goods, p.trade_good[id]); break;
-            case MapMode::development: f = development(p.tax[id] + p.production[id] + p.manpower[id], most); break;
+            case MapMode::resource: f = listed(game->content.goods, p.resource[id]); break;
             case MapMode::unfilled: {
                 const int missing = missing_fields(p, id);
                 f = missing == 0 ? ProvinceFill{ 0.30f, 0.62f, 0.32f, 1.0f }
                                  : mix({ 0.95f, 0.62f, 0.20f, 1.0f }, { 0.80f, 0.10f, 0.10f, 1.0f },
-                                       static_cast<float>(missing - 1) / 5.0f);
+                                       static_cast<float>(missing - 1) / static_cast<float>(kRequiredFields - 1));
                 break;
             }
             default: break;

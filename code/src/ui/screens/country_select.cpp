@@ -36,26 +36,18 @@ namespace mc
                 return;
             }
             ui::fact("Capital");
-            const std::uint16_t capital = ui.state.countries.capital[country];
+            const std::uint32_t capital = seat(ui.state, country);
             if (capital != 0) {
                 ImGui::TextUnformatted(std::string(ui.map.province_name(capital)).c_str());
             } else {
                 ImGui::TextDisabled("none");
             }
-            ui::fact("Primary culture");
-            ui::listed(ui.content.cultures, ui.state.countries.primary_culture[country], &ui.content.culture_groups);
-            ui::fact("State religion");
-            ui::listed(ui.content.religions, ui.state.countries.religion[country], &ui.content.religion_groups);
             ui::fact("Provinces");
             ImGui::Text("%zu", stats.provinces);
             if (stats.cores > 0) {
                 ImGui::SameLine();
                 ImGui::TextDisabled("(cores on %zu)", stats.cores);
             }
-            ui::fact("Development");
-            ImGui::Text("%.0f", stats.development());
-            ImGui::SameLine();
-            ImGui::TextDisabled("%.0f / %.0f / %.0f", stats.tax, stats.production, stats.manpower);
             ui::end_facts();
         }
     }

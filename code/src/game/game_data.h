@@ -32,13 +32,12 @@ namespace mc
     template <class T>
     using Column = std::vector<T, AlignedAllocator<T>>;
 
-    // One list of data/common: terrain, cultures, religions, ... Index 0 is "none" (empty key); the rest in file order.
+    // One list of data/common: terrain, goods, ... Index 0 is "none" (empty key); the rest in file order.
     struct DefinitionList
     {
         std::vector<std::string> key;
         std::vector<std::string> name;
         std::vector<std::uint32_t> color;   // RGBA8, r in the low byte (like MapData::color)
-        std::vector<std::uint8_t> group;    // cultures and religions: index into their group list, 0 = none
 
         [[nodiscard]] std::size_t size() const { return key.size(); }
         // Index of a key, 0 for an empty key, -1 if unknown.
@@ -67,16 +66,9 @@ namespace mc
         // hot
         Column<std::uint16_t> owner;
         Column<std::uint16_t> controller;
-        Column<float> tax;
-        Column<float> production;
-        Column<float> manpower;
-        Column<std::uint8_t> culture;
-        Column<std::uint8_t> religion;
         // cold
         Column<std::uint8_t> terrain;
-        Column<std::uint8_t> trade_good;
-        Column<std::uint8_t> trade_node;
-        Column<std::uint8_t> center_of_trade;   // 0 / 1
+        Column<std::uint8_t> resource;   // the RGO's good: Content::goods index, 0 = none
         // Cores: a bit matrix, core_words u64 per province (64 countries a word): bit c of province p.
         std::uint32_t core_words = 1;
         Column<std::uint64_t> cores;
@@ -100,8 +92,6 @@ namespace mc
     {
         std::size_t count = 0;                  // countries, 0 = none included
         Column<std::uint16_t> capital;          // province id, 0 = none
-        Column<std::uint8_t> primary_culture;   // Content::cultures index, 0 = none
-        Column<std::uint8_t> religion;          // state religion: Content::religions index, 0 = none
 
         void resize(std::size_t country_count);
     };
@@ -111,12 +101,7 @@ namespace mc
     struct Content
     {
         DefinitionList terrain;
-        DefinitionList culture_groups;
-        DefinitionList cultures;
-        DefinitionList religion_groups;
-        DefinitionList religions;
-        DefinitionList trade_goods;   // data/common/trade_goods.csv, optional until trade is made
-        DefinitionList trade_nodes;   // data/common/trade_nodes.csv, optional until trade is made
+        DefinitionList goods;   // data/common/goods.csv: key, name, colour for now (optional)
         CountryDefinitions countries;
     };
 

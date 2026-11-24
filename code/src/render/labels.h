@@ -25,9 +25,9 @@ namespace mc
     {
     public:
         bool init(ID3D11Device* device, const MapData& map, std::string* error);
-        // `keys`: per province id the group its names belong to (the province itself for province names; owner,
-        // region, culture or religion for a map mode's names), 0 = none. A name's group is the most common key under
-        // its glyphs; blocks of provinces of that group never hide it.
+        // `keys`: per province id the group its names belong to (the province itself for province names; owner or
+        // region for a map mode's names), 0 = none. A name's group is the most common key under its glyphs; blocks of
+        // provinces of that group never hide it.
         void set_labels(ID3D11Device* device, const MapData& map, const LabelFont& font,
                         std::span<const MapLabel> labels, std::span<const std::uint32_t> keys);
         // Needs the renderer's state (frame constants b0, linear clamp sampler s0, the terrain's block data t4 and

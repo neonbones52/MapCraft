@@ -1,7 +1,6 @@
 #include "game/game_data.h"
 
 #include <charconv>
-#include <cmath>
 #include <format>
 
 #include "core/csv.h"
@@ -54,14 +53,13 @@ namespace mc
             return true;
         }
 
-        // key,name[,color][,group]: `groups` given = the list has a group column naming keys of it.
-        bool read_list(const std::filesystem::path& path, bool required, bool colored, const DefinitionList* groups,
-                       DefinitionList* list, std::string* error)
+        // key,name[,color]: `colored` = the colour column is required.
+        bool read_list(const std::filesystem::path& path, bool required, bool colored, DefinitionList* list,
+                       std::string* error)
         {
             list->key.assign(1, "");
             list->name.assign(1, "");
             list->color.assign(1, 0);
-            list->group.assign(1, 0);
             if (!required && !std::filesystem::exists(path)) {
                 return true;
             }
@@ -73,10 +71,8 @@ namespace mc
             const int key = table.column("key");
             const int name = table.column("name");
             const int color = table.column("color");
-            const int group = table.column("group");
-            if (key < 0 || name < 0 || (colored && color < 0) || (groups && group < 0)) {
-                *error = std::format("{}: needs columns key, name{}{}", path.string(), colored ? ", color" : "",
-                                     groups ? ", group" : "");
+            if (key < 0 || name < 0 || (colored && color < 0)) {
+                *error = std::format("{}: needs columns key, name{}", path.string(), colored ? ", color" : "");
                 return false;
             }
             for (std::size_t r = 0; r < table.rows.size(); ++r) {
@@ -94,17 +90,9 @@ namespace mc
                 if (colored && !parse_color(row[color], &c)) {
                     return ctx.fail(r, std::format("colour \"{}\": #RRGGBB", row[color]));
                 }
-                int g = 0;
-                if (groups) {
-                    g = groups->find(row[group]);
-                    if (g <= 0) {
-                        return ctx.fail(r, std::format("unknown group \"{}\"", row[group]));
-                    }
-                }
                 list->key.push_back(row[key]);
                 list->name.push_back(row[name].empty() ? row[key] : row[name]);
                 list->color.push_back(c);
-                list->group.push_back(static_cast<std::uint8_t>(g));
             }
             return true;
         }
@@ -132,27 +120,6 @@ namespace mc
         {
             const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), *out);
             return ec == std::errc{} && ptr == text.data() + text.size();
-        }
-
-        bool parse_amount(std::string_view text, float* out)
-        {
-            if (text.empty()) {
-                *out = 0.0f;
-                return true;
-            }
-            const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), *out);
-            return ec == std::errc{} && ptr == text.data() + text.size() && std::isfinite(*out) && *out >= 0.0f;
-        }
-
-        std::string amount_text(float v)
-        {
-            if (v == 0.0f) {
-                return "";
-            }
-            if (v == std::floor(v) && v < 1e7f) {
-                return std::format("{}", static_cast<long long>(v));
-            }
-            return std::format("{}", v);
         }
 
         template <class T>
@@ -207,15 +174,8 @@ namespace mc
         const std::size_t n = padded(province_count);
         fill(&owner, n);
         fill(&controller, n);
-        fill(&tax, n);
-        fill(&production, n);
-        fill(&manpower, n);
-        fill(&culture, n);
-        fill(&religion, n);
         fill(&terrain, n);
-        fill(&trade_good, n);
-        fill(&trade_node, n);
-        fill(&center_of_trade, n);
+        fill(&resource, n);
         core_words = static_cast<std::uint32_t>((country_count + 63) / 64);
         if (core_words == 0) {
             core_words = 1;
@@ -227,8 +187,6 @@ namespace mc
     {
         count = country_count;
         fill(&capital, padded(count));
-        fill(&primary_culture, padded(count));
-        fill(&religion, padded(count));
     }
 
     bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error)
@@ -236,13 +194,8 @@ namespace mc
         loaded = false;
         const auto common = dir / "common";
         const auto setup = dir / "setup";
-        if (!read_list(common / "terrain.csv", true, true, nullptr, &content.terrain, error) ||
-            !read_list(common / "culture_groups.csv", true, false, nullptr, &content.culture_groups, error) ||
-            !read_list(common / "cultures.csv", true, true, &content.culture_groups, &content.cultures, error) ||
-            !read_list(common / "religion_groups.csv", true, false, nullptr, &content.religion_groups, error) ||
-            !read_list(common / "religions.csv", true, true, &content.religion_groups, &content.religions, error) ||
-            !read_list(common / "trade_goods.csv", false, true, nullptr, &content.trade_goods, error) ||
-            !read_list(common / "trade_nodes.csv", false, true, nullptr, &content.trade_nodes, error)) {
+        if (!read_list(common / "terrain.csv", true, true, &content.terrain, error) ||
+            !read_list(common / "goods.csv", false, true, &content.goods, error)) {
             return false;
         }
 
@@ -310,8 +263,7 @@ namespace mc
                 return false;
             }
             const Context ctx{ path, &table, error };
-            const char* names[] = { "id", "owner", "controller", "cores", "terrain", "tax", "production", "manpower",
-                                    "culture", "religion", "trade_good", "trade_node", "center_of_trade" };
+            const char* names[] = { "id", "owner", "controller", "cores", "terrain", "resource" };
             int col[std::size(names)];
             for (std::size_t i = 0; i < std::size(names); ++i) {
                 col[i] = table.column(names[i]);
@@ -355,10 +307,7 @@ namespace mc
                     const char* what;
                 } keyed[] = {
                     { col[4], &content.terrain, &state.provinces.terrain, "terrain" },
-                    { col[8], &content.cultures, &state.provinces.culture, "culture" },
-                    { col[9], &content.religions, &state.provinces.religion, "religion" },
-                    { col[10], &content.trade_goods, &state.provinces.trade_good, "trade good" },
-                    { col[11], &content.trade_nodes, &state.provinces.trade_node, "trade node" },
+                    { col[5], &content.goods, &state.provinces.resource, "resource" },
                 };
                 for (const auto& k : keyed) {
                     const int index = k.list->find(row[k.column]);
@@ -367,20 +316,10 @@ namespace mc
                     }
                     (*k.out)[id] = static_cast<std::uint8_t>(index);
                 }
-                if (!parse_amount(row[col[5]], &state.provinces.tax[id]) ||
-                    !parse_amount(row[col[6]], &state.provinces.production[id]) ||
-                    !parse_amount(row[col[7]], &state.provinces.manpower[id])) {
-                    return ctx.fail(r, "development: a number >= 0 or empty");
-                }
-                const std::string& cot = row[col[12]];
-                if (!(cot.empty() || cot == "0" || cot == "1")) {
-                    return ctx.fail(r, std::format("center_of_trade \"{}\": 0, 1 or empty", cot));
-                }
-                state.provinces.center_of_trade[id] = cot == "1" ? 1 : 0;
             }
         }
 
-        // Country setup (optional: no file = no capitals; primary_culture and religion columns optional).
+        // Country setup (optional: no file = no capitals).
         {
             const auto path = setup / "countries.csv";
             if (std::filesystem::exists(path)) {
@@ -391,8 +330,6 @@ namespace mc
                 const Context ctx{ path, &table, error };
                 const int tag = table.column("tag");
                 const int capital = table.column("capital");
-                const int culture = table.column("primary_culture");
-                const int religion = table.column("religion");
                 if (tag < 0 || capital < 0) {
                     *error = std::format("{}: needs columns tag, capital", path.string());
                     return false;
@@ -408,16 +345,6 @@ namespace mc
                         return ctx.fail(r, std::format("capital \"{}\" is not a land province", row[capital]));
                     }
                     state.countries.capital[c] = static_cast<std::uint16_t>(id);
-                    const int k = culture >= 0 ? content.cultures.find(row[culture]) : 0;
-                    if (k < 0) {
-                        return ctx.fail(r, std::format("unknown culture \"{}\"", row[culture]));
-                    }
-                    state.countries.primary_culture[c] = static_cast<std::uint8_t>(k);
-                    const int g = religion >= 0 ? content.religions.find(row[religion]) : 0;
-                    if (g < 0) {
-                        return ctx.fail(r, std::format("unknown religion \"{}\"", row[religion]));
-                    }
-                    state.countries.religion[c] = static_cast<std::uint8_t>(g);
                 }
             }
         }
@@ -428,8 +355,8 @@ namespace mc
 
     std::string GameData::summary() const
     {
-        return std::format("{} countries, {} terrain, {} cultures, {} religions", content.countries.size() - 1,
-                           content.terrain.size() - 1, content.cultures.size() - 1, content.religions.size() - 1);
+        return std::format("{} countries, {} terrain, {} goods", content.countries.size() - 1,
+                           content.terrain.size() - 1, content.goods.size() - 1);
     }
 
     std::vector<std::string> GameData::check(const MapData& map) const
@@ -449,8 +376,7 @@ namespace mc
     {
         const Provinces& p = state.provinces;
         const CountryDefinitions& countries = content.countries;
-        std::string text = "id,name,owner,controller,cores,terrain,tax,production,manpower,culture,religion,"
-                           "trade_good,trade_node,center_of_trade\n";
+        std::string text = "id,name,owner,controller,cores,terrain,resource\n";
         for (std::uint32_t id = 1; id < map.count; ++id) {
             if (map.kind[id] != ProvinceKind::land) {
                 continue;
@@ -464,24 +390,18 @@ namespace mc
                     cores_text += countries.tag_text(c);
                 }
             }
-            text += std::format("{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n", id, csv::field(map.province_name(id)),
+            text += std::format("{},{},{},{},{},{},{}\n", id, csv::field(map.province_name(id)),
                                 countries.tag_text(p.owner[id]), countries.tag_text(p.controller[id]), cores_text,
-                                content.terrain.key[p.terrain[id]], amount_text(p.tax[id]),
-                                amount_text(p.production[id]), amount_text(p.manpower[id]),
-                                content.cultures.key[p.culture[id]], content.religions.key[p.religion[id]],
-                                content.trade_goods.key[p.trade_good[id]], content.trade_nodes.key[p.trade_node[id]],
-                                p.center_of_trade[id] ? "1" : "");
+                                content.terrain.key[p.terrain[id]], content.goods.key[p.resource[id]]);
         }
         if (!csv::write_file(dir / "setup" / "provinces.csv", text, error)) {
             return false;
         }
-        std::string countries_text = "tag,capital,primary_culture,religion\n";
+        std::string countries_text = "tag,capital\n";
         for (std::size_t c = 1; c < countries.size(); ++c) {
             const std::uint16_t capital = state.countries.capital[c];
-            countries_text += std::format("{},{},{},{}\n", countries.tag_text(c),
-                                          capital ? std::format("{}", capital) : "",
-                                          content.cultures.key[state.countries.primary_culture[c]],
-                                          content.religions.key[state.countries.religion[c]]);
+            countries_text += std::format("{},{}\n", countries.tag_text(c),
+                                          capital ? std::format("{}", capital) : "");
         }
         return csv::write_file(dir / "setup" / "countries.csv", countries_text, error);
     }

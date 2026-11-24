@@ -70,15 +70,6 @@ namespace mc
         redo_.clear();
     }
 
-    void Editor::begin_typing()
-    {
-        const ImGuiID item = ImGui::GetItemID();
-        if (item != typing_item_) {
-            begin_edit();
-            typing_item_ = item;
-        }
-    }
-
     void Editor::changed()
     {
         dirty_ = true;
@@ -229,26 +220,6 @@ namespace mc
         ImGui::EndCombo();
     }
 
-    void Editor::pick_country_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column)
-    {
-        const std::uint8_t value = column[country_];
-        if (ImGui::BeginCombo(label, value == 0 ? "-" : list.name[value].c_str())) {
-            for (std::size_t i = 0; i < list.size(); ++i) {
-                ImGui::PushID(static_cast<int>(i));
-                if (i != 0) {
-                    swatch(list.color[i]);
-                }
-                if (ImGui::Selectable(i == 0 ? "-" : list.name[i].c_str(), value == i) && value != i) {
-                    begin_edit();
-                    column[country_] = static_cast<std::uint8_t>(i);
-                    changed();
-                }
-                ImGui::PopID();
-            }
-            ImGui::EndCombo();
-        }
-    }
-
     void Editor::pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column)
     {
         std::uint8_t value = 0;
@@ -277,40 +248,6 @@ namespace mc
             ImGui::SameLine();
             ImGui::TextDisabled("(no list yet)");
         }
-    }
-
-    void Editor::edit_amount(const char* label, Column<float>& column)
-    {
-        float value = 0.0f;
-        const bool same = shared(column, selection_, &value);
-        ImGui::PushID(label);
-        // Typed: every selected province gets the number. The buttons add or take one from each.
-        int typed = static_cast<int>(same ? value : column[selection_[0]]);
-        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5.0f);
-        if (ImGui::InputInt("##value", &typed, 0, 0)) {
-            begin_typing();
-            for (const std::uint32_t id : selection_) {
-                column[id] = static_cast<float>(std::max(typed, 0));
-            }
-            changed();
-        }
-        for (const int step : { -1, 1 }) {
-            ImGui::SameLine();
-            if (ImGui::Button(step < 0 ? "-" : "+")) {
-                begin_edit();
-                for (const std::uint32_t id : selection_) {
-                    column[id] = std::max(column[id] + static_cast<float>(step), 0.0f);
-                }
-                changed();
-            }
-        }
-        ImGui::SameLine();
-        ImGui::TextUnformatted(label);
-        if (!same) {
-            ImGui::SameLine();
-            ImGui::TextDisabled(kMixed);
-        }
-        ImGui::PopID();
     }
 
     void Editor::edit_cores()
@@ -411,38 +348,7 @@ namespace mc
 
         ImGui::SeparatorText("Land");
         pick_listed("Terrain", game.content.terrain, game.state.provinces.terrain);
-        pick_listed("Culture", game.content.cultures, game.state.provinces.culture);
-        pick_listed("Religion", game.content.religions, game.state.provinces.religion);
-
-        ImGui::SeparatorText("Development");
-        edit_amount("Tax", game.state.provinces.tax);
-        edit_amount("Production", game.state.provinces.production);
-        edit_amount("Manpower", game.state.provinces.manpower);
-        float total = 0.0f;
-        for (const std::uint32_t id : selection_) {
-            total += game.state.provinces.tax[id] + game.state.provinces.production[id] + game.state.provinces.manpower[id];
-        }
-        ImGui::TextDisabled("Total: %.0f", total);
-
-        ImGui::SeparatorText("Trade");
-        pick_listed("Trade good", game.content.trade_goods, game.state.provinces.trade_good);
-        pick_listed("Trade node", game.content.trade_nodes, game.state.provinces.trade_node);
-        std::uint8_t cot = 0;
-        const bool same = shared(game.state.provinces.center_of_trade, selection_, &cot);
-        bool on = same && cot != 0;
-        if (!same) {
-            ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, true);
-        }
-        if (ImGui::Checkbox("Center of trade", &on)) {
-            begin_edit();
-            for (const std::uint32_t id : selection_) {
-                game.state.provinces.center_of_trade[id] = on ? 1 : 0;
-            }
-            changed();
-        }
-        if (!same) {
-            ImGui::PopItemFlag();
-        }
+        pick_listed("Resource", game.content.goods, game.state.provinces.resource);
         ImGui::End();
     }
 
@@ -476,14 +382,12 @@ namespace mc
             ImGui::EndCombo();
         }
         std::vector<std::uint32_t> owned;
-        float development = 0.0f;
         for (std::uint32_t id = 1; id < map.count; ++id) {
             if (game.state.provinces.owner[id] == country_) {
                 owned.push_back(id);
-                development += game.state.provinces.tax[id] + game.state.provinces.production[id] + game.state.provinces.manpower[id];
             }
         }
-        ImGui::Text("%zu provinces, development %.0f", owned.size(), development);
+        ImGui::Text("%zu provinces", owned.size());
         const std::uint16_t capital = states.capital[country_];
         ImGui::Text("Capital: %s", capital ? std::string(map.province_name(capital)).c_str() : "-");
         ImGui::BeginDisabled(owned.empty());
@@ -510,8 +414,6 @@ namespace mc
             changed();
         }
         ImGui::EndDisabled();
-        pick_country_listed("Primary culture", game.content.cultures, states.primary_culture);
-        pick_country_listed("State religion", game.content.religions, states.religion);
 
         const auto warnings = game.check(map);
         if (!warnings.empty()) {
@@ -555,8 +457,7 @@ namespace mc
                 continue;
             }
             ++land;
-            const bool missing = !p.owner[id] || !p.controller[id] || !p.terrain[id] || !p.culture[id] ||
-                                 !p.religion[id] || p.tax[id] + p.production[id] + p.manpower[id] <= 0.0f;
+            const bool missing = !p.owner[id] || !p.controller[id] || !p.terrain[id];
             if (missing) {
                 ++unfilled;
                 if (first_unfilled == 0) {
@@ -614,9 +515,7 @@ namespace mc
             ImGui::TextDisabled("%s", std::string(map.region_name(map.region[id])).c_str());
             ImGui::Text("Owner: %s", country_label(game.content.countries, p.owner[id]).c_str());
             ImGui::Text("Terrain: %s", p.terrain[id] ? game.content.terrain.name[p.terrain[id]].c_str() : "-");
-            ImGui::Text("Culture: %s", p.culture[id] ? game.content.cultures.name[p.culture[id]].c_str() : "-");
-            ImGui::Text("Religion: %s", p.religion[id] ? game.content.religions.name[p.religion[id]].c_str() : "-");
-            ImGui::Text("Development: %.0f / %.0f / %.0f", p.tax[id], p.production[id], p.manpower[id]);
+            ImGui::Text("Resource: %s", p.resource[id] ? game.content.goods.name[p.resource[id]].c_str() : "-");
         }
         ImGui::EndTooltip();
     }
@@ -624,9 +523,6 @@ namespace mc
     void Editor::ui(float view_width, float view_height)
     {
         const ImGuiIO& io = ImGui::GetIO();
-        if (!ImGui::IsAnyItemActive()) {
-            typing_item_ = 0;
-        }
         if (!io.WantTextInput) {
             if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_S)) {
                 save();

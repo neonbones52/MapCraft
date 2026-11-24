@@ -24,19 +24,12 @@ namespace mc
         if (capital != 0 && state.provinces.owner[capital] == country) {
             return capital;
         }
-        std::uint32_t best = 0;
-        float best_development = -1.0f;
         for (std::uint32_t id = 1; id < state.provinces.count; ++id) {
-            if (state.provinces.owner[id] != country) {
-                continue;
-            }
-            const float d = state.provinces.tax[id] + state.provinces.production[id] + state.provinces.manpower[id];
-            if (d > best_development) {
-                best_development = d;
-                best = id;
+            if (state.provinces.owner[id] == country) {
+                return id;
             }
         }
-        return best;
+        return 0;
     }
 
     CountryStats country_stats(const WorldState& state, std::uint16_t country)
@@ -49,9 +42,6 @@ namespace mc
                 continue;
             }
             ++s.provinces;
-            s.tax += p.tax[id];
-            s.production += p.production[id];
-            s.manpower += p.manpower[id];
         }
         return s;
     }

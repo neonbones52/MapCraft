@@ -1,7 +1,5 @@
 #include "ui/widgets.h"
 
-#include "game/game_data.h"
-
 namespace mc::ui
 {
     ImVec4 color(std::uint32_t rgba, float alpha)
@@ -45,19 +43,5 @@ namespace mc::ui
     void end_facts()
     {
         ImGui::EndTable();
-    }
-
-    void listed(const DefinitionList& list, std::size_t index, const DefinitionList* groups)
-    {
-        if (index == 0 || index >= list.size()) {
-            ImGui::TextDisabled("-");
-            return;
-        }
-        swatch(list.color[index]);
-        ImGui::TextUnformatted(list.name[index].c_str());
-        if (groups && list.group[index] != 0) {
-            ImGui::SameLine();
-            ImGui::TextDisabled("(%s)", groups->name[list.group[index]].c_str());
-        }
     }
 }

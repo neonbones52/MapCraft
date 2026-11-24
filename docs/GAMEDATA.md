@@ -21,13 +21,9 @@ Tamriel Universalis (поля EU4); под Vic2 её переделывает M2
 | `common/terrain.csv` | key, name, color | логический terrain провинций (не вид карты) |
 | `common/biomes.csv` | key, name, color, density, minecraft_biome, top, side, under, deep, shore, snow_top, snow_side, snow_line, trees, tree_density, tree_line, village | биомы вида карты (см. ниже); не игровые данные, редактор его не правит |
 | `common/countries.csv` | tag, name, adjective, color | определения стран; `adjective` — для частей, отрезанных от столицы, по умолчанию = name |
-| `common/culture_groups.csv` | key, name | группы культур |
-| `common/cultures.csv` | key, name, color, group | культуры |
-| `common/religion_groups.csv` | key, name | группы религий |
-| `common/religions.csv` | key, name, color, group | религии |
-| `common/trade_goods.csv`, `trade_nodes.csv` | key, name, color | необязательны, пока нет торговли |
-| `setup/provinces.csv` | id, name, owner, controller, cores, terrain, tax, production, manpower, culture, religion, trade_good, trade_node, center_of_trade | провинции суши на старте |
-| `setup/countries.csv` | tag, capital, primary_culture, religion | страны на старте: столица (id провинции), основная культура, государственная религия |
+| `common/goods.csv` | key, name, color | товары; необязателен. Пока только список для ресурса RGO, остальные колонки — M2 |
+| `setup/provinces.csv` | id, name, owner, controller, cores, terrain, resource | провинции суши на старте |
+| `setup/countries.csv` | tag, capital | страны на старте: столица (id провинции) |
 
 Подробности `common/biomes.csv` (читают инструменты карты и игра при запуске, docs/RENDER.md «Облик блоков»):
 - `color` — цвет биома в `biome.png`; `density` — плотность провинций при генерации карты (1 — обычная, меньше —
@@ -55,8 +51,10 @@ Tamriel Universalis (поля EU4); под Vic2 её переделывает M2
 - `id` — номер провинции карты;
 - `name` нужен только человеку и для diff, загрузчик его не читает;
 - `cores` — теги через пробел;
-- development — числа ≥ 0;
-- `center_of_trade` — 0 или 1.
+- `resource` — ресурс RGO, ключ из `common/goods.csv` или пусто.
+
+Столица страны — `capital` в `setup/countries.csv`; без неё (или если провинция не своя) столицей считается первая
+провинция страны, наименьший id (`seat`, `game/countries.h`).
 
 Провинция без владельца допустима. Морских строк пока нет.
 
@@ -75,10 +73,10 @@ Tamriel Universalis (поля EU4); под Vic2 её переделывает M2
 - **Содержимое и состояние — разные типы.**
   - `Content` — справочники и `CountryDefinitions` (тег упакован в `u32`, имя, прилагательное, цвет). Все строки
     живут только здесь; после загрузки не меняется.
-  - `WorldState` — только столбцы: `Provinces` и `CountryStates` (столица, основная культура, религия) с тем же
+  - `WorldState` — только столбцы: `Provinces` и `CountryStates` (столица) с тем же
     индексом, что у стран. Симуляция меняет только его.
-- **Индексы.** Провинция и страна — `u16`, 0 = нет; провинции 1..N, как в карте. Terrain, культура, религия, группы,
-  товар и узел — `u8`, 0 = нет, поэтому в каждом списке не больше 255 записей (проверяется).
+- **Индексы.** Провинция и страна — `u16`, 0 = нет; провинции 1..N, как в карте. Terrain и ресурс —
+  `u8`, 0 = нет, поэтому в каждом списке не больше 255 записей (проверяется).
 - **Раскладка.** Каждое поле — свой столбец длиной N+1, дополненной до кратной 16, с выравниванием 64 байта
   (`Column<T>`, `AlignedAllocator`). Цикл по провинциям идёт по столбцу подряд.
 - **Числа — `float`**; балансы и требования (когда появятся) — `i64` (docs/ECONOMY.md, «Деньги в i64»). Симуляция
