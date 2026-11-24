@@ -8,6 +8,7 @@
 #include "game/game_data.h"
 #include "core/map_data.h"
 #include "game/countries.h"
+#include "game/economy/ledger.h"
 #include "game/session.h"
 #include "ui/flags.h"
 #include "ui/widgets.h"
@@ -99,6 +100,7 @@ namespace mc
             ui::swatch(ui.content.countries.color[owner]);
             ImGui::TextUnformatted(ui.content.countries.name[owner].c_str());
             ImGui::TextDisabled("%s", std::string(ui.map.province_name(province)).c_str());
+            ImGui::Text("Money: %.2f emeralds", to_emeralds(ledger::province_cash(ui.state, province)));
             ImGui::EndTooltip();
         }
     }

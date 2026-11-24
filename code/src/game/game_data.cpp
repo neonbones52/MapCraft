@@ -6,6 +6,7 @@
 
 #include "core/csv.h"
 #include "core/map_data.h"
+#include "game/economy/ledger.h"
 
 namespace mc
 {
@@ -156,7 +157,8 @@ namespace mc
             column->assign(n, T{});
         }
 
-        // pop_types.csv: key, name, essential, everyday, luxury (per person a day; empty = 0).
+        // pop_types.csv: key, name, essential, everyday, luxury (per person a day; empty = 0), cash (emeralds per
+        // person at the start; empty = 0).
         bool read_pop_types(const std::filesystem::path& path, PopTypes* types, std::string* error)
         {
             csv::Table table;
@@ -164,10 +166,15 @@ namespace mc
                 return false;
             }
             types->need.assign(types->size(), {});
+            types->start_cash.assign(types->size(), 0.0f);
             if (table.header.empty()) {
                 return true;
             }
             const Context ctx{ path, &table, error };
+            int cash = 0;
+            if (!need_column(path, table, "cash", &cash, error)) {
+                return false;
+            }
             int tier[kNeedTiers];
             for (std::size_t t = 0; t < kNeedTiers; ++t) {
                 if (!need_column(path, table, kNeedTierKeys[t], &tier[t], error)) {
@@ -175,6 +182,9 @@ namespace mc
                 }
             }
             for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                if (!parse_number(table.rows[r][cash], &types->start_cash[r + 1], true)) {
+                    return ctx.fail(r, std::format("cash \"{}\": a number >= 0 or empty", table.rows[r][cash]));
+                }
                 for (std::size_t t = 0; t < kNeedTiers; ++t) {
                     if (!parse_number(table.rows[r][tier[t]], &types->need[r + 1][t], true)) {
                         return ctx.fail(r, std::format("{} \"{}\": a number >= 0 or empty", kNeedTierKeys[t],
@@ -233,7 +243,8 @@ namespace mc
             return true;
         }
 
-        // rgo_types.csv: key, name, color, workers (a pop type), outputs ("meat:1 leather:0.3", per worker a day).
+        // rgo_types.csv: key, name, color, workers and owners (pop types), outputs ("meat:1 leather:0.3", per worker a
+        // day).
         bool read_rgo_types(const std::filesystem::path& path, const DefinitionList& goods, const PopTypes& pop_types,
                             RgoTypes* rgos, std::string* error)
         {
@@ -242,6 +253,7 @@ namespace mc
                 return false;
             }
             rgos->workers.assign(1, 0);
+            rgos->owners.assign(1, 0);
             rgos->output_first.assign(2, 0);   // "none" makes nothing
             rgos->output_good.clear();
             rgos->output_amount.clear();
@@ -250,8 +262,10 @@ namespace mc
             }
             const Context ctx{ path, &table, error };
             int workers = 0;
+            int owners = 0;
             int outputs = 0;
             if (!need_column(path, table, "workers", &workers, error) ||
+                !need_column(path, table, "owners", &owners, error) ||
                 !need_column(path, table, "outputs", &outputs, error)) {
                 return false;
             }
@@ -262,6 +276,11 @@ namespace mc
                     return ctx.fail(r, std::format("workers \"{}\": a pop type of pop_types.csv", row[workers]));
                 }
                 rgos->workers.push_back(static_cast<std::uint8_t>(w));
+                const int owner = pop_types.list.find(row[owners]);
+                if (owner <= 0) {
+                    return ctx.fail(r, std::format("owners \"{}\": a pop type of pop_types.csv", row[owners]));
+                }
+                rgos->owners.push_back(static_cast<std::uint8_t>(owner));
                 const std::size_t first = rgos->output_good.size();
                 std::string_view text = row[outputs];
                 while (!text.empty()) {
@@ -565,6 +584,7 @@ namespace mc
                 }
             }
         }
+        ledger::start(content, &state);
         warnings = check(map);
         loaded = true;
         return true;

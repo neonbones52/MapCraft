@@ -20,6 +20,8 @@ add_library(mc_sim STATIC
     src/core/map_data.cpp
     src/game/calendar.cpp
     src/game/countries.cpp
+    src/game/economy/economy.cpp
+    src/game/economy/ledger.cpp
     src/game/game_data.cpp
     src/game/session.cpp
     src/game/world.cpp

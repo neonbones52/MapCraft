@@ -1,7 +1,7 @@
-key,name,color,workers,outputs,icon
-cattle_ranch,Cattle Ranch,#8B5A3C,farmers,meat:1 leather:0.3,entity:cow
-horse_breeding,Horse Breeding,#D2A86E,farmers,horses:1 meat:0.35,entity:horse
-wheat_farm,Wheat Farm,#E8CD4A,farmers,wheat:2,wheat
-creeper_trapping,Creeper Trapping,#5E8C31,farmers,gunpowder:1,entity:creeper
-emerald_mine,Emerald Mine,#22E0A4,workers,emerald:1,emerald
-fishing,Fishing,#3F76E4,farmers,fish:1,cod
+key,name,color,workers,owners,outputs,icon
+cattle_ranch,Cattle Ranch,#8B5A3C,farmers,capitalists,meat:1 leather:0.3,entity:cow
+horse_breeding,Horse Breeding,#D2A86E,farmers,capitalists,horses:1 meat:0.35,entity:horse
+wheat_farm,Wheat Farm,#E8CD4A,farmers,capitalists,wheat:2,wheat
+creeper_trapping,Creeper Trapping,#5E8C31,farmers,capitalists,gunpowder:1,entity:creeper
+emerald_mine,Emerald Mine,#22E0A4,workers,capitalists,emerald:0.1,emerald
+fishing,Fishing,#3F76E4,farmers,capitalists,fish:1,cod

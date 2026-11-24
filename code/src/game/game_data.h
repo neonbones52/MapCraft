@@ -9,6 +9,8 @@
 #include <string_view>
 #include <vector>
 
+#include "core/money.h"
+
 namespace mc
 {
     class MapData;
@@ -101,6 +103,25 @@ namespace mc
         float& at(std::size_t type, std::uint32_t province) { return size[type * stride + province]; }
     };
 
+    // What money moved for: the ledger's counters, one per rule that moves money (docs/ECONOMY.md).
+    enum class Flow : std::uint8_t
+    {
+        mine,    // emeralds minted by an RGO
+        count,
+    };
+    inline constexpr std::size_t kFlows = static_cast<std::size_t>(Flow::count);
+
+    // Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts: the pops' cash, the
+    // account of a pop being its place in Pops (t * stride + p); treasuries, buildings and the pool get ranges of
+    // their own when they come. Written only by the ledger (game/economy/ledger.h).
+    struct Balances
+    {
+        Column<Money> cash;
+        Money start = 0;                       // the sum of all cash at the start
+        Money minted = 0;                      // all money minted since
+        std::array<Money, kFlows> flows{};     // money moved per flow since the start
+    };
+
     // Country state (data/setup/countries.csv at the start), one column per field, indexed like CountryDefinitions,
     // padded(count) long.
     struct CountryStates
@@ -123,6 +144,7 @@ namespace mc
     {
         DefinitionList list;                                // index 0 = none
         std::vector<std::array<float, kNeedTiers>> need;
+        std::vector<float> start_cash;                      // emeralds per person at the start
 
         [[nodiscard]] std::size_t size() const { return list.size(); }
     };
@@ -140,6 +162,7 @@ namespace mc
     {
         DefinitionList list;                         // index 0 = none
         std::vector<std::uint8_t> workers;           // PopTypes index
+        std::vector<std::uint8_t> owners;            // PopTypes index: the pop of the province its earnings go to
         std::vector<std::uint32_t> output_first;     // type t makes outputs [output_first[t], output_first[t + 1])
         std::vector<std::uint8_t> output_good;       // Content::goods index
         std::vector<float> output_amount;
@@ -165,6 +188,7 @@ namespace mc
     {
         Provinces provinces;
         Pops pops;
+        Balances money;
         CountryStates countries;
     };
 

@@ -22,9 +22,9 @@ Tamriel Universalis (поля EU4); под Vic2 её переделывает M2
 | `common/biomes.csv` | key, name, color, density, minecraft_biome, top, side, under, deep, shore, snow_top, snow_side, snow_line, trees, tree_density, tree_line, village | биомы вида карты (см. ниже); не игровые данные, редактор его не правит |
 | `common/countries.csv` | tag, name, adjective, color | определения стран; `adjective` — для частей, отрезанных от столицы, по умолчанию = name |
 | `common/goods.csv` | key, name, icon | товары; `icon` — предмет Майнкрафта для UI (M6), пока не читается |
-| `common/pop_types.csv` | key, name, essential, everyday, luxury, look, skin | типы попов: потребность каждого уровня на человека в день (пусто = 0); `look`, `skin` — профессия и биом жителя для UI (M6), пока не читаются |
+| `common/pop_types.csv` | key, name, essential, everyday, luxury, cash, look, skin | типы попов: потребность каждого уровня на человека в день (пусто = 0); `cash` — стартовые деньги на человека, в изумрудах; `look`, `skin` — профессия и биом жителя для UI (M6), пока не читаются |
 | `common/needs.csv` | tier, good, weight | чем закрывается уровень потребностей (`essential`, `everyday`, `luxury`): товары уровня взаимозаменяемы, `weight` — сколько уровня закрывает единица товара |
-| `common/rgo_types.csv` | key, name, color, workers, outputs, icon | типы RGO: `workers` — тип попа, `outputs` — выход на работника в день через пробел (`meat:1 leather:0.3`); `icon` — для UI (M6; `entity:cow` — 3D-рендер моба), пока не читается |
+| `common/rgo_types.csv` | key, name, color, workers, owners, outputs, icon | типы RGO: `workers` — кто работает, `owners` — чьему попу в провинции идёт доход (оба — типы попов); `outputs` — выход на работника в день через пробел (`meat:1 leather:0.3`); `icon` — для UI (M6; `entity:cow` — 3D-рендер моба), пока не читается |
 | `setup/provinces.csv` | id, name, owner, controller, cores, terrain, rgo | провинции суши на старте |
 | `setup/pops.csv` | province, name, pop_type, size | попы на старте: одна строка на провинцию и тип; нет строки — нет попа |
 | `setup/countries.csv` | tag, capital | страны на старте: столица (id провинции) |
@@ -101,6 +101,22 @@ Tamriel Universalis (поля EU4); под Vic2 её переделывает M2
   - в игре `GameData` принадлежит `game/World`, наружу он отдаёт только `const`;
   - карта (`App::set_game`) и UI только читают;
   - редактор держит свой `GameData` и правит только `state`; undo хранит снимки `WorldState`.
+
+## Деньги (`core/money.h`, `game/economy/`)
+- **Тип.** `Money` — `i64`, целые крупинки, 10⁶ на изумруд. Сумма считается во `float`/`double`, округляется до
+  крупинок один раз (`to_grains`), и ровно это целое переходит со счёта на счёт. `to_emeralds` — только для показа.
+- **Счета** — `Balances` в `WorldState`: один столбец `cash`; счёт попа — его место в `Pops` (`t * stride + p`).
+  Казна, здания и пул получат свои диапазоны того же столбца.
+- **Пишет только `ledger`:** `start` (старт: размер попа × `cash` его типа), `mint` (из ничего — только шахта),
+  `transfer` (точная сумма между счетами; не уходит в минус). Счётчики `flows` — сколько прошло по каждому виду
+  (`Flow`: пока `mine`).
+- **День экономики** — `economy_day` (`economy.cpp`, порядок фаз только там). Сейчас одна фаза: RGO, у которого среди
+  выходов изумруд, каждый день чеканит `работники × выход` владельцам (`owners`). Остальные товары RGO ждут
+  производства (M3).
+- **Инвариант мира** — `ledger::balanced`: сумма `cash` = старт + всё добытое. `World` проверяет его после каждого дня и
+  при первом нарушении пишет ошибку в лог. `World::restart` возвращает состояние, каким оно загрузилось.
+- **Редактор** правит старт: после каждой правки попов стартовые деньги пересчитываются; в `data/` деньги не пишутся
+  (они следуют из попов и `cash`).
 
 ## Время
 Единица времени — день. Всё это код, не данные: календарь и старт в `data/` не лежат.

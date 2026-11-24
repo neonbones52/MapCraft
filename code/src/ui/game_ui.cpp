@@ -45,6 +45,7 @@ namespace mc
         case Session::Phase::playing:
             player_hud(ui, &commands);
             time_bar(ui, &commands);
+            country_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
             break;
         }
         return commands;

@@ -8,6 +8,7 @@
 
 #include "app/app.h"
 #include "core/map_data.h"
+#include "game/economy/ledger.h"
 
 namespace mc
 {
@@ -90,6 +91,7 @@ namespace mc
 
     void Editor::changed()
     {
+        ledger::start(game_.content, &game_.state);   // the start money follows the pops
         dirty_ = true;
         app_.refresh_map_mode();
     }
@@ -358,7 +360,11 @@ namespace mc
             }
             ImGui::PopID();
         }
-        ImGui::TextDisabled("Population: %.0f", total);
+        Money cash = 0;
+        for (const std::uint32_t id : selection_) {
+            cash += ledger::province_cash(game.state, id);
+        }
+        ImGui::TextDisabled("Population: %.0f, money at the start: %.2f emeralds", total, to_emeralds(cash));
     }
 
     // ------------------------------------------------------------------------------------------------ panels
@@ -601,6 +607,7 @@ namespace mc
             ImGui::Text("Terrain: %s", p.terrain[id] ? game.content.terrain.name[p.terrain[id]].c_str() : "-");
             ImGui::Text("RGO: %s", p.rgo[id] ? game.content.rgo_types.list.name[p.rgo[id]].c_str() : "-");
             ImGui::Text("Population: %.0f", population(game.state.pops, id));
+            ImGui::Text("Money: %.2f emeralds", to_emeralds(ledger::province_cash(game.state, id)));
         }
         ImGui::EndTooltip();
     }

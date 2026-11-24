@@ -1,4 +1,4 @@
-key,name,essential,everyday,luxury,look,skin
-farmers,Farmers,1,0.1,,farmer,plains
-workers,Workers,1,0.2,,armorer,taiga
-capitalists,Capitalists,1.5,0.5,0.2,cartographer,savanna
+key,name,essential,everyday,luxury,cash,look,skin
+farmers,Farmers,1,0.1,,0.01,farmer,plains
+workers,Workers,1,0.2,,0.02,armorer,taiga
+capitalists,Capitalists,1.5,0.5,0.2,1,cartographer,savanna

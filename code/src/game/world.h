@@ -24,9 +24,10 @@ namespace mc
 
         // `days` days pass, one after another: the only way the state and the date change (the game's Shell, at the
         // pace the player set, view/pace.h; later mapcraft_sim). Sets the simulation's floating-point environment
-        // first (core/det_math.h). The rules of the simulation will run in here, over the columns.
+        // first (core/det_math.h). Each day runs the rules over the columns (game/economy/economy.h), then checks the
+        // money invariant (game/economy/ledger.h) and logs an error the first time it breaks.
         void advance_days(std::uint32_t days);
-        // Back to the start date. (Once the tick changes the columns, this restores the start state as well.)
+        // Back to the start: the start date and the state as loaded.
         void restart();
 
         [[nodiscard]] bool loaded() const { return data_.loaded; }
@@ -41,6 +42,8 @@ namespace mc
         void tick_day();   // one day of the rules
 
         GameData data_;
+        WorldState start_;              // the state as loaded, for restart
         std::uint32_t day_ = kStartDay;
+        bool unbalanced_ = false;       // the money invariant broke (logged once)
     };
 }
