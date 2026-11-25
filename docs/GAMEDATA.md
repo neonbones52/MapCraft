@@ -7,8 +7,8 @@
 Данные в `data/` черновые, заполняет их пользователь (README, «Состояние»).
 
 Экономика будет EU3-lite (docs/ECONOMY.md); правил экономики в коде пока нет. Расстановка RGO по провинциям ждёт
-шага 2 среза M5, где станет товаром провинции (trade goods); рынки регионов стали торговыми узлами (trade nodes в
-смысле центров торговли EU3, без графа между узлами; правила — срез M11, docs/ECONOMY.md, «Торговые узлы»).
+шага 3 среза M5, где станет товаром провинции (trade goods); рынки регионов стали торговыми узлами (trade nodes в
+смысле центров торговли EU3, без графа между узлами; правила — срез M14, docs/ECONOMY.md, «Торговые узлы»).
 
 ## Файлы
 - Формат: CSV UTF-8, первая строка — заголовок.
@@ -23,10 +23,10 @@
 | `common/terrain.csv` | key, name, color | логический terrain провинций (не вид карты); ставится руками в редакторе |
 | `common/biomes.csv` | key, name, color, density, minecraft_biome, top, side, under, deep, shore, snow_top, snow_side, snow_line, trees, tree_density, tree_line, village | биомы вида карты (см. ниже); не игровые данные, редактор его не правит |
 | `common/countries.csv` | tag, name, adjective, color | определения стран; `adjective` — для частей, отрезанных от столицы, по умолчанию = name |
-| `common/goods.csv` | key, name, price, icon | товары; `price` — цена в изумрудах за единицу, > 0 (у изумруда всегда 1), в EU3-lite станет `base_price` мировой цены; правила её пока не читают; `icon` — предмет Майнкрафта для UI (M10), пока не читается |
-| `common/rgo_types.csv` | key, name, color, icon | типы RGO — ключи колонки `rgo` до шага 2 M5 (там она станет товаром провинции, а файл уйдёт); `icon` — для UI, не читается |
-| `common/trade_nodes.csv` | key, name, color | торговые узлы; узел — из целых регионов (`setup/regions.csv`); необязателен; правил узлов пока нет (M11) |
-| `setup/provinces.csv` | id, name, owner, controller, cores, terrain, rgo | провинции суши на старте; в шаге 2 M5 `rgo` станет товаром провинции, добавятся `base_tax`, население и крепость (docs/ECONOMY.md, «Провинция») |
+| `common/goods.csv` | key, name, price, icon | товары; `price` — цена в изумрудах за единицу, > 0 (у изумруда всегда 1), в EU3-lite станет `base_price` мировой цены; правила её пока не читают; `icon` — предмет Майнкрафта для UI (M13), пока не читается |
+| `common/rgo_types.csv` | key, name, color, icon | типы RGO — ключи колонки `rgo` до шага 3 M5 (там она станет товаром провинции, а файл уйдёт); `icon` — для UI, не читается |
+| `common/trade_nodes.csv` | key, name, color | торговые узлы; узел — из целых регионов (`setup/regions.csv`); необязателен; правил узлов пока нет (M14) |
+| `setup/provinces.csv` | id, name, owner, controller, cores, terrain, rgo | провинции суши на старте; в шаге 3 M5 `rgo` станет товаром провинции, добавятся `base_tax` и население (docs/ECONOMY.md, «Провинция») |
 | `setup/regions.csv` | region, name, trade_node | регион карты (номер из `regions.csv` карты) → торговый узел; пусто — без узла |
 | `setup/countries.csv` | tag, capital | страны на старте: столица (id провинции) |
 
@@ -137,6 +137,6 @@
 - **Кто кого зовёт.** `Shell::frame` → `Pace::advance(dt, run)` → `World::advance_days(n)`. `Pace` хранится в `Shell`;
   вне фазы `playing` (`Session::playing()`) время стоит и кнопки темпа ничего не делают. Дни идут до отрисовки карты
   и UI в том же кадре. `mapcraft_sim` зовёт ту же `World::advance_days`.
-- **Тик.** `tick_day` пока только `++day_`: правил дня нет (первые придут с войной, M5). Поэтому скорость 5 за кадр
+- **Тик.** `tick_day` пока только `++day_`: правил дня нет (первые придут с армиями, M5). Поэтому скорость 5 за кадр
   делает сотни тысяч дней — бюджет кадра уходит на пустой цикл. Счётчик дней — `u32` (около 12 млн лет); на пустом
   тике скорость 5, по оценке, доходит до его предела за минуты; настоящая цена дня это снимет.
