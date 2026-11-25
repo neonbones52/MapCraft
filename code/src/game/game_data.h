@@ -71,19 +71,36 @@ namespace mc
         [[nodiscard]] std::string tag_text(std::size_t country) const;
     };
 
+    // Column lists. Every table of WorldState has one, next to it: one line per column, X(table, type, name, start),
+    // in the saved order (game/saved_state.h). From it expand the table's fields (MC_DECLARE_COLUMN), its resize and
+    // for_each_saved (the dump and the checksum of mapcraft_sim, later the save); a new column is one line. `table` is
+    // the table's member in WorldState, the first half of the column's saved name ("provinces.owner"). `type` has no
+    // commas. `start` says where the column's value at the start comes from (read by GameData, game_data.cpp):
+    //   runtime                    0; from then on only the game changes it
+    //   setup("csv column", parse) data/setup: read at load and written back by the editor (GameData::save_setup);
+    //                              parse is country (a tag, empty = none; u16), key(&Content::list) (a key of that
+    //                              list, empty = none; u8) or number (a number >= 0, empty = 0; float)
+    //   by_hand                    data/setup, read and written by GameData's own code (a capital: a land province)
+    // What is not a column of a list is written out by hand where the lists expand: the sizes, the cores bit matrix.
+    // A line's own comment is /* */: a // comment would swallow the line continuation.
+#define MC_DECLARE_COLUMN(table, type, name, start) Column<type> name;
+
+#define MC_PROVINCE_COLUMNS(X)                                                                                  \
+    X(provinces, std::uint16_t, owner, setup("owner", country))                                                 \
+    X(provinces, std::uint16_t, controller, setup("controller", country))                                       \
+    X(provinces, std::uint8_t, terrain, setup("terrain", key(&Content::terrain)))                               \
+    /* Content::rgo_types index (becomes the province's good, M5 step 3) */                                     \
+    X(provinces, std::uint8_t, rgo, setup("rgo", key(&Content::rgo_types)))
+
     // Saved. Province state, one column per field, indexed by province id (MapData ids, 0 = none), padded(count)
-    // long. Hot (changes in the simulation) and cold fields are separate columns anyway; strings never live here.
+    // long; strings never live here. data/setup/provinces.csv at the start: id and name (for people) by hand, then
+    // the list's setup columns and the cores.
     struct Provinces
     {
         std::uint32_t count = 0;            // MapData::count: ids 0..count-1
-        // hot
-        Column<std::uint16_t> owner;
-        Column<std::uint16_t> controller;
-        // cold
-        Column<std::uint8_t> terrain;
-        Column<std::uint8_t> rgo;        // Content::rgo_types index, 0 = none (becomes the province's good, M5 step 2)
-        // Cores: a bit matrix, core_words u64 per province (64 countries a word): bit c of province p.
+        // Cores (by hand): a bit matrix, core_words u64 per province (64 countries a word): bit c of province p.
         std::uint32_t core_words = 1;
+        MC_PROVINCE_COLUMNS(MC_DECLARE_COLUMN)
         Column<std::uint64_t> cores;
 
         void resize(std::uint32_t province_count, std::size_t country_count);
@@ -99,30 +116,40 @@ namespace mc
         }
     };
 
-    // Saved. Region state (data/setup/regions.csv at the start), indexed by the map's region (1-based, 0 = none),
-    // padded(count) long.
+#define MC_REGION_COLUMNS(X)                                                                                    \
+    X(regions, std::uint8_t, trade_node, setup("trade_node", key(&Content::trade_nodes)))
+
+    // Saved. Region state (data/setup/regions.csv at the start: region, the map's number, and name for people by
+    // hand), indexed by the map's region (1-based, 0 = none), padded(count) long.
     struct Regions
     {
         std::uint32_t count = 0;          // MapData::region_count(): regions 0..count-1
-        Column<std::uint8_t> trade_node;  // Content::trade_nodes index, 0 = none
+        MC_REGION_COLUMNS(MC_DECLARE_COLUMN)
 
         void resize(std::uint32_t region_count);
     };
 
-    // Saved. Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts. Written only by the
-    // ledger (game/economy/ledger.h). No accounts yet: the countries' treasuries get theirs with the treasury (M8),
-    // and with them the ledger's counters per kind of flow.
+#define MC_BALANCE_COLUMNS(X)                                                                                   \
+    X(money, Money, cash, runtime)
+
+    // Saved. Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts; runtime only (no
+    // setup file). Written only by the ledger (game/economy/ledger.h). No accounts yet: the countries' treasuries get
+    // theirs with the treasury (M8), and with them the ledger's counters per kind of flow.
     struct Balances
     {
-        Column<Money> cash;
+        MC_BALANCE_COLUMNS(MC_DECLARE_COLUMN)
     };
 
-    // Saved. Country state (data/setup/countries.csv at the start), one column per field, indexed like
+#define MC_COUNTRY_COLUMNS(X)                                                                                   \
+    /* province id, 0 = none */                                                                                 \
+    X(countries, std::uint16_t, capital, by_hand)
+
+    // Saved. Country state (data/setup/countries.csv at the start: tag by hand), one column per field, indexed like
     // CountryDefinitions, padded(count) long.
     struct CountryStates
     {
         std::size_t count = 0;                  // countries, 0 = none included
-        Column<std::uint16_t> capital;          // province id, 0 = none
+        MC_COUNTRY_COLUMNS(MC_DECLARE_COLUMN)
 
         void resize(std::size_t country_count);
     };
@@ -144,7 +171,7 @@ namespace mc
     };
 
     // Saved: the state of the world, SoA columns only (indices into Content, numbers); what the simulation changes.
-    // Loaded from data/setup (the start). Every column is listed in game/saved_state.h.
+    // Its start comes from data/setup and the defaults (the lists' `start`). Every column is in game/saved_state.h.
     struct WorldState
     {
         Provinces provinces;
@@ -166,7 +193,7 @@ namespace mc
         bool load(const std::filesystem::path& dir, const MapData& map, std::string* error,
                   std::span<const csv::Patch> patches = {});
         // Rewrites data/setup/provinces.csv (every land province, by id), regions.csv (every region, by number) and
-        // countries.csv from `state`.
+        // countries.csv from `state`, each in its `setup_layout` order.
         bool save_setup(const std::filesystem::path& dir, const MapData& map, std::string* error) const;
         // The checks that are warnings at load, for the current state: a capital its country does not own; once there
         // are trade nodes, a region without one and a node without regions.
@@ -178,5 +205,13 @@ namespace mc
         Content content;
         WorldState state;
         std::vector<std::string> warnings;
+        // The columns of each data/setup file in the order they were loaded (the game's own only; an absent file: the
+        // default order), which save_setup keeps. Neither state nor content: how the files are laid out.
+        struct SetupLayout
+        {
+            std::vector<std::string> provinces;
+            std::vector<std::string> regions;
+            std::vector<std::string> countries;
+        } setup_layout;
     };
 }
