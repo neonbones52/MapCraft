@@ -56,6 +56,7 @@ namespace mc
         // Field editing over the whole selection.
         void pick_country(const char* label, Column<std::uint16_t>& column, bool owner);
         void pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column);
+        void edit_number(const char* label, Column<float>& column, float step);   // >= 0, typed or stepped
         void edit_cores();
 
         App& app_;

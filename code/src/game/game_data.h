@@ -89,8 +89,10 @@ namespace mc
     X(provinces, std::uint16_t, owner, setup("owner", country))                                                 \
     X(provinces, std::uint16_t, controller, setup("controller", country))                                       \
     X(provinces, std::uint8_t, terrain, setup("terrain", key(&Content::terrain)))                               \
-    /* Content::rgo_types index (becomes the province's good, M5 step 3) */                                     \
-    X(provinces, std::uint8_t, rgo, setup("rgo", key(&Content::rgo_types)))
+    /* the trade good the province produces: every land province has one (GameData::check) */                  \
+    X(provinces, std::uint8_t, good, setup("good", key(&Content::goods)))                                       \
+    X(provinces, float, base_tax, setup("base_tax", number))                                                    \
+    X(provinces, float, population, setup("population", number))
 
     // Saved. Province state, one column per field, indexed by province id (MapData ids, 0 = none), padded(count)
     // long; strings never live here. data/setup/provinces.csv at the start: id and name (for people) by hand, then
@@ -163,8 +165,8 @@ namespace mc
     {
         DefinitionList terrain;
         DefinitionList goods;
-        std::vector<float> goods_price;   // goods.csv `price`, emeralds per unit (the money good: 1); no rule reads it yet
-        DefinitionList rgo_types;         // data/common/rgo_types.csv: the keys of `rgo` until it becomes the good
+        std::vector<float> goods_price;   // goods.csv `price`: the base price, emeralds per unit produced (the money
+                                          // good: 1); no rule reads it yet
         DefinitionList trade_nodes;       // data/common/trade_nodes.csv: a node is made of whole regions (M11 rules)
         CountryDefinitions countries;
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
@@ -195,8 +197,8 @@ namespace mc
         // Rewrites data/setup/provinces.csv (every land province, by id), regions.csv (every region, by number) and
         // countries.csv from `state`, each in its `setup_layout` order.
         bool save_setup(const std::filesystem::path& dir, const MapData& map, std::string* error) const;
-        // The checks that are warnings at load, for the current state: a capital its country does not own; once there
-        // are trade nodes, a region without one and a node without regions.
+        // The checks that are warnings at load, for the current state: a capital its country does not own; a land
+        // province without a good; once there are trade nodes, a region without one and a node without regions.
         [[nodiscard]] std::vector<std::string> check(const MapData& map) const;
         // "11 countries, 5 terrain, ..." for the logs.
         [[nodiscard]] std::string summary() const;

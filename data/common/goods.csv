@@ -1,8 +1,11 @@
-key,name,price,icon
-wheat,Wheat,0.001,wheat
-meat,Meat,0.0015,beef
-leather,Leather,0.005,leather
-horses,Horses,0.05,
-fish,Fish,0.001,cod
-gunpowder,Gunpowder,0.002,gunpowder
-emerald,Emerald,1,emerald
+key,name,color,price,icon
+wheat,Wheat,#E8CD4A,1.5,wheat
+cattle,Cattle,#8B5A3C,2,beef
+fish,Fish,#3F76E4,2,cod
+sugar_cane,Sugar Cane,#9BD65A,2.5,sugar_cane
+redstone,Redstone,#C8241B,1.5,redstone
+copper,Copper,#C8743F,3.5,copper_ingot
+iron,Iron,#D4D4D4,3,iron_ingot
+gunpowder,Gunpowder,#5E8C31,3,gunpowder
+potions,Potions,#A64BD0,4,potion
+emerald,Emerald,#22E0A4,1,emerald

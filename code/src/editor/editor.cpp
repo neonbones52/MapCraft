@@ -281,6 +281,26 @@ namespace mc
         }
     }
 
+    void Editor::edit_number(const char* label, Column<float>& column, float step)
+    {
+        float value = 0.0f;
+        const bool same = shared(column, selection_, &value);
+        if (!same) {
+            value = 0.0f;
+        }
+        if (ImGui::InputFloat(label, &value, step, step * 10.0f, "%g")) {
+            begin_typing();
+            for (const std::uint32_t id : selection_) {
+                column[id] = std::max(value, 0.0f);
+            }
+            changed();
+        }
+        if (!same) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("%s", kMixed);   // the field shows 0; what is typed goes to the whole selection
+        }
+    }
+
     void Editor::edit_cores()
     {
         GameData& game = game_;
@@ -379,7 +399,10 @@ namespace mc
 
         ImGui::SeparatorText("Land");
         pick_listed("Terrain", game.content.terrain, game.state.provinces.terrain);
-        pick_listed("RGO", game.content.rgo_types, game.state.provinces.rgo);
+        ImGui::SeparatorText("Economy");
+        pick_listed("Good", game.content.goods, game.state.provinces.good);
+        edit_number("Base tax", game.state.provinces.base_tax, 1.0f);
+        edit_number("Population", game.state.provinces.population, 1000.0f);
         ImGui::End();
     }
 
@@ -531,7 +554,7 @@ namespace mc
                 continue;
             }
             ++land;
-            const bool missing = !p.owner[id] || !p.controller[id] || !p.terrain[id] || !p.rgo[id];
+            const bool missing = !p.owner[id] || !p.controller[id] || !p.terrain[id] || !p.good[id];
             if (missing) {
                 ++unfilled;
                 if (first_unfilled == 0) {
@@ -589,7 +612,8 @@ namespace mc
             ImGui::TextDisabled("%s", std::string(map.region_name(map.region[id])).c_str());
             ImGui::Text("Owner: %s", country_label(game.content.countries, p.owner[id]).c_str());
             ImGui::Text("Terrain: %s", p.terrain[id] ? game.content.terrain.name[p.terrain[id]].c_str() : "-");
-            ImGui::Text("RGO: %s", p.rgo[id] ? game.content.rgo_types.name[p.rgo[id]].c_str() : "-");
+            ImGui::Text("Good: %s", p.good[id] ? game.content.goods.name[p.good[id]].c_str() : "-");
+            ImGui::Text("Base tax: %g, population: %g", p.base_tax[id], p.population[id]);
         }
         ImGui::EndTooltip();
     }

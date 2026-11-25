@@ -446,18 +446,16 @@ namespace mc
         constexpr std::string_view kRegionHand[] = { "region", "name" };
         constexpr std::string_view kCountryHand[] = { "tag", "capital" };
 
-        // goods.csv: key, name, price (emeralds per unit, > 0; the money good is worth 1 whatever it says).
+        // goods.csv (required: every land province has a good): key, name, color, price (the base price, emeralds per
+        // unit produced, > 0; the money good is worth 1 whatever it says).
         bool read_goods(Source& src, const std::filesystem::path& path, DefinitionList* goods,
                         std::vector<float>* price, std::string* error)
         {
             csv::Table table;
-            if (!read_list(src, path, false, false, goods, error, &table)) {
+            if (!read_list(src, path, true, true, goods, error, &table)) {
                 return false;
             }
             price->assign(goods->size(), 0.0f);
-            if (table.header.empty()) {
-                return true;
-            }
             const Context ctx{ path, &table, error };
             int column = 0;
             if (!need_column(path, table, "price", &column, error)) {
@@ -550,7 +548,6 @@ namespace mc
         const auto setup = dir / "setup";
         if (!read_list(src, common / "terrain.csv", true, true, &content.terrain, error) ||
             !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, error) ||
-            !read_list(src, common / "rgo_types.csv", false, true, &content.rgo_types, error) ||
             !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error)) {
             return false;
         }
@@ -740,9 +737,8 @@ namespace mc
 
     std::string GameData::summary() const
     {
-        return std::format("{} countries, {} terrain, {} goods, {} RGO types, {} trade nodes",
-                           content.countries.size() - 1, content.terrain.size() - 1, content.goods.size() - 1,
-                           content.rgo_types.size() - 1, content.trade_nodes.size() - 1);
+        return std::format("{} countries, {} terrain, {} goods, {} trade nodes", content.countries.size() - 1,
+                           content.terrain.size() - 1, content.goods.size() - 1, content.trade_nodes.size() - 1);
     }
 
     std::vector<std::string> GameData::check(const MapData& map) const
@@ -754,6 +750,21 @@ namespace mc
                 out.push_back(std::format("{}: capital {} ({}) is not its own", content.countries.tag_text(c), capital,
                                           map.province_name(capital)));
             }
+        }
+
+        // Every land province produces a good. A warning, not a load error: a land province without a row (new on the
+        // map) has none until the editor gives it one. The first few by name, then a count.
+        constexpr std::size_t kNamed = 10;
+        std::size_t without_good = 0;
+        for (std::uint32_t id = 1; id < map.count; ++id) {
+            if (map.kind[id] == ProvinceKind::land && state.provinces.good[id] == 0) {
+                if (++without_good <= kNamed) {
+                    out.push_back(std::format("province {} ({}): no good", id, map.province_name(id)));
+                }
+            }
+        }
+        if (without_good > kNamed) {
+            out.push_back(std::format("... {} land provinces without a good in all", without_good));
         }
 
         // Trade nodes: every region in one, no node empty (once there are nodes at all).

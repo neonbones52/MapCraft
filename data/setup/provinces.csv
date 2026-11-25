@@ -1,701 +1,701 @@
-id,name,owner,controller,cores,terrain,rgo
-1,Chillmarch,,,,taiga,wheat_farm
-2,Rime Moor,,,,taiga,wheat_farm
-3,Boulder Cross,,,,swamp,wheat_farm
-4,Cold Fold,,,,taiga,wheat_farm
-5,Fern Point,,,,taiga,wheat_farm
-6,Fox Holm,,,,forest,wheat_farm
-7,Skeletoncross,,,,forest,wheat_farm
-8,Oakrest,,,,forest,wheat_farm
-9,Sleetford,,,,taiga,wheat_farm
-10,Palefield,,,,forest,wheat_farm
-11,Podzolrun,,,,taiga,wheat_farm
-12,Pinewharf,,,,taiga,wheat_farm
-13,Sprucefold,,,,taiga,wheat_farm
-14,Wolf Mouth,,,,taiga,wheat_farm
-15,Wolf Bay,,,,plains,wheat_farm
-16,Cold Heath,,,,taiga,wheat_farm
-17,Fireflyglen,,,,swamp,wheat_farm
-18,Bogbarrow,,,,taiga,wheat_farm
-19,Podzolmouth,,,,taiga,wheat_farm
-20,Bramblewell,,,,forest,wheat_farm
-21,Bear Well,,,,taiga,wheat_farm
-22,Wolf Field,,,,hills,wheat_farm
-23,Rime Shire,,,,taiga,wheat_farm
-24,Powder Hearth,,,,taiga,wheat_farm
-25,Pinebrook,,,,taiga,wheat_farm
-26,Snowshire,,,,swamp,wheat_farm
-27,Igloo Watch,,,,taiga,wheat_farm
-28,Batwatch,,,,mountains,wheat_farm
-29,Chillwick,,,,taiga,wheat_farm
-30,Icehead,,,,taiga,wheat_farm
-31,Wolfridge,,,,taiga,wheat_farm
-32,Berry Wick,,,,taiga,wheat_farm
-33,Mushroomwood,,,,forest,wheat_farm
-34,Lilybay,,,,forest,wheat_farm
-35,Icefield,,,,taiga,wheat_farm
-36,Thorn Bay,,,,hills,wheat_farm
-37,Barkford,,,,forest,wheat_farm
-38,Pinemarch,,,,hills,wheat_farm
-39,Pinepoint,,,,taiga,wheat_farm
-40,Coldstead,,,,swamp,wheat_farm
-41,Foxhearth,,,,taiga,wheat_farm
-42,Chill Barrow,,,,taiga,wheat_farm
-43,Orerock,,,,mountains,wheat_farm
-44,Berrycross,,,,taiga,wheat_farm
-45,Pickaxe Top,,,,mountains,wheat_farm
-46,Pinewatch,,,,taiga,wheat_farm
-47,Frost Dale,,,,taiga,wheat_farm
-48,Frosthold,,,,mountains,wheat_farm
-49,Dioritecrag,,,,hills,wheat_farm
-50,Batspire,,,,mountains,wheat_farm
-51,Cobblemoor,,,,plains,wheat_farm
-52,Dandelionwood,,,,plains,wheat_farm
-53,Saddleheath,,,,plains,wheat_farm
-54,Foxwell,,,,forest,wheat_farm
-55,Beevale,,,,plains,wheat_farm
-56,Beewatch,,,,plains,wheat_farm
-57,Dandeliondale,,,,plains,wheat_farm
-58,Breadbay,,,,plains,wheat_farm
-59,Horsefield,,,,plains,horse_breeding
-60,Cornflowerport,,,,plains,wheat_farm
-61,Cornflowerhaven,,,,plains,wheat_farm
-62,Cowfield,,,,plains,cattle_ranch
-63,Beemouth,,,,plains,wheat_farm
-64,Owlfold,,,,forest,wheat_farm
-65,Spidercombe,,,,forest,wheat_farm
-66,Cobble Ley,,,,plains,wheat_farm
-67,Oakhearth,,,,forest,wheat_farm
-68,Spidercrest,,,,forest,wheat_farm
-69,Cobwebdale,,,,forest,wheat_farm
-70,Dandelionbrook,,,,plains,wheat_farm
-71,Saplingbury,,,,forest,wheat_farm
-72,Villagerbay,,,,plains,wheat_farm
-73,Saddle Shire,,,,plains,wheat_farm
-74,Chicken Fold,,,,plains,wheat_farm
-75,Pigfold,,,,swamp,wheat_farm
-76,Saddlemill,,,,swamp,wheat_farm
-77,Hayfold,,,,plains,wheat_farm
-78,Honey Rest,,,,plains,wheat_farm
-79,Honeymoor,,,,plains,wheat_farm
-80,Rabbithaven,,,,plains,wheat_farm
-81,Chickenwick,,,,plains,wheat_farm
-82,Poppyworth,,,,plains,wheat_farm
-83,Beetrootmarch,,,,plains,wheat_farm
-84,Potatoglen,,,,plains,wheat_farm
-85,Villagerwharf,,,,plains,wheat_farm
-86,Potatoport,,,,plains,wheat_farm
-87,Oxeyemouth,,,,plains,wheat_farm
-88,Wheatmarch,,,,plains,wheat_farm
-89,Haymoor,,,,plains,wheat_farm
-90,Carrotley,,,,plains,wheat_farm
-91,Meadow Vale,,,,plains,wheat_farm
-92,Sheepmarch,,,,plains,wheat_farm
-93,Beewick,,,,plains,wheat_farm
-94,Barleyrest,,,,plains,wheat_farm
-95,Oxeyeridge,,,,plains,wheat_farm
-96,Poppyhead,,,,plains,wheat_farm
-97,Hayshire,,,,plains,wheat_farm
-98,Breadreach,,,,plains,wheat_farm
-99,Breadhearth,,,,plains,wheat_farm
-100,Tadpolecove,,,,swamp,wheat_farm
-101,Bell Fold,,,,plains,wheat_farm
-102,Dripstone Field,,,,mountains,wheat_farm
-103,Horseton,,,,hills,horse_breeding
-104,Bell Rest,,,,hills,wheat_farm
-105,Chickenport,,,,plains,wheat_farm
-106,Sheep Bay,,,,plains,wheat_farm
-107,Villagerton,,,,plains,wheat_farm
-108,Bellhaven,,,,plains,wheat_farm
-109,Potato Mill,,,,hills,wheat_farm
-110,Potatohead,,,,plains,wheat_farm
-111,Sunflowerstrand,,,,plains,wheat_farm
-112,Cow Field,,,,plains,wheat_farm
-113,Cornflower Point,,,,plains,wheat_farm
-114,Poppywick,,,,plains,wheat_farm
-115,Sleetstead,,,,taiga,wheat_farm
-116,Horsebay,,,,plains,wheat_farm
-117,Woolvale,,,,taiga,wheat_farm
-118,Hayshore,,,,hills,wheat_farm
-119,Tulip Hollow,,,,taiga,wheat_farm
-120,Honeymill,,,,plains,wheat_farm
-121,Wheatstone,,,,plains,wheat_farm
-122,Honey Hollow,,,,plains,wheat_farm
-123,Fernbay,,,,taiga,wheat_farm
-124,Bee Mouth,,,,plains,wheat_farm
-125,Foxbrook,,,,taiga,wheat_farm
-126,Bread Gate,,,,plains,wheat_farm
-127,Potato Ford,,,,plains,wheat_farm
-128,Cowpoint,,,,plains,wheat_farm
-129,Meadowpoint,,,,plains,wheat_farm
-130,Bearpoint,,,,taiga,wheat_farm
-131,Rabbitstrand,,,,plains,wheat_farm
-132,Sheep Stone,,,,plains,wheat_farm
-133,Rabbitcombe,,,,plains,wheat_farm
-134,Cobblestrand,,,,plains,wheat_farm
-135,Lantern Head,,,,plains,wheat_farm
-136,Oakstrand,,,,plains,wheat_farm
-137,Dandelionwatch,,,,plains,wheat_farm
-138,Chickenwood,,,,plains,wheat_farm
-139,Beemill,,,,plains,wheat_farm
-140,Bread Moor,,,,plains,wheat_farm
-141,Chickenhollow,,,,plains,wheat_farm
-142,Beewell,,,,swamp,wheat_farm
-143,Lanterncombe,,,,plains,wheat_farm
-144,Cowrest,,,,plains,wheat_farm
-145,Potatoden,,,,plains,wheat_farm
-146,Horsecrag,,,,hills,wheat_farm
-147,Saddlefold,,,,plains,wheat_farm
-148,Cobble Glen,,,,mountains,wheat_farm
-149,Wheatbury,,,,plains,wheat_farm
-150,Sheepcombe,,,,plains,wheat_farm
-151,Beeden,,,,forest,wheat_farm
-152,Zombieshore,,,,forest,wheat_farm
-153,Moss Rest,,,,swamp,wheat_farm
-154,Mushroomhollow,,,,forest,wheat_farm
-155,Potatocombe,,,,plains,wheat_farm
-156,Skeletoncove,,,,forest,wheat_farm
-157,Miremere,,,,swamp,wheat_farm
-158,Cobbleton,,,,plains,wheat_farm
-159,Diamondwick,,,,mountains,wheat_farm
-160,Emeraldford,,,,mountains,emerald_mine
-161,Pig Haven,,,,swamp,wheat_farm
-162,Tulipstead,,,,plains,wheat_farm
-163,Leafhaven,,,,swamp,wheat_farm
-164,Sheepbay,,,,plains,wheat_farm
-165,Creeperport,,,,forest,wheat_farm
-166,Wheat Field,,,,plains,wheat_farm
-167,Zombiemill,,,,forest,wheat_farm
-168,Hay Port,,,,swamp,wheat_farm
-169,Pumpkinmill,,,,plains,wheat_farm
-170,Lilybury,,,,forest,wheat_farm
-171,Stone Scar,,,,mountains,wheat_farm
-172,Hollowmarch,,,,forest,wheat_farm
-173,Chickenglen,,,,plains,wheat_farm
-174,Coppercliff,,,,mountains,wheat_farm
-175,Azaleaworth,,,,forest,wheat_farm
-176,Dandelion Brook,,,,plains,wheat_farm
-177,Pumpkinmouth,,,,plains,wheat_farm
-178,Potatomarch,,,,plains,wheat_farm
-179,Rabbit Brook,,,,forest,wheat_farm
-180,Oakglen,,,,plains,wheat_farm
-181,Poppy Holm,,,,plains,wheat_farm
-182,Barkdale,,,,forest,wheat_farm
-183,Beedale,,,,plains,wheat_farm
-184,Meadowford,,,,forest,wheat_farm
-185,Lanternbrook,,,,plains,wheat_farm
-186,Pigcove,,,,plains,wheat_farm
-187,Frostheight,,,,mountains,wheat_farm
-188,Mulespire,,,,plains,wheat_farm
-189,Gravelsummit,,,,mountains,wheat_farm
-190,Acaciaholm,,,,plains,wheat_farm
-191,Frostcrest,,,,mountains,wheat_farm
-192,Scute Gate,,,,plains,wheat_farm
-193,Sunflowerglen,,,,plains,wheat_farm
-194,Oxeyeton,,,,plains,wheat_farm
-195,Meadowholm,,,,plains,wheat_farm
-196,Carrotgate,,,,plains,wheat_farm
-197,Lanternhollow,,,,plains,wheat_farm
-198,Haymarch,,,,plains,wheat_farm
-199,Mosswell,,,,forest,wheat_farm
-200,Wool Den,,,,plains,wheat_farm
-201,Azaleadale,,,,forest,wheat_farm
-202,Bee Field,,,,forest,wheat_farm
-203,Cobble Ridge,,,,plains,wheat_farm
-204,Bellcove,,,,plains,wheat_farm
-205,Sunflower Combe,,,,plains,wheat_farm
-206,Wheat Den,,,,plains,wheat_farm
-207,Pigshore,,,,plains,wheat_farm
-208,Sheepglen,,,,plains,cattle_ranch
-209,Poppymarch,,,,plains,wheat_farm
-210,Zombiebarrow,,,,plains,wheat_farm
-211,Honeywatch,,,,plains,wheat_farm
-212,Bell Ley,,,,plains,wheat_farm
-213,Carrotden,,,,plains,wheat_farm
-214,Fernhearth,,,,forest,wheat_farm
-215,Barleyhollow,,,,plains,wheat_farm
-216,Beeridge,,,,forest,wheat_farm
-217,Woolcross,,,,plains,wheat_farm
-218,Acornrest,,,,forest,wheat_farm
-219,Oak Wick,,,,forest,wheat_farm
-220,Rabbit Watch,,,,plains,wheat_farm
-221,Birch Watch,,,,plains,wheat_farm
-222,Pumpkincrest,,,,plains,wheat_farm
-223,Honeybarrow,,,,plains,wheat_farm
-224,Barleymarch,,,,plains,wheat_farm
-225,Palerun,,,,plains,wheat_farm
-226,Cornflowerpoint,,,,plains,wheat_farm
-227,Woolwharf,,,,plains,wheat_farm
-228,Barkbarrow,,,,plains,wheat_farm
-229,Toadmoor,,,,swamp,wheat_farm
-230,Reedvale,,,,swamp,wheat_farm
-231,Carrotmouth,,,,plains,wheat_farm
-232,Chicken Wick,,,,plains,wheat_farm
-233,Mangrovemarsh,,,,swamp,wheat_farm
-234,Breadshire,,,,plains,wheat_farm
-235,Peatwell,,,,swamp,wheat_farm
-236,Fireflyslough,,,,swamp,wheat_farm
-237,Beeholm,,,,forest,wheat_farm
-238,Oak Dale,,,,plains,wheat_farm
-239,Tadpolemere,,,,plains,wheat_farm
-240,Mosswood,,,,forest,wheat_farm
-241,Rabbitscar,,,,hills,wheat_farm
-242,Logcombe,,,,forest,wheat_farm
-243,Tadpoleshire,,,,swamp,wheat_farm
-244,Root Gate,,,,forest,wheat_farm
-245,Bellheath,,,,plains,wheat_farm
-246,Fern Shire,,,,forest,wheat_farm
-247,Creeperden,,,,forest,wheat_farm
-248,Breadcombe,,,,plains,wheat_farm
-249,Thornrun,,,,forest,wheat_farm
-250,Bramblebrook,,,,forest,wheat_farm
-251,Mushroomdale,,,,hills,wheat_farm
-252,Cobblefall,,,,mountains,wheat_farm
-253,Deepslatepass,,,,mountains,wheat_farm
-254,Goat Well,,,,mountains,wheat_farm
-255,Moss Pass,,,,forest,wheat_farm
-256,Fernreach,,,,forest,wheat_farm
-257,Coalshire,,,,mountains,wheat_farm
-258,Azalearest,,,,forest,wheat_farm
-259,Owlwood,,,,forest,wheat_farm
-260,Mossvale,,,,forest,wheat_farm
-261,Paleglen,,,,forest,wheat_farm
-262,Wheat Hold,,,,plains,wheat_farm
-263,Wolffold,,,,forest,wheat_farm
-264,Hayden,,,,plains,wheat_farm
-265,Mushroomwatch,,,,plains,wheat_farm
-266,Dustwell,,,,desert,wheat_farm
-267,Silverfish Barrow,,,,mountains,wheat_farm
-268,Lapisheight,,,,mountains,wheat_farm
-269,Granite Moor,,,,hills,wheat_farm
-270,Redstonesummit,,,,mountains,wheat_farm
-271,Diamondhold,,,,mountains,wheat_farm
-272,Sun Hearth,,,,desert,wheat_farm
-273,Duneden,,,,desert,wheat_farm
-274,Goldsands,,,,desert,wheat_farm
-275,Sandstonedune,,,,desert,wheat_farm
-276,Sandstoneford,,,,desert,wheat_farm
-277,Pickaxepass,,,,mountains,emerald_mine
-278,Emberwell,,,,desert,wheat_farm
-279,Terracottafield,,,,desert,wheat_farm
-280,Terracotta Rock,,,,mountains,wheat_farm
-281,Sandstoneley,,,,hills,wheat_farm
-282,Cactusspire,,,,hills,wheat_farm
-283,Sandrest,,,,desert,wheat_farm
-284,Cornflowercove,,,,plains,wheat_farm
-285,Terracottaport,,,,desert,wheat_farm
-286,Rabbithearth,,,,desert,wheat_farm
-287,Deadbushrun,,,,desert,wheat_farm
-288,Pumpkinwatch,,,,plains,wheat_farm
-289,Sheepcrest,,,,hills,wheat_farm
-290,Miragerest,,,,desert,wheat_farm
-291,Dustwharf,,,,hills,wheat_farm
-292,Barley Strand,,,,hills,wheat_farm
-293,Sunflowerridge,,,,desert,wheat_farm
-294,Dripstone Cliff,,,,mountains,wheat_farm
-295,Stonehold,,,,mountains,wheat_farm
-296,Iron Ridge,,,,mountains,wheat_farm
-297,Emberstead,,,,desert,wheat_farm
-298,Glasswick,,,,desert,wheat_farm
-299,Emberspire,,,,desert,wheat_farm
-300,Dunerest,,,,desert,wheat_farm
-301,Pyramidpoint,,,,desert,wheat_farm
-302,Glasshearth,,,,desert,wheat_farm
-303,Poppyheath,,,,plains,wheat_farm
-304,Templegate,,,,jungle,wheat_farm
-305,Cornflowerbay,,,,plains,wheat_farm
-306,Leaf Point,,,,jungle,wheat_farm
-307,Beetrootbrook,,,,plains,wheat_farm
-308,Pumpkinglen,,,,plains,wheat_farm
-309,Scorchstone,,,,desert,wheat_farm
-310,Wooldale,,,,hills,wheat_farm
-311,Sunden,,,,desert,wheat_farm
-312,Haywharf,,,,plains,wheat_farm
-313,Emberflat,,,,desert,wheat_farm
-314,Cobblewell,,,,plains,wheat_farm
-315,Rabbitheath,,,,forest,wheat_farm
-316,Oakmoor,,,,plains,wheat_farm
-317,Loghaven,,,,forest,wheat_farm
-318,Rabbitridge,,,,swamp,wheat_farm
-319,Cobweb Combe,,,,forest,wheat_farm
-320,Lily Mouth,,,,swamp,wheat_farm
-321,Leafbay,,,,forest,wheat_farm
-322,Anvilhollow,,,,mountains,wheat_farm
-323,Cornflowerwatch,,,,hills,wheat_farm
-324,Beeport,,,,plains,wheat_farm
-325,Redstonemarch,,,,mountains,wheat_farm
-326,Acacia Port,,,,plains,wheat_farm
-327,Chickenfield,,,,plains,wheat_farm
-328,Goldrun,,,,mountains,wheat_farm
-329,Lanterncove,,,,plains,wheat_farm
-330,Dandelionden,,,,plains,wheat_farm
-331,Cow Gate,,,,plains,wheat_farm
-332,Carrot Field,,,,plains,wheat_farm
-333,Snow Watch,,,,mountains,wheat_farm
-334,Tulipdale,,,,plains,wheat_farm
-335,Emerald Fold,,,,mountains,emerald_mine
-336,Horse Bay,,,,plains,wheat_farm
-337,Sheep Field,,,,plains,wheat_farm
-338,Horse Well,,,,hills,wheat_farm
-339,Tulip Cove,,,,plains,wheat_farm
-340,Sheepshore,,,,hills,wheat_farm
-341,Meadowmill,,,,plains,wheat_farm
-342,Pickaxespire,,,,mountains,wheat_farm
-343,Coalcombe,,,,mountains,wheat_farm
-344,Sunflowershire,,,,plains,wheat_farm
-345,Wool Mill,,,,hills,wheat_farm
-346,Chickenmarch,,,,plains,wheat_farm
-347,Wheatworth,,,,plains,wheat_farm
-348,Oxeye Tor,,,,hills,wheat_farm
-349,Beetrootrun,,,,plains,wheat_farm
-350,Creeper Stead,,,,forest,wheat_farm
-351,Slime Point,,,,swamp,wheat_farm
-352,Oakstead,,,,hills,wheat_farm
-353,Frogslough,,,,swamp,wheat_farm
-354,Breadstrand,,,,plains,wheat_farm
-355,Sunflowerford,,,,hills,wheat_farm
-356,Barleypoint,,,,plains,wheat_farm
-357,Wool Crest,,,,hills,wheat_farm
-358,Chicken Crest,,,,plains,wheat_farm
-359,Poppycove,,,,plains,wheat_farm
-360,Saddlewharf,,,,plains,wheat_farm
-361,Dandelionhaven,,,,plains,wheat_farm
-362,Hay Wood,,,,plains,wheat_farm
-363,Foxden,,,,forest,wheat_farm
-364,Oxeyeshore,,,,plains,wheat_farm
-365,Rabbitshore,,,,plains,wheat_farm
-366,Creeperstead,,,,forest,wheat_farm
-367,Zombiebay,,,,forest,wheat_farm
-368,Sheepley,,,,plains,wheat_farm
-369,Cowhead,,,,plains,wheat_farm
-370,Mudwharf,,,,plains,wheat_farm
-371,Logbrook,,,,forest,wheat_farm
-372,Potatoheath,,,,plains,wheat_farm
-373,Cowgate,,,,plains,cattle_ranch
-374,Thornglen,,,,forest,wheat_farm
-375,Breadfold,,,,plains,wheat_farm
-376,Oxeyebrook,,,,plains,wheat_farm
-377,Lanternmoor,,,,swamp,wheat_farm
-378,Roothold,,,,swamp,wheat_farm
-379,Thorn Shire,,,,forest,wheat_farm
-380,Palestone,,,,forest,wheat_farm
-381,Cowmoor,,,,plains,cattle_ranch
-382,Sheepwell,,,,plains,wheat_farm
-383,Bread Holm,,,,plains,wheat_farm
-384,Oxeye Bay,,,,plains,wheat_farm
-385,Meadow Cross,,,,plains,wheat_farm
-386,Leafwharf,,,,forest,wheat_farm
-387,Oakhaven,,,,plains,wheat_farm
-388,Wool Strand,,,,plains,wheat_farm
-389,Wheatton,,,,plains,wheat_farm
-390,Horseford,,,,plains,horse_breeding
-391,Bell Vale,,,,plains,wheat_farm
-392,Dandelionley,,,,plains,wheat_farm
-393,Sheepcross,,,,plains,wheat_farm
-394,Zombieridge,,,,mountains,wheat_farm
-395,Cobweb Hearth,,,,plains,wheat_farm
-396,Cobwebglen,,,,plains,wheat_farm
-397,Barkcross,,,,hills,wheat_farm
-398,Fox Worth,,,,forest,wheat_farm
-399,Chickenmoor,,,,hills,wheat_farm
-400,Gravelhold,,,,mountains,wheat_farm
-401,Armadillo Holm,,,,plains,wheat_farm
-402,Sunpoint,,,,plains,wheat_farm
-403,Cornflowerstead,,,,plains,wheat_farm
-404,Honeybrook,,,,plains,wheat_farm
-405,Beetrootstead,,,,plains,wheat_farm
-406,Dustden,,,,hills,cattle_ranch
-407,Oakcrest,,,,plains,wheat_farm
-408,Lilysink,,,,plains,wheat_farm
-409,Cobble Point,,,,plains,wheat_farm
-410,Saddlerun,,,,plains,wheat_farm
-411,Potatoridge,,,,forest,wheat_farm
-412,Beeshore,,,,plains,wheat_farm
-413,Cobweb Dale,,,,forest,wheat_farm
-414,Murkpoint,,,,swamp,wheat_farm
-415,Mire Fen,,,,swamp,wheat_farm
-416,Murk Pool,,,,swamp,wheat_farm
-417,Cauldronglen,,,,swamp,wheat_farm
-418,Bogmarsh,,,,swamp,wheat_farm
-419,Lilyreed,,,,swamp,wheat_farm
-420,Mossdale,,,,swamp,wheat_farm
-421,Root Ford,,,,swamp,wheat_farm
-422,Murkfen,,,,swamp,wheat_farm
-423,Toad Slough,,,,swamp,wheat_farm
-424,Witchrest,,,,swamp,wheat_farm
-425,Drowned Watch,,,,swamp,wheat_farm
-426,Clay Bay,,,,swamp,wheat_farm
-427,Murkfold,,,,plains,wheat_farm
-428,Mireshore,,,,swamp,wheat_farm
-429,Toadwell,,,,plains,wheat_farm
-430,Orchidbury,,,,swamp,wheat_farm
-431,Claycove,,,,swamp,wheat_farm
-432,Cauldron Bog,,,,swamp,wheat_farm
-433,Cauldronreed,,,,swamp,wheat_farm
-434,Rootcrest,,,,swamp,wheat_farm
-435,Chickenley,,,,plains,wheat_farm
-436,Cobblerest,,,,plains,wheat_farm
-437,Claycrest,,,,swamp,wheat_farm
-438,Bogwash,,,,swamp,wheat_farm
-439,Tulip Ford,,,,plains,wheat_farm
-440,Bogslough,,,,swamp,wheat_farm
-441,Murk Shire,,,,swamp,wheat_farm
-442,Slime Crest,,,,swamp,wheat_farm
-443,Roothaven,,,,swamp,wheat_farm
-444,Frogvale,,,,plains,wheat_farm
-445,Moss Port,,,,swamp,wheat_farm
-446,Witchsink,,,,swamp,wheat_farm
-447,Mirebog,,,,plains,wheat_farm
-448,Peatfen,,,,swamp,wheat_farm
-449,Mud Heath,,,,swamp,wheat_farm
-450,Mudmire,,,,swamp,wheat_farm
-451,Slimestone,,,,swamp,wheat_farm
-452,Cauldron Wharf,,,,swamp,wheat_farm
-453,Mudbrook,,,,swamp,wheat_farm
-454,Drownedwharf,,,,swamp,wheat_farm
-455,Mireridge,,,,swamp,wheat_farm
-456,Cauldron Ley,,,,plains,wheat_farm
-457,Orchidstrand,,,,swamp,wheat_farm
-458,Orchid Moor,,,,plains,wheat_farm
-459,Witch Fold,,,,swamp,wheat_farm
-460,Murk Reed,,,,plains,wheat_farm
-461,Mire Bay,,,,swamp,wheat_farm
-462,Reedcove,,,,swamp,wheat_farm
-463,Roothearth,,,,swamp,wheat_farm
-464,Murk Worth,,,,swamp,wheat_farm
-465,Mangrovewell,,,,swamp,wheat_farm
-466,Peatcove,,,,swamp,wheat_farm
-467,Bogwharf,,,,swamp,wheat_farm
-468,Sporestrand,,,,jungle,wheat_farm
-469,Liana Port,,,,jungle,wheat_farm
-470,Cocoa Dale,,,,jungle,wheat_farm
-471,Creeperwharf,,,,jungle,wheat_farm
-472,Oaktop,DUM,DUM,DUM,forest,wheat_farm
-473,Azalea Heath,,,,forest,wheat_farm
-474,Lapishearth,DUM,DUM,DUM,mountains,wheat_farm
-475,Anvilwick,,,,hills,wheat_farm
-476,Tulip Pass,,,,plains,wheat_farm
-477,Diamond Brook,DUM,DUM,DUM,hills,wheat_farm
-478,Azaleabrook,,,,forest,wheat_farm
-479,Zombiecrag,,,,forest,wheat_farm
-480,Dripstonebarrow,,,,hills,wheat_farm
-481,Bread Hollow,,,,plains,wheat_farm
-482,Spider Mill,,,,forest,wheat_farm
-483,Wheatridge,,,,plains,wheat_farm
-484,Bramblebury,,,,forest,wheat_farm
-485,Beetrootden,,,,plains,wheat_farm
-486,Wolfvale,,,,hills,wheat_farm
-487,Batpass,DUM,DUM,DUM,hills,wheat_farm
-488,Goatbrook,,,,hills,wheat_farm
-489,Zombiestrand,,,,hills,wheat_farm
-490,Deepslateworth,DUM,DUM,DUM,hills,wheat_farm
-491,Deepslatebay,,,,hills,wheat_farm
-492,Leaf Field,,,,forest,wheat_farm
-493,Amethyst Cliff,,,,mountains,wheat_farm
-494,Wolfshire,,,,hills,wheat_farm
-495,Golemtor,DUM,DUM,DUM,mountains,wheat_farm
-496,Golemscar,DUM,DUM,DUM,mountains,emerald_mine
-497,Frostheath,DUM,DUM,DUM,mountains,emerald_mine
-498,Redstone Hold,DUM,DUM,DUM,mountains,wheat_farm
-499,Dripstoneshire,DUM,DUM,DUM,mountains,wheat_farm
-500,Calcite Dale,DUM,DUM,DUM,mountains,wheat_farm
-501,Carrot Dale,,,,plains,wheat_farm
-502,Breadmarch,,,,plains,wheat_farm
-503,Cornflowerreach,,,,plains,wheat_farm
-504,Wheatley,,,,plains,wheat_farm
-505,Carrot Holm,,,,plains,wheat_farm
-506,Dandelion Field,,,,plains,wheat_farm
-507,Cowley,,,,plains,wheat_farm
-508,Cowhearth,,,,plains,cattle_ranch
-509,Tulipglen,,,,plains,wheat_farm
-510,Cornflower Ford,,,,plains,wheat_farm
-511,Cobblestone,,,,plains,wheat_farm
-512,Sunflowerheath,,,,plains,wheat_farm
-513,Beetrootfold,,,,plains,wheat_farm
-514,Barleyholm,,,,plains,wheat_farm
-515,Carrotholm,,,,plains,wheat_farm
-516,Dandelionbarrow,,,,plains,wheat_farm
-517,Bellhold,,,,plains,wheat_farm
-518,Honey Ridge,,,,plains,wheat_farm
-519,Breadhold,,,,plains,wheat_farm
-520,Oxeyestone,,,,plains,wheat_farm
-521,Cornflowerton,,,,plains,wheat_farm
-522,Potatogate,,,,plains,wheat_farm
-523,Rabbitwatch,,,,plains,wheat_farm
-524,Beetrootcrest,,,,plains,wheat_farm
-525,Carrotwood,,,,plains,wheat_farm
-526,Carrotbarrow,,,,plains,wheat_farm
-527,Bread Well,,,,plains,wheat_farm
-528,Beetrootworth,,,,plains,wheat_farm
-529,Bell Ford,,,,plains,wheat_farm
-530,Breaddale,,,,plains,wheat_farm
-531,Cowcombe,,,,hills,cattle_ranch
-532,Breadley,,,,plains,wheat_farm
-533,Deepslate Gate,,,,mountains,wheat_farm
-534,Liana Shire,,,,jungle,wheat_farm
-535,Orchidley,,,,jungle,wheat_farm
-536,Pumpkinbury,,,,hills,cattle_ranch
-537,Emeraldrun,,,,jungle,wheat_farm
-538,Wheatcrest,,,,plains,wheat_farm
-539,Orchid Point,,,,jungle,wheat_farm
-540,Hollowstone,,,,plains,wheat_farm
-541,Barley Well,,,,plains,wheat_farm
-542,Breadhollow,,,,plains,wheat_farm
-543,Lanterndale,,,,plains,wheat_farm
-544,Meadowvale,,,,plains,wheat_farm
-545,Beebarrow,,,,plains,wheat_farm
-546,Saddlecrest,,,,plains,wheat_farm
-547,Honeyfold,,,,plains,wheat_farm
-548,Creeperrun,,,,plains,wheat_farm
-549,Chickenfold,,,,jungle,wheat_farm
-550,Beetroothold,,,,plains,wheat_farm
-551,Saddle Hold,,,,plains,horse_breeding
-552,Bamboostrand,,,,jungle,wheat_farm
-553,Iron Hollow,,,,mountains,wheat_farm
-554,Moss Head,,,,jungle,wheat_farm
-555,Oxeyefield,,,,plains,wheat_farm
-556,Vineshore,,,,jungle,wheat_farm
-557,Honey Heath,,,,plains,wheat_farm
-558,Bloommill,,,,jungle,wheat_farm
-559,Carrot Mill,,,,plains,wheat_farm
-560,Chicken Ford,,,,plains,wheat_farm
-561,Meloncove,,,,jungle,wheat_farm
-562,Honeyford,,,,plains,wheat_farm
-563,Junglemouth,,,,jungle,wheat_farm
-564,Lantern Gate,,,,hills,wheat_farm
-565,Meadowbay,,,,plains,wheat_farm
-566,Bellstrand,,,,plains,wheat_farm
-567,Honeyridge,,,,plains,wheat_farm
-568,Sheep Point,,,,plains,wheat_farm
-569,Rabbit Haven,,,,plains,wheat_farm
-570,Sunflowerbarrow,,,,plains,wheat_farm
-571,Cobblefield,,,,plains,wheat_farm
-572,Cornflowerglen,,,,hills,wheat_farm
-573,Cocoahearth,,,,jungle,wheat_farm
-574,Creeperhearth,,,,jungle,wheat_farm
-575,Lianawood,,,,jungle,wheat_farm
-576,Cocoawatch,,,,jungle,wheat_farm
-577,Canopybrook,,,,jungle,wheat_farm
-578,Spore Fold,,,,jungle,wheat_farm
-579,Fern Mill,,,,jungle,wheat_farm
-580,Junglevale,,,,jungle,wheat_farm
-581,Sunbakedflat,,,,plains,wheat_farm
-582,Coarsereach,,,,plains,wheat_farm
-583,Haywaste,,,,plains,wheat_farm
-584,Armadillospire,,,,plains,wheat_farm
-585,Coarsecross,,,,plains,wheat_farm
-586,Coarseton,,,,plains,wheat_farm
-587,Sunoasis,,,,hills,wheat_farm
-588,Dry Ridge,,,,plains,wheat_farm
-589,Sunley,,,,hills,wheat_farm
-590,Coarsebrook,,,,plains,wheat_farm
-591,Goatcross,,,,mountains,wheat_farm
-592,Andesitetop,,,,mountains,wheat_farm
-593,Dustheight,,,,plains,wheat_farm
-594,Cat Ton,,,,jungle,wheat_farm
-595,Parrothold,,,,jungle,wheat_farm
-596,Spore Hold,,,,jungle,wheat_farm
-597,Graveldale,,,,mountains,wheat_farm
-598,Horse Crest,,,,hills,wheat_farm
-599,Dustsands,,,,plains,wheat_farm
-600,Ember Dune,,,,desert,wheat_farm
-601,Acacia Stead,,,,plains,wheat_farm
-602,Donkey Sands,,,,plains,wheat_farm
-603,Acacia Hearth,,,,plains,wheat_farm
-604,Dust Dune,,,,plains,wheat_farm
-605,Coarserest,,,,plains,wheat_farm
-606,Donkey Well,,,,plains,wheat_farm
-607,Donkeywharf,,,,desert,wheat_farm
-608,Armadilloheath,,,,desert,wheat_farm
-609,Bonesands,,,,desert,wheat_farm
-610,Tallgrasscrest,,,,plains,wheat_farm
-611,Rabbitwell,,,,desert,wheat_farm
-612,Terracotta Mouth,,,,desert,wheat_farm
-613,Armadillohead,,,,desert,wheat_farm
-614,Ember Bay,,,,desert,wheat_farm
-615,Mulestrand,,,,plains,wheat_farm
-616,Sandstone Haven,,,,desert,wheat_farm
-617,Glassflat,,,,desert,wheat_farm
-618,Dioritepass,,,,mountains,wheat_farm
-619,Goldbasin,,,,plains,wheat_farm
-620,Stonemarch,,,,mountains,wheat_farm
-621,Rabbitvale,,,,hills,wheat_farm
-622,Pickaxecliff,,,,mountains,wheat_farm
-623,Sandhearth,,,,desert,wheat_farm
-624,Ochrebasin,,,,plains,wheat_farm
-625,Acacia Drift,,,,plains,wheat_farm
-626,Mirage Waste,,,,desert,wheat_farm
-627,Armadillo Dune,,,,plains,wheat_farm
-628,Cactussands,,,,desert,wheat_farm
-629,Deadbushridge,,,,desert,wheat_farm
-630,Ochre Rest,,,,plains,wheat_farm
-631,Goldbury,,,,desert,wheat_farm
-632,Armadillowaste,,,,plains,wheat_farm
-633,Moss Ley,,,,jungle,wheat_farm
-634,Orchidhaven,,,,jungle,wheat_farm
-635,Temple Den,,,,jungle,wheat_farm
-636,Parrotwick,,,,jungle,wheat_farm
-637,Leaf Stead,,,,jungle,wheat_farm
-638,Sunbakedwick,,,,plains,wheat_farm
-639,Ochreden,,,,plains,wheat_farm
-640,Muleflat,,,,plains,wheat_farm
-641,Mulebrook,,,,plains,wheat_farm
-642,Creepercrest,,,,jungle,wheat_farm
-643,Fernbrook,,,,jungle,wheat_farm
-644,Emeraldcrest,,,,jungle,wheat_farm
-645,Lianahold,,,,jungle,wheat_farm
-646,Spore Heath,,,,jungle,wheat_farm
-647,Cocoa Combe,,,,jungle,wheat_farm
-648,Moss Shire,,,,jungle,wheat_farm
-649,Ocelot Well,,,,jungle,wheat_farm
-650,Orchidcombe,,,,jungle,wheat_farm
-651,Creeper Field,,,,jungle,wheat_farm
-652,Lianaley,,,,jungle,wheat_farm
-653,Ocelotbrook,,,,jungle,wheat_farm
-654,Bloomheath,,,,jungle,wheat_farm
-655,Creeper Mouth,,,,jungle,wheat_farm
-656,Junglehead,,,,jungle,wheat_farm
-657,Jungle Ley,,,,jungle,wheat_farm
-658,Bloom Cove,,,,jungle,wheat_farm
-659,Canopymouth,,,,jungle,wheat_farm
-660,Sporehollow,,,,jungle,wheat_farm
-661,Emeraldmarch,,,,jungle,wheat_farm
-662,Pandaford,,,,jungle,wheat_farm
-663,Vinerun,,,,jungle,wheat_farm
-664,Creeper Bury,,,,jungle,wheat_farm
-665,Ocelotdale,,,,jungle,wheat_farm
-666,Moss Stone,,,,jungle,wheat_farm
-667,Mossholm,,,,jungle,wheat_farm
-668,Catpoint,,,,jungle,wheat_farm
-669,Lianarest,,,,jungle,wheat_farm
-670,Fernbarrow,,,,jungle,wheat_farm
-671,Canopyglen,,,,jungle,wheat_farm
-672,Templebury,,,,jungle,wheat_farm
-673,Ocelotshore,,,,jungle,wheat_farm
-674,Podzolport,,,,taiga,wheat_farm
-675,Beetrootport,,,,plains,wheat_farm
-676,Powderbury,,,,plains,wheat_farm
-677,Poppymouth,,,,plains,wheat_farm
-678,Wolfcombe,,,,taiga,wheat_farm
-679,Haywatch,,,,plains,wheat_farm
-680,Hay Mill,,,,plains,wheat_farm
-681,Meadowglen,,,,plains,wheat_farm
-682,Poppyhaven,,,,plains,wheat_farm
-683,Leafcrest,,,,jungle,wheat_farm
-684,Parrotwood,,,,jungle,wheat_farm
-685,Parrot Hearth,,,,jungle,wheat_farm
-686,Melonpoint,,,,plains,wheat_farm
-687,Parrotmoor,,,,jungle,wheat_farm
-688,Emeraldbay,,,,jungle,wheat_farm
-689,Ocelotcrest,,,,jungle,wheat_farm
-690,Bloomdale,,,,jungle,wheat_farm
-691,Orchidreach,,,,jungle,wheat_farm
-692,Templereach,,,,jungle,wheat_farm
-693,Leafford,,,,plains,wheat_farm
-694,Dandelionglen,,,,plains,wheat_farm
-695,Honeycove,,,,plains,wheat_farm
-696,Horserun,,,,plains,horse_breeding
-697,Haybury,,,,plains,wheat_farm
-698,Meadowworth,,,,plains,wheat_farm
-699,Saddlestrand,,,,hills,wheat_farm
-700,Meadowbrook,,,,plains,wheat_farm
+id,name,owner,controller,cores,terrain,good,base_tax,population
+1,Chillmarch,,,,taiga,wheat,0,0
+2,Rime Moor,,,,taiga,wheat,0,0
+3,Boulder Cross,,,,swamp,wheat,0,0
+4,Cold Fold,,,,taiga,wheat,0,0
+5,Fern Point,,,,taiga,wheat,0,0
+6,Fox Holm,,,,forest,wheat,0,0
+7,Skeletoncross,,,,forest,wheat,0,0
+8,Oakrest,,,,forest,wheat,0,0
+9,Sleetford,,,,taiga,wheat,0,0
+10,Palefield,,,,forest,wheat,0,0
+11,Podzolrun,,,,taiga,wheat,0,0
+12,Pinewharf,,,,taiga,wheat,0,0
+13,Sprucefold,,,,taiga,wheat,0,0
+14,Wolf Mouth,,,,taiga,wheat,0,0
+15,Wolf Bay,,,,plains,wheat,0,0
+16,Cold Heath,,,,taiga,wheat,0,0
+17,Fireflyglen,,,,swamp,wheat,0,0
+18,Bogbarrow,,,,taiga,wheat,0,0
+19,Podzolmouth,,,,taiga,wheat,0,0
+20,Bramblewell,,,,forest,wheat,0,0
+21,Bear Well,,,,taiga,wheat,0,0
+22,Wolf Field,,,,hills,wheat,0,0
+23,Rime Shire,,,,taiga,wheat,0,0
+24,Powder Hearth,,,,taiga,wheat,0,0
+25,Pinebrook,,,,taiga,wheat,0,0
+26,Snowshire,,,,swamp,wheat,0,0
+27,Igloo Watch,,,,taiga,wheat,0,0
+28,Batwatch,,,,mountains,wheat,0,0
+29,Chillwick,,,,taiga,wheat,0,0
+30,Icehead,,,,taiga,wheat,0,0
+31,Wolfridge,,,,taiga,wheat,0,0
+32,Berry Wick,,,,taiga,wheat,0,0
+33,Mushroomwood,,,,forest,wheat,0,0
+34,Lilybay,,,,forest,wheat,0,0
+35,Icefield,,,,taiga,wheat,0,0
+36,Thorn Bay,,,,hills,wheat,0,0
+37,Barkford,,,,forest,wheat,0,0
+38,Pinemarch,,,,hills,wheat,0,0
+39,Pinepoint,,,,taiga,wheat,0,0
+40,Coldstead,,,,swamp,wheat,0,0
+41,Foxhearth,,,,taiga,wheat,0,0
+42,Chill Barrow,,,,taiga,wheat,0,0
+43,Orerock,,,,mountains,wheat,0,0
+44,Berrycross,,,,taiga,wheat,0,0
+45,Pickaxe Top,,,,mountains,wheat,0,0
+46,Pinewatch,,,,taiga,wheat,0,0
+47,Frost Dale,,,,taiga,wheat,0,0
+48,Frosthold,,,,mountains,wheat,0,0
+49,Dioritecrag,,,,hills,wheat,0,0
+50,Batspire,,,,mountains,wheat,0,0
+51,Cobblemoor,,,,plains,wheat,0,0
+52,Dandelionwood,,,,plains,wheat,0,0
+53,Saddleheath,,,,plains,wheat,0,0
+54,Foxwell,,,,forest,wheat,0,0
+55,Beevale,,,,plains,wheat,0,0
+56,Beewatch,,,,plains,wheat,0,0
+57,Dandeliondale,,,,plains,wheat,0,0
+58,Breadbay,,,,plains,wheat,0,0
+59,Horsefield,,,,plains,cattle,0,0
+60,Cornflowerport,,,,plains,wheat,0,0
+61,Cornflowerhaven,,,,plains,wheat,0,0
+62,Cowfield,,,,plains,cattle,0,0
+63,Beemouth,,,,plains,wheat,0,0
+64,Owlfold,,,,forest,wheat,0,0
+65,Spidercombe,,,,forest,wheat,0,0
+66,Cobble Ley,,,,plains,wheat,0,0
+67,Oakhearth,,,,forest,wheat,0,0
+68,Spidercrest,,,,forest,wheat,0,0
+69,Cobwebdale,,,,forest,wheat,0,0
+70,Dandelionbrook,,,,plains,wheat,0,0
+71,Saplingbury,,,,forest,wheat,0,0
+72,Villagerbay,,,,plains,wheat,0,0
+73,Saddle Shire,,,,plains,wheat,0,0
+74,Chicken Fold,,,,plains,wheat,0,0
+75,Pigfold,,,,swamp,wheat,0,0
+76,Saddlemill,,,,swamp,wheat,0,0
+77,Hayfold,,,,plains,wheat,0,0
+78,Honey Rest,,,,plains,wheat,0,0
+79,Honeymoor,,,,plains,wheat,0,0
+80,Rabbithaven,,,,plains,wheat,0,0
+81,Chickenwick,,,,plains,wheat,0,0
+82,Poppyworth,,,,plains,wheat,0,0
+83,Beetrootmarch,,,,plains,wheat,0,0
+84,Potatoglen,,,,plains,wheat,0,0
+85,Villagerwharf,,,,plains,wheat,0,0
+86,Potatoport,,,,plains,wheat,0,0
+87,Oxeyemouth,,,,plains,wheat,0,0
+88,Wheatmarch,,,,plains,wheat,0,0
+89,Haymoor,,,,plains,wheat,0,0
+90,Carrotley,,,,plains,wheat,0,0
+91,Meadow Vale,,,,plains,wheat,0,0
+92,Sheepmarch,,,,plains,wheat,0,0
+93,Beewick,,,,plains,wheat,0,0
+94,Barleyrest,,,,plains,wheat,0,0
+95,Oxeyeridge,,,,plains,wheat,0,0
+96,Poppyhead,,,,plains,wheat,0,0
+97,Hayshire,,,,plains,wheat,0,0
+98,Breadreach,,,,plains,wheat,0,0
+99,Breadhearth,,,,plains,wheat,0,0
+100,Tadpolecove,,,,swamp,wheat,0,0
+101,Bell Fold,,,,plains,wheat,0,0
+102,Dripstone Field,,,,mountains,wheat,0,0
+103,Horseton,,,,hills,cattle,0,0
+104,Bell Rest,,,,hills,wheat,0,0
+105,Chickenport,,,,plains,wheat,0,0
+106,Sheep Bay,,,,plains,wheat,0,0
+107,Villagerton,,,,plains,wheat,0,0
+108,Bellhaven,,,,plains,wheat,0,0
+109,Potato Mill,,,,hills,wheat,0,0
+110,Potatohead,,,,plains,wheat,0,0
+111,Sunflowerstrand,,,,plains,wheat,0,0
+112,Cow Field,,,,plains,wheat,0,0
+113,Cornflower Point,,,,plains,wheat,0,0
+114,Poppywick,,,,plains,wheat,0,0
+115,Sleetstead,,,,taiga,wheat,0,0
+116,Horsebay,,,,plains,wheat,0,0
+117,Woolvale,,,,taiga,wheat,0,0
+118,Hayshore,,,,hills,wheat,0,0
+119,Tulip Hollow,,,,taiga,wheat,0,0
+120,Honeymill,,,,plains,wheat,0,0
+121,Wheatstone,,,,plains,wheat,0,0
+122,Honey Hollow,,,,plains,wheat,0,0
+123,Fernbay,,,,taiga,wheat,0,0
+124,Bee Mouth,,,,plains,wheat,0,0
+125,Foxbrook,,,,taiga,wheat,0,0
+126,Bread Gate,,,,plains,wheat,0,0
+127,Potato Ford,,,,plains,wheat,0,0
+128,Cowpoint,,,,plains,wheat,0,0
+129,Meadowpoint,,,,plains,wheat,0,0
+130,Bearpoint,,,,taiga,wheat,0,0
+131,Rabbitstrand,,,,plains,wheat,0,0
+132,Sheep Stone,,,,plains,wheat,0,0
+133,Rabbitcombe,,,,plains,wheat,0,0
+134,Cobblestrand,,,,plains,wheat,0,0
+135,Lantern Head,,,,plains,wheat,0,0
+136,Oakstrand,,,,plains,wheat,0,0
+137,Dandelionwatch,,,,plains,wheat,0,0
+138,Chickenwood,,,,plains,wheat,0,0
+139,Beemill,,,,plains,wheat,0,0
+140,Bread Moor,,,,plains,wheat,0,0
+141,Chickenhollow,,,,plains,wheat,0,0
+142,Beewell,,,,swamp,wheat,0,0
+143,Lanterncombe,,,,plains,wheat,0,0
+144,Cowrest,,,,plains,wheat,0,0
+145,Potatoden,,,,plains,wheat,0,0
+146,Horsecrag,,,,hills,wheat,0,0
+147,Saddlefold,,,,plains,wheat,0,0
+148,Cobble Glen,,,,mountains,wheat,0,0
+149,Wheatbury,,,,plains,wheat,0,0
+150,Sheepcombe,,,,plains,wheat,0,0
+151,Beeden,,,,forest,wheat,0,0
+152,Zombieshore,,,,forest,wheat,0,0
+153,Moss Rest,,,,swamp,wheat,0,0
+154,Mushroomhollow,,,,forest,wheat,0,0
+155,Potatocombe,,,,plains,wheat,0,0
+156,Skeletoncove,,,,forest,wheat,0,0
+157,Miremere,,,,swamp,wheat,0,0
+158,Cobbleton,,,,plains,wheat,0,0
+159,Diamondwick,,,,mountains,wheat,0,0
+160,Emeraldford,,,,mountains,emerald,0,0
+161,Pig Haven,,,,swamp,wheat,0,0
+162,Tulipstead,,,,plains,wheat,0,0
+163,Leafhaven,,,,swamp,wheat,0,0
+164,Sheepbay,,,,plains,wheat,0,0
+165,Creeperport,,,,forest,wheat,0,0
+166,Wheat Field,,,,plains,wheat,0,0
+167,Zombiemill,,,,forest,wheat,0,0
+168,Hay Port,,,,swamp,wheat,0,0
+169,Pumpkinmill,,,,plains,wheat,0,0
+170,Lilybury,,,,forest,wheat,0,0
+171,Stone Scar,,,,mountains,wheat,0,0
+172,Hollowmarch,,,,forest,wheat,0,0
+173,Chickenglen,,,,plains,wheat,0,0
+174,Coppercliff,,,,mountains,wheat,0,0
+175,Azaleaworth,,,,forest,wheat,0,0
+176,Dandelion Brook,,,,plains,wheat,0,0
+177,Pumpkinmouth,,,,plains,wheat,0,0
+178,Potatomarch,,,,plains,wheat,0,0
+179,Rabbit Brook,,,,forest,wheat,0,0
+180,Oakglen,,,,plains,wheat,0,0
+181,Poppy Holm,,,,plains,wheat,0,0
+182,Barkdale,,,,forest,wheat,0,0
+183,Beedale,,,,plains,wheat,0,0
+184,Meadowford,,,,forest,wheat,0,0
+185,Lanternbrook,,,,plains,wheat,0,0
+186,Pigcove,,,,plains,wheat,0,0
+187,Frostheight,,,,mountains,wheat,0,0
+188,Mulespire,,,,plains,wheat,0,0
+189,Gravelsummit,,,,mountains,wheat,0,0
+190,Acaciaholm,,,,plains,wheat,0,0
+191,Frostcrest,,,,mountains,wheat,0,0
+192,Scute Gate,,,,plains,wheat,0,0
+193,Sunflowerglen,,,,plains,wheat,0,0
+194,Oxeyeton,,,,plains,wheat,0,0
+195,Meadowholm,,,,plains,wheat,0,0
+196,Carrotgate,,,,plains,wheat,0,0
+197,Lanternhollow,,,,plains,wheat,0,0
+198,Haymarch,,,,plains,wheat,0,0
+199,Mosswell,,,,forest,wheat,0,0
+200,Wool Den,,,,plains,wheat,0,0
+201,Azaleadale,,,,forest,wheat,0,0
+202,Bee Field,,,,forest,wheat,0,0
+203,Cobble Ridge,,,,plains,wheat,0,0
+204,Bellcove,,,,plains,wheat,0,0
+205,Sunflower Combe,,,,plains,wheat,0,0
+206,Wheat Den,,,,plains,wheat,0,0
+207,Pigshore,,,,plains,wheat,0,0
+208,Sheepglen,,,,plains,cattle,0,0
+209,Poppymarch,,,,plains,wheat,0,0
+210,Zombiebarrow,,,,plains,wheat,0,0
+211,Honeywatch,,,,plains,wheat,0,0
+212,Bell Ley,,,,plains,wheat,0,0
+213,Carrotden,,,,plains,wheat,0,0
+214,Fernhearth,,,,forest,wheat,0,0
+215,Barleyhollow,,,,plains,wheat,0,0
+216,Beeridge,,,,forest,wheat,0,0
+217,Woolcross,,,,plains,wheat,0,0
+218,Acornrest,,,,forest,wheat,0,0
+219,Oak Wick,,,,forest,wheat,0,0
+220,Rabbit Watch,,,,plains,wheat,0,0
+221,Birch Watch,,,,plains,wheat,0,0
+222,Pumpkincrest,,,,plains,wheat,0,0
+223,Honeybarrow,,,,plains,wheat,0,0
+224,Barleymarch,,,,plains,wheat,0,0
+225,Palerun,,,,plains,wheat,0,0
+226,Cornflowerpoint,,,,plains,wheat,0,0
+227,Woolwharf,,,,plains,wheat,0,0
+228,Barkbarrow,,,,plains,wheat,0,0
+229,Toadmoor,,,,swamp,wheat,0,0
+230,Reedvale,,,,swamp,wheat,0,0
+231,Carrotmouth,,,,plains,wheat,0,0
+232,Chicken Wick,,,,plains,wheat,0,0
+233,Mangrovemarsh,,,,swamp,wheat,0,0
+234,Breadshire,,,,plains,wheat,0,0
+235,Peatwell,,,,swamp,wheat,0,0
+236,Fireflyslough,,,,swamp,wheat,0,0
+237,Beeholm,,,,forest,wheat,0,0
+238,Oak Dale,,,,plains,wheat,0,0
+239,Tadpolemere,,,,plains,wheat,0,0
+240,Mosswood,,,,forest,wheat,0,0
+241,Rabbitscar,,,,hills,wheat,0,0
+242,Logcombe,,,,forest,wheat,0,0
+243,Tadpoleshire,,,,swamp,wheat,0,0
+244,Root Gate,,,,forest,wheat,0,0
+245,Bellheath,,,,plains,wheat,0,0
+246,Fern Shire,,,,forest,wheat,0,0
+247,Creeperden,,,,forest,wheat,0,0
+248,Breadcombe,,,,plains,wheat,0,0
+249,Thornrun,,,,forest,wheat,0,0
+250,Bramblebrook,,,,forest,wheat,0,0
+251,Mushroomdale,,,,hills,wheat,0,0
+252,Cobblefall,,,,mountains,wheat,0,0
+253,Deepslatepass,,,,mountains,wheat,0,0
+254,Goat Well,,,,mountains,wheat,0,0
+255,Moss Pass,,,,forest,wheat,0,0
+256,Fernreach,,,,forest,wheat,0,0
+257,Coalshire,,,,mountains,wheat,0,0
+258,Azalearest,,,,forest,wheat,0,0
+259,Owlwood,,,,forest,wheat,0,0
+260,Mossvale,,,,forest,wheat,0,0
+261,Paleglen,,,,forest,wheat,0,0
+262,Wheat Hold,,,,plains,wheat,0,0
+263,Wolffold,,,,forest,wheat,0,0
+264,Hayden,,,,plains,wheat,0,0
+265,Mushroomwatch,,,,plains,wheat,0,0
+266,Dustwell,,,,desert,wheat,0,0
+267,Silverfish Barrow,,,,mountains,wheat,0,0
+268,Lapisheight,,,,mountains,wheat,0,0
+269,Granite Moor,,,,hills,wheat,0,0
+270,Redstonesummit,,,,mountains,wheat,0,0
+271,Diamondhold,,,,mountains,wheat,0,0
+272,Sun Hearth,,,,desert,wheat,0,0
+273,Duneden,,,,desert,wheat,0,0
+274,Goldsands,,,,desert,wheat,0,0
+275,Sandstonedune,,,,desert,wheat,0,0
+276,Sandstoneford,,,,desert,wheat,0,0
+277,Pickaxepass,,,,mountains,emerald,0,0
+278,Emberwell,,,,desert,wheat,0,0
+279,Terracottafield,,,,desert,wheat,0,0
+280,Terracotta Rock,,,,mountains,wheat,0,0
+281,Sandstoneley,,,,hills,wheat,0,0
+282,Cactusspire,,,,hills,wheat,0,0
+283,Sandrest,,,,desert,wheat,0,0
+284,Cornflowercove,,,,plains,wheat,0,0
+285,Terracottaport,,,,desert,wheat,0,0
+286,Rabbithearth,,,,desert,wheat,0,0
+287,Deadbushrun,,,,desert,wheat,0,0
+288,Pumpkinwatch,,,,plains,wheat,0,0
+289,Sheepcrest,,,,hills,wheat,0,0
+290,Miragerest,,,,desert,wheat,0,0
+291,Dustwharf,,,,hills,wheat,0,0
+292,Barley Strand,,,,hills,wheat,0,0
+293,Sunflowerridge,,,,desert,wheat,0,0
+294,Dripstone Cliff,,,,mountains,wheat,0,0
+295,Stonehold,,,,mountains,wheat,0,0
+296,Iron Ridge,,,,mountains,wheat,0,0
+297,Emberstead,,,,desert,wheat,0,0
+298,Glasswick,,,,desert,wheat,0,0
+299,Emberspire,,,,desert,wheat,0,0
+300,Dunerest,,,,desert,wheat,0,0
+301,Pyramidpoint,,,,desert,wheat,0,0
+302,Glasshearth,,,,desert,wheat,0,0
+303,Poppyheath,,,,plains,wheat,0,0
+304,Templegate,,,,jungle,wheat,0,0
+305,Cornflowerbay,,,,plains,wheat,0,0
+306,Leaf Point,,,,jungle,wheat,0,0
+307,Beetrootbrook,,,,plains,wheat,0,0
+308,Pumpkinglen,,,,plains,wheat,0,0
+309,Scorchstone,,,,desert,wheat,0,0
+310,Wooldale,,,,hills,wheat,0,0
+311,Sunden,,,,desert,wheat,0,0
+312,Haywharf,,,,plains,wheat,0,0
+313,Emberflat,,,,desert,wheat,0,0
+314,Cobblewell,,,,plains,wheat,0,0
+315,Rabbitheath,,,,forest,wheat,0,0
+316,Oakmoor,,,,plains,wheat,0,0
+317,Loghaven,,,,forest,wheat,0,0
+318,Rabbitridge,,,,swamp,wheat,0,0
+319,Cobweb Combe,,,,forest,wheat,0,0
+320,Lily Mouth,,,,swamp,wheat,0,0
+321,Leafbay,,,,forest,wheat,0,0
+322,Anvilhollow,,,,mountains,wheat,0,0
+323,Cornflowerwatch,,,,hills,wheat,0,0
+324,Beeport,,,,plains,wheat,0,0
+325,Redstonemarch,,,,mountains,wheat,0,0
+326,Acacia Port,,,,plains,wheat,0,0
+327,Chickenfield,,,,plains,wheat,0,0
+328,Goldrun,,,,mountains,wheat,0,0
+329,Lanterncove,,,,plains,wheat,0,0
+330,Dandelionden,,,,plains,wheat,0,0
+331,Cow Gate,,,,plains,wheat,0,0
+332,Carrot Field,,,,plains,wheat,0,0
+333,Snow Watch,,,,mountains,wheat,0,0
+334,Tulipdale,,,,plains,wheat,0,0
+335,Emerald Fold,,,,mountains,emerald,0,0
+336,Horse Bay,,,,plains,wheat,0,0
+337,Sheep Field,,,,plains,wheat,0,0
+338,Horse Well,,,,hills,wheat,0,0
+339,Tulip Cove,,,,plains,wheat,0,0
+340,Sheepshore,,,,hills,wheat,0,0
+341,Meadowmill,,,,plains,wheat,0,0
+342,Pickaxespire,,,,mountains,wheat,0,0
+343,Coalcombe,,,,mountains,wheat,0,0
+344,Sunflowershire,,,,plains,wheat,0,0
+345,Wool Mill,,,,hills,wheat,0,0
+346,Chickenmarch,,,,plains,wheat,0,0
+347,Wheatworth,,,,plains,wheat,0,0
+348,Oxeye Tor,,,,hills,wheat,0,0
+349,Beetrootrun,,,,plains,wheat,0,0
+350,Creeper Stead,,,,forest,wheat,0,0
+351,Slime Point,,,,swamp,wheat,0,0
+352,Oakstead,,,,hills,wheat,0,0
+353,Frogslough,,,,swamp,wheat,0,0
+354,Breadstrand,,,,plains,wheat,0,0
+355,Sunflowerford,,,,hills,wheat,0,0
+356,Barleypoint,,,,plains,wheat,0,0
+357,Wool Crest,,,,hills,wheat,0,0
+358,Chicken Crest,,,,plains,wheat,0,0
+359,Poppycove,,,,plains,wheat,0,0
+360,Saddlewharf,,,,plains,wheat,0,0
+361,Dandelionhaven,,,,plains,wheat,0,0
+362,Hay Wood,,,,plains,wheat,0,0
+363,Foxden,,,,forest,wheat,0,0
+364,Oxeyeshore,,,,plains,wheat,0,0
+365,Rabbitshore,,,,plains,wheat,0,0
+366,Creeperstead,,,,forest,wheat,0,0
+367,Zombiebay,,,,forest,wheat,0,0
+368,Sheepley,,,,plains,wheat,0,0
+369,Cowhead,,,,plains,wheat,0,0
+370,Mudwharf,,,,plains,wheat,0,0
+371,Logbrook,,,,forest,wheat,0,0
+372,Potatoheath,,,,plains,wheat,0,0
+373,Cowgate,,,,plains,cattle,0,0
+374,Thornglen,,,,forest,wheat,0,0
+375,Breadfold,,,,plains,wheat,0,0
+376,Oxeyebrook,,,,plains,wheat,0,0
+377,Lanternmoor,,,,swamp,wheat,0,0
+378,Roothold,,,,swamp,wheat,0,0
+379,Thorn Shire,,,,forest,wheat,0,0
+380,Palestone,,,,forest,wheat,0,0
+381,Cowmoor,,,,plains,cattle,0,0
+382,Sheepwell,,,,plains,wheat,0,0
+383,Bread Holm,,,,plains,wheat,0,0
+384,Oxeye Bay,,,,plains,wheat,0,0
+385,Meadow Cross,,,,plains,wheat,0,0
+386,Leafwharf,,,,forest,wheat,0,0
+387,Oakhaven,,,,plains,wheat,0,0
+388,Wool Strand,,,,plains,wheat,0,0
+389,Wheatton,,,,plains,wheat,0,0
+390,Horseford,,,,plains,cattle,0,0
+391,Bell Vale,,,,plains,wheat,0,0
+392,Dandelionley,,,,plains,wheat,0,0
+393,Sheepcross,,,,plains,wheat,0,0
+394,Zombieridge,,,,mountains,wheat,0,0
+395,Cobweb Hearth,,,,plains,wheat,0,0
+396,Cobwebglen,,,,plains,wheat,0,0
+397,Barkcross,,,,hills,wheat,0,0
+398,Fox Worth,,,,forest,wheat,0,0
+399,Chickenmoor,,,,hills,wheat,0,0
+400,Gravelhold,,,,mountains,wheat,0,0
+401,Armadillo Holm,,,,plains,wheat,0,0
+402,Sunpoint,,,,plains,wheat,0,0
+403,Cornflowerstead,,,,plains,wheat,0,0
+404,Honeybrook,,,,plains,wheat,0,0
+405,Beetrootstead,,,,plains,wheat,0,0
+406,Dustden,,,,hills,cattle,0,0
+407,Oakcrest,,,,plains,wheat,0,0
+408,Lilysink,,,,plains,wheat,0,0
+409,Cobble Point,,,,plains,wheat,0,0
+410,Saddlerun,,,,plains,wheat,0,0
+411,Potatoridge,,,,forest,wheat,0,0
+412,Beeshore,,,,plains,wheat,0,0
+413,Cobweb Dale,,,,forest,wheat,0,0
+414,Murkpoint,,,,swamp,wheat,0,0
+415,Mire Fen,,,,swamp,wheat,0,0
+416,Murk Pool,,,,swamp,wheat,0,0
+417,Cauldronglen,,,,swamp,wheat,0,0
+418,Bogmarsh,,,,swamp,wheat,0,0
+419,Lilyreed,,,,swamp,wheat,0,0
+420,Mossdale,,,,swamp,wheat,0,0
+421,Root Ford,,,,swamp,wheat,0,0
+422,Murkfen,,,,swamp,wheat,0,0
+423,Toad Slough,,,,swamp,wheat,0,0
+424,Witchrest,,,,swamp,wheat,0,0
+425,Drowned Watch,,,,swamp,wheat,0,0
+426,Clay Bay,,,,swamp,wheat,0,0
+427,Murkfold,,,,plains,wheat,0,0
+428,Mireshore,,,,swamp,wheat,0,0
+429,Toadwell,,,,plains,wheat,0,0
+430,Orchidbury,,,,swamp,wheat,0,0
+431,Claycove,,,,swamp,wheat,0,0
+432,Cauldron Bog,,,,swamp,wheat,0,0
+433,Cauldronreed,,,,swamp,wheat,0,0
+434,Rootcrest,,,,swamp,wheat,0,0
+435,Chickenley,,,,plains,wheat,0,0
+436,Cobblerest,,,,plains,wheat,0,0
+437,Claycrest,,,,swamp,wheat,0,0
+438,Bogwash,,,,swamp,wheat,0,0
+439,Tulip Ford,,,,plains,wheat,0,0
+440,Bogslough,,,,swamp,wheat,0,0
+441,Murk Shire,,,,swamp,wheat,0,0
+442,Slime Crest,,,,swamp,wheat,0,0
+443,Roothaven,,,,swamp,wheat,0,0
+444,Frogvale,,,,plains,wheat,0,0
+445,Moss Port,,,,swamp,wheat,0,0
+446,Witchsink,,,,swamp,wheat,0,0
+447,Mirebog,,,,plains,wheat,0,0
+448,Peatfen,,,,swamp,wheat,0,0
+449,Mud Heath,,,,swamp,wheat,0,0
+450,Mudmire,,,,swamp,wheat,0,0
+451,Slimestone,,,,swamp,wheat,0,0
+452,Cauldron Wharf,,,,swamp,wheat,0,0
+453,Mudbrook,,,,swamp,wheat,0,0
+454,Drownedwharf,,,,swamp,wheat,0,0
+455,Mireridge,,,,swamp,wheat,0,0
+456,Cauldron Ley,,,,plains,wheat,0,0
+457,Orchidstrand,,,,swamp,wheat,0,0
+458,Orchid Moor,,,,plains,wheat,0,0
+459,Witch Fold,,,,swamp,wheat,0,0
+460,Murk Reed,,,,plains,wheat,0,0
+461,Mire Bay,,,,swamp,wheat,0,0
+462,Reedcove,,,,swamp,wheat,0,0
+463,Roothearth,,,,swamp,wheat,0,0
+464,Murk Worth,,,,swamp,wheat,0,0
+465,Mangrovewell,,,,swamp,wheat,0,0
+466,Peatcove,,,,swamp,wheat,0,0
+467,Bogwharf,,,,swamp,wheat,0,0
+468,Sporestrand,,,,jungle,wheat,0,0
+469,Liana Port,,,,jungle,wheat,0,0
+470,Cocoa Dale,,,,jungle,wheat,0,0
+471,Creeperwharf,,,,jungle,wheat,0,0
+472,Oaktop,DUM,DUM,DUM,forest,wheat,0,0
+473,Azalea Heath,,,,forest,wheat,0,0
+474,Lapishearth,DUM,DUM,DUM,mountains,wheat,0,0
+475,Anvilwick,,,,hills,wheat,0,0
+476,Tulip Pass,,,,plains,wheat,0,0
+477,Diamond Brook,DUM,DUM,DUM,hills,wheat,0,0
+478,Azaleabrook,,,,forest,wheat,0,0
+479,Zombiecrag,,,,forest,wheat,0,0
+480,Dripstonebarrow,,,,hills,wheat,0,0
+481,Bread Hollow,,,,plains,wheat,0,0
+482,Spider Mill,,,,forest,wheat,0,0
+483,Wheatridge,,,,plains,wheat,0,0
+484,Bramblebury,,,,forest,wheat,0,0
+485,Beetrootden,,,,plains,wheat,0,0
+486,Wolfvale,,,,hills,wheat,0,0
+487,Batpass,DUM,DUM,DUM,hills,wheat,0,0
+488,Goatbrook,,,,hills,wheat,0,0
+489,Zombiestrand,,,,hills,wheat,0,0
+490,Deepslateworth,DUM,DUM,DUM,hills,wheat,0,0
+491,Deepslatebay,,,,hills,wheat,0,0
+492,Leaf Field,,,,forest,wheat,0,0
+493,Amethyst Cliff,,,,mountains,wheat,0,0
+494,Wolfshire,,,,hills,wheat,0,0
+495,Golemtor,DUM,DUM,DUM,mountains,wheat,0,0
+496,Golemscar,DUM,DUM,DUM,mountains,emerald,0,0
+497,Frostheath,DUM,DUM,DUM,mountains,emerald,0,0
+498,Redstone Hold,DUM,DUM,DUM,mountains,wheat,0,0
+499,Dripstoneshire,DUM,DUM,DUM,mountains,wheat,0,0
+500,Calcite Dale,DUM,DUM,DUM,mountains,wheat,0,0
+501,Carrot Dale,,,,plains,wheat,0,0
+502,Breadmarch,,,,plains,wheat,0,0
+503,Cornflowerreach,,,,plains,wheat,0,0
+504,Wheatley,,,,plains,wheat,0,0
+505,Carrot Holm,,,,plains,wheat,0,0
+506,Dandelion Field,,,,plains,wheat,0,0
+507,Cowley,,,,plains,wheat,0,0
+508,Cowhearth,,,,plains,cattle,0,0
+509,Tulipglen,,,,plains,wheat,0,0
+510,Cornflower Ford,,,,plains,wheat,0,0
+511,Cobblestone,,,,plains,wheat,0,0
+512,Sunflowerheath,,,,plains,wheat,0,0
+513,Beetrootfold,,,,plains,wheat,0,0
+514,Barleyholm,,,,plains,wheat,0,0
+515,Carrotholm,,,,plains,wheat,0,0
+516,Dandelionbarrow,,,,plains,wheat,0,0
+517,Bellhold,,,,plains,wheat,0,0
+518,Honey Ridge,,,,plains,wheat,0,0
+519,Breadhold,,,,plains,wheat,0,0
+520,Oxeyestone,,,,plains,wheat,0,0
+521,Cornflowerton,,,,plains,wheat,0,0
+522,Potatogate,,,,plains,wheat,0,0
+523,Rabbitwatch,,,,plains,wheat,0,0
+524,Beetrootcrest,,,,plains,wheat,0,0
+525,Carrotwood,,,,plains,wheat,0,0
+526,Carrotbarrow,,,,plains,wheat,0,0
+527,Bread Well,,,,plains,wheat,0,0
+528,Beetrootworth,,,,plains,wheat,0,0
+529,Bell Ford,,,,plains,wheat,0,0
+530,Breaddale,,,,plains,wheat,0,0
+531,Cowcombe,,,,hills,cattle,0,0
+532,Breadley,,,,plains,wheat,0,0
+533,Deepslate Gate,,,,mountains,wheat,0,0
+534,Liana Shire,,,,jungle,wheat,0,0
+535,Orchidley,,,,jungle,wheat,0,0
+536,Pumpkinbury,,,,hills,cattle,0,0
+537,Emeraldrun,,,,jungle,wheat,0,0
+538,Wheatcrest,,,,plains,wheat,0,0
+539,Orchid Point,,,,jungle,wheat,0,0
+540,Hollowstone,,,,plains,wheat,0,0
+541,Barley Well,,,,plains,wheat,0,0
+542,Breadhollow,,,,plains,wheat,0,0
+543,Lanterndale,,,,plains,wheat,0,0
+544,Meadowvale,,,,plains,wheat,0,0
+545,Beebarrow,,,,plains,wheat,0,0
+546,Saddlecrest,,,,plains,wheat,0,0
+547,Honeyfold,,,,plains,wheat,0,0
+548,Creeperrun,,,,plains,wheat,0,0
+549,Chickenfold,,,,jungle,wheat,0,0
+550,Beetroothold,,,,plains,wheat,0,0
+551,Saddle Hold,,,,plains,cattle,0,0
+552,Bamboostrand,,,,jungle,wheat,0,0
+553,Iron Hollow,,,,mountains,wheat,0,0
+554,Moss Head,,,,jungle,wheat,0,0
+555,Oxeyefield,,,,plains,wheat,0,0
+556,Vineshore,,,,jungle,wheat,0,0
+557,Honey Heath,,,,plains,wheat,0,0
+558,Bloommill,,,,jungle,wheat,0,0
+559,Carrot Mill,,,,plains,wheat,0,0
+560,Chicken Ford,,,,plains,wheat,0,0
+561,Meloncove,,,,jungle,wheat,0,0
+562,Honeyford,,,,plains,wheat,0,0
+563,Junglemouth,,,,jungle,wheat,0,0
+564,Lantern Gate,,,,hills,wheat,0,0
+565,Meadowbay,,,,plains,wheat,0,0
+566,Bellstrand,,,,plains,wheat,0,0
+567,Honeyridge,,,,plains,wheat,0,0
+568,Sheep Point,,,,plains,wheat,0,0
+569,Rabbit Haven,,,,plains,wheat,0,0
+570,Sunflowerbarrow,,,,plains,wheat,0,0
+571,Cobblefield,,,,plains,wheat,0,0
+572,Cornflowerglen,,,,hills,wheat,0,0
+573,Cocoahearth,,,,jungle,wheat,0,0
+574,Creeperhearth,,,,jungle,wheat,0,0
+575,Lianawood,,,,jungle,wheat,0,0
+576,Cocoawatch,,,,jungle,wheat,0,0
+577,Canopybrook,,,,jungle,wheat,0,0
+578,Spore Fold,,,,jungle,wheat,0,0
+579,Fern Mill,,,,jungle,wheat,0,0
+580,Junglevale,,,,jungle,wheat,0,0
+581,Sunbakedflat,,,,plains,wheat,0,0
+582,Coarsereach,,,,plains,wheat,0,0
+583,Haywaste,,,,plains,wheat,0,0
+584,Armadillospire,,,,plains,wheat,0,0
+585,Coarsecross,,,,plains,wheat,0,0
+586,Coarseton,,,,plains,wheat,0,0
+587,Sunoasis,,,,hills,wheat,0,0
+588,Dry Ridge,,,,plains,wheat,0,0
+589,Sunley,,,,hills,wheat,0,0
+590,Coarsebrook,,,,plains,wheat,0,0
+591,Goatcross,,,,mountains,wheat,0,0
+592,Andesitetop,,,,mountains,wheat,0,0
+593,Dustheight,,,,plains,wheat,0,0
+594,Cat Ton,,,,jungle,wheat,0,0
+595,Parrothold,,,,jungle,wheat,0,0
+596,Spore Hold,,,,jungle,wheat,0,0
+597,Graveldale,,,,mountains,wheat,0,0
+598,Horse Crest,,,,hills,wheat,0,0
+599,Dustsands,,,,plains,wheat,0,0
+600,Ember Dune,,,,desert,wheat,0,0
+601,Acacia Stead,,,,plains,wheat,0,0
+602,Donkey Sands,,,,plains,wheat,0,0
+603,Acacia Hearth,,,,plains,wheat,0,0
+604,Dust Dune,,,,plains,wheat,0,0
+605,Coarserest,,,,plains,wheat,0,0
+606,Donkey Well,,,,plains,wheat,0,0
+607,Donkeywharf,,,,desert,wheat,0,0
+608,Armadilloheath,,,,desert,wheat,0,0
+609,Bonesands,,,,desert,wheat,0,0
+610,Tallgrasscrest,,,,plains,wheat,0,0
+611,Rabbitwell,,,,desert,wheat,0,0
+612,Terracotta Mouth,,,,desert,wheat,0,0
+613,Armadillohead,,,,desert,wheat,0,0
+614,Ember Bay,,,,desert,wheat,0,0
+615,Mulestrand,,,,plains,wheat,0,0
+616,Sandstone Haven,,,,desert,wheat,0,0
+617,Glassflat,,,,desert,wheat,0,0
+618,Dioritepass,,,,mountains,wheat,0,0
+619,Goldbasin,,,,plains,wheat,0,0
+620,Stonemarch,,,,mountains,wheat,0,0
+621,Rabbitvale,,,,hills,wheat,0,0
+622,Pickaxecliff,,,,mountains,wheat,0,0
+623,Sandhearth,,,,desert,wheat,0,0
+624,Ochrebasin,,,,plains,wheat,0,0
+625,Acacia Drift,,,,plains,wheat,0,0
+626,Mirage Waste,,,,desert,wheat,0,0
+627,Armadillo Dune,,,,plains,wheat,0,0
+628,Cactussands,,,,desert,wheat,0,0
+629,Deadbushridge,,,,desert,wheat,0,0
+630,Ochre Rest,,,,plains,wheat,0,0
+631,Goldbury,,,,desert,wheat,0,0
+632,Armadillowaste,,,,plains,wheat,0,0
+633,Moss Ley,,,,jungle,wheat,0,0
+634,Orchidhaven,,,,jungle,wheat,0,0
+635,Temple Den,,,,jungle,wheat,0,0
+636,Parrotwick,,,,jungle,wheat,0,0
+637,Leaf Stead,,,,jungle,wheat,0,0
+638,Sunbakedwick,,,,plains,wheat,0,0
+639,Ochreden,,,,plains,wheat,0,0
+640,Muleflat,,,,plains,wheat,0,0
+641,Mulebrook,,,,plains,wheat,0,0
+642,Creepercrest,,,,jungle,wheat,0,0
+643,Fernbrook,,,,jungle,wheat,0,0
+644,Emeraldcrest,,,,jungle,wheat,0,0
+645,Lianahold,,,,jungle,wheat,0,0
+646,Spore Heath,,,,jungle,wheat,0,0
+647,Cocoa Combe,,,,jungle,wheat,0,0
+648,Moss Shire,,,,jungle,wheat,0,0
+649,Ocelot Well,,,,jungle,wheat,0,0
+650,Orchidcombe,,,,jungle,wheat,0,0
+651,Creeper Field,,,,jungle,wheat,0,0
+652,Lianaley,,,,jungle,wheat,0,0
+653,Ocelotbrook,,,,jungle,wheat,0,0
+654,Bloomheath,,,,jungle,wheat,0,0
+655,Creeper Mouth,,,,jungle,wheat,0,0
+656,Junglehead,,,,jungle,wheat,0,0
+657,Jungle Ley,,,,jungle,wheat,0,0
+658,Bloom Cove,,,,jungle,wheat,0,0
+659,Canopymouth,,,,jungle,wheat,0,0
+660,Sporehollow,,,,jungle,wheat,0,0
+661,Emeraldmarch,,,,jungle,wheat,0,0
+662,Pandaford,,,,jungle,wheat,0,0
+663,Vinerun,,,,jungle,wheat,0,0
+664,Creeper Bury,,,,jungle,wheat,0,0
+665,Ocelotdale,,,,jungle,wheat,0,0
+666,Moss Stone,,,,jungle,wheat,0,0
+667,Mossholm,,,,jungle,wheat,0,0
+668,Catpoint,,,,jungle,wheat,0,0
+669,Lianarest,,,,jungle,wheat,0,0
+670,Fernbarrow,,,,jungle,wheat,0,0
+671,Canopyglen,,,,jungle,wheat,0,0
+672,Templebury,,,,jungle,wheat,0,0
+673,Ocelotshore,,,,jungle,wheat,0,0
+674,Podzolport,,,,taiga,wheat,0,0
+675,Beetrootport,,,,plains,wheat,0,0
+676,Powderbury,,,,plains,wheat,0,0
+677,Poppymouth,,,,plains,wheat,0,0
+678,Wolfcombe,,,,taiga,wheat,0,0
+679,Haywatch,,,,plains,wheat,0,0
+680,Hay Mill,,,,plains,wheat,0,0
+681,Meadowglen,,,,plains,wheat,0,0
+682,Poppyhaven,,,,plains,wheat,0,0
+683,Leafcrest,,,,jungle,wheat,0,0
+684,Parrotwood,,,,jungle,wheat,0,0
+685,Parrot Hearth,,,,jungle,wheat,0,0
+686,Melonpoint,,,,plains,wheat,0,0
+687,Parrotmoor,,,,jungle,wheat,0,0
+688,Emeraldbay,,,,jungle,wheat,0,0
+689,Ocelotcrest,,,,jungle,wheat,0,0
+690,Bloomdale,,,,jungle,wheat,0,0
+691,Orchidreach,,,,jungle,wheat,0,0
+692,Templereach,,,,jungle,wheat,0,0
+693,Leafford,,,,plains,wheat,0,0
+694,Dandelionglen,,,,plains,wheat,0,0
+695,Honeycove,,,,plains,wheat,0,0
+696,Horserun,,,,plains,cattle,0,0
+697,Haybury,,,,plains,wheat,0,0
+698,Meadowworth,,,,plains,wheat,0,0
+699,Saddlestrand,,,,hills,wheat,0,0
+700,Meadowbrook,,,,plains,wheat,0,0
