@@ -8,7 +8,7 @@
 #include "core/money.h"
 #include "game/game_data.h"
 
-// The economy's day: its phases, in the one order written in economy.cpp (docs/ECONOMY.md, "Код").
+// The economy's day: its phases, in the one order written in economy.cpp (docs/GAMEDATA.md, "Экономика дня").
 
 namespace mc
 {

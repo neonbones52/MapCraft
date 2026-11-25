@@ -5,7 +5,7 @@
 
 #include "game/economy/ledger.h"
 
-// Phase -> what it writes (docs/ECONOMY.md, "Код"); the order is economy_day's, at the end of this file.
+// Phase -> what it writes (docs/GAMEDATA.md, "Экономика дня"); the order is economy_day's, at the end of this file.
 //   mine            Balances::cash (owners mint, workers' wages), minted, flows[mine, wages]
 //   produce         Stock::amount
 //   measure_supply  EconomyCache::market_supply, market_demand (cleared)

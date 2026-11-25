@@ -160,7 +160,7 @@ namespace mc
         float& at(std::size_t good, std::size_t market) { return price[good * stride + market]; }
     };
 
-    // What money moved for: the ledger's counters, one per rule that moves money (docs/ECONOMY.md).
+    // What money moved for: the ledger's counters, one per rule that moves money (docs/GAMEDATA.md, "Деньги").
     enum class Flow : std::uint8_t
     {
         mine,    // emeralds minted by an RGO
@@ -195,7 +195,7 @@ namespace mc
 
     inline constexpr std::array<const char*, kNeedTiers> kNeedTierKeys = { "essential", "everyday", "luxury" };
     inline constexpr std::array<const char*, kNeedTiers> kNeedTierNames = { "Essential", "Everyday", "Luxury" };
-    // The money good: the only one no need consumes (docs/ECONOMY.md).
+    // The money good: the only one no need consumes (docs/GAMEDATA.md, "Файлы").
     inline constexpr std::string_view kMoneyGood = "emerald";
 
     // Content. Pop types (data/common/pop_types.csv): classes of behaviour; what they need, per person a day and tier.
