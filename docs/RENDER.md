@@ -4,6 +4,9 @@
 шейдеры в `evidence/shaders/`) и файлы `C:\Games\EUIV\map` — только референс. Код: `code/src/render/`, шейдеры в
 `shaders.cpp` (компилируются при запуске).
 
+**Проверка шейдеров без запуска** — компилятор `fxc.exe` из Windows Kits (`bin/<версия>/x64`): текст между `R"hlsl(` и
+`)hlsl"` вырезать в файл в scratchpad и собрать каждую точку входа (`/T vs_5_0` или `ps_5_0`, `/E <имя>`).
+
 ## Поверхность: блоки
 Код: `render/terrain.{h,cpp}` (геометрия и отрисовка), облик — `app/terrain_look.cpp`, ассеты — `minecraft/assets.cpp`.
 

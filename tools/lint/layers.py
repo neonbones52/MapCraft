@@ -1,8 +1,8 @@
-"""Linter of the layer graph of code/src (CLAUDE.md, "Архитектура").
+"""Linter of the layer graph of code/src (CLAUDE.md, "Архитектура", points here).
 
 Fails the build when a layer includes a layer it must not know, or a library header that belongs to other layers
 (D3D, ImGui, Windows, the asset libraries). The table below is the graph: a new folder in code/src, or a new edge,
-is a decision made here and in CLAUDE.md together. The simulation's own rules (determinism) are tools/lint/sim_lint.py.
+is a decision made here, with the user. The simulation's own rules (determinism) are tools/lint/sim_lint.py.
 
     python tools/lint/layers.py code/src
 """
@@ -47,7 +47,7 @@ def lint(src):
         relative = path.relative_to(src)
         layer = relative.parts[0] if len(relative.parts) > 1 else ''
         if layer not in LAYERS:
-            problems.append(f'{path}: not in a known layer (add it to tools/lint/layers.py and CLAUDE.md)')
+            problems.append(f'{path}: not in a known layer (add it to tools/lint/layers.py)')
             continue
         for number, line in enumerate(path.read_text(encoding='utf-8').split('\n'), 1):
             match = INCLUDE.match(line)

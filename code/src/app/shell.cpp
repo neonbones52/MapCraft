@@ -143,7 +143,7 @@ namespace mc
 
         const std::uint8_t price_good = app_.map_mode() == MapMode::prices ? app_.price_good() : 0;
         const UiCommands commands = ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), price_good, input);
-        ui_.render(context, target);
+        ui_.render(context, target);   // the frame order: the map above, then the UI over it
         if (commands.play) {
             play();
         }

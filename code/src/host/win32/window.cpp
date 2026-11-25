@@ -24,7 +24,7 @@ namespace mc::win32
         WNDCLASSEXW wc{ sizeof(wc) };
         wc.lpfnWndProc = procedure;
         wc.hInstance = instance;
-        wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);   // the cursor is the system one: the game draws none of its own
         wc.lpszClassName = class_name;
         RegisterClassExW(&wc);
         RECT rect{ 0, 0, width, height };
