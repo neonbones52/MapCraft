@@ -5,6 +5,7 @@
 #include "game/world.h"
 #include "ui/screens/country_select.h"
 #include "ui/screens/player_hud.h"
+#include "ui/screens/province_tooltip.h"
 #include "ui/screens/time_bar.h"
 
 namespace mc
@@ -40,12 +41,12 @@ namespace mc
         switch (session.phase()) {
         case Session::Phase::choose_country:
             country_select_screen(ui, &commands);
-            country_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
+            province_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
             break;
         case Session::Phase::playing:
             player_hud(ui, &commands);
             time_bar(ui, &commands);
-            country_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
+            province_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
             break;
         }
         return commands;

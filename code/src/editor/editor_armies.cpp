@@ -1,0 +1,123 @@
+// The Editor's armies: the armies of the selected land province and their regiments, put down, removed and edited
+// (editor/editor.h). Slots are taken and freed only through game/armies.h.
+
+#include "editor/editor.h"
+
+#include <format>
+#include <string>
+#include <vector>
+
+#include <imgui.h>
+
+#include "game/armies.h"
+#include "ui/army_name.h"
+
+namespace mc
+{
+    namespace
+    {
+        constexpr float kFullRegiment = 1000.0f;   // men
+    }
+
+    void Editor::army_section(std::uint32_t province)
+    {
+        GameData& game = game_;
+        WorldState& state = game.state;
+        const DefinitionList& types = game.content.regiment_types;
+        const std::uint16_t owner = state.provinces.owner[province];
+
+        std::vector<std::uint16_t> here;
+        for_each_alive(state.armies.alive, [&](std::uint32_t a) {
+            if (state.armies.province[a] == province) {
+                here.push_back(static_cast<std::uint16_t>(a));
+            }
+        });
+
+        for (const std::uint16_t army : here) {
+            ImGui::PushID(army);
+            const std::uint16_t army_owner = state.armies.owner[army];
+            const ArmyTotals totals = army_totals(state.regiments, army);
+            ImGui::Text("%s (%s): %u regiments, %.0f men", ui::army_name(army).c_str(),
+                        army_owner ? game.content.countries.tag_text(army_owner).c_str() : "no owner",
+                        totals.regiments, totals.men);
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Remove army")) {
+                begin_edit();
+                destroy_army(state, army);
+                changed();
+                ImGui::PopID();
+                break;   // `here` is stale now; the next frame lists them again
+            }
+
+            std::vector<std::uint16_t> regiments;
+            for_each_alive(state.regiments.alive, [&](std::uint32_t r) {
+                if (state.regiments.army[r] == army) {
+                    regiments.push_back(static_cast<std::uint16_t>(r));
+                }
+            });
+            bool removed = false;
+            for (const std::uint16_t r : regiments) {
+                ImGui::PushID(r);
+                const std::uint32_t one[] = { r };
+                ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9.0f);
+                pick_listed("##type", types, state.regiments.type, one);
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9.0f);
+                edit_number("men", state.regiments.strength, one, 100.0f, kFullRegiment);
+                ImGui::SameLine();
+                if (ImGui::SmallButton("x")) {
+                    begin_edit();
+                    remove_regiment(state.regiments, r);
+                    changed();
+                    removed = true;
+                }
+                ImGui::SetItemTooltip("Remove the regiment");
+                ImGui::PopID();
+                if (removed) {
+                    break;
+                }
+            }
+            ImGui::BeginDisabled(types.size() <= 1);
+            if (ImGui::SmallButton("Add regiment")) {
+                std::uint16_t slot = 0;
+                begin_edit();
+                if (add_regiment(state.regiments, army, 1, kFullRegiment, state.countries.morale[army_owner], &slot)) {
+                    changed();
+                } else {
+                    message_ = std::format("Every one of the {} regiment slots is taken", kRegimentSlots);
+                }
+            }
+            ImGui::EndDisabled();
+            ImGui::Separator();
+            ImGui::PopID();
+            if (removed) {
+                break;
+            }
+        }
+
+        // A new army of the province's owner, with one full regiment of the first type.
+        ImGui::BeginDisabled(owner == 0 || types.size() <= 1);
+        if (ImGui::Button("Add army")) {
+            std::uint16_t army = 0;
+            std::uint16_t regiment = 0;
+            begin_edit();
+            if (!create_army(state.armies, owner, static_cast<std::uint16_t>(province), &army)) {
+                message_ = std::format("Every one of the {} army slots is taken", kArmySlots);
+            } else if (!add_regiment(state.regiments, army, 1, kFullRegiment, state.countries.morale[owner],
+                                     &regiment)) {
+                destroy_army(state, army);
+                message_ = std::format("Every one of the {} regiment slots is taken", kRegimentSlots);
+            } else {
+                changed();
+            }
+        }
+        ImGui::EndDisabled();
+        if (owner == 0) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("(the province has no owner)");
+        } else if (types.size() <= 1) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("(no types in data/common/regiment_types.csv)");
+        }
+    }
+}

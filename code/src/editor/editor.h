@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <deque>
 #include <filesystem>
+#include <limits>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -52,11 +54,17 @@ namespace mc
         void trade_node_panel();    // the Trade nodes map mode: the node to paint regions with
         void status_panel(float view_width, float view_height);
         void hover_tooltip();
+        void army_section(std::uint32_t province);   // the armies of one land province (editor/editor_armies.cpp)
 
-        // Field editing over the whole selection.
+        // Field editing over the whole selection (and edit_cores below).
         void pick_country(const char* label, Column<std::uint16_t>& column, bool owner);
-        void pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column);
-        void edit_number(const char* label, Column<float>& column, float step);   // >= 0, typed or stepped
+        // Field editing over a set of entries: `ids` are indices into the column (the selected provinces, a country,
+        // a regiment).
+        void pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column,
+                         std::span<const std::uint32_t> ids);
+        // A number in [0, max], typed or stepped.
+        void edit_number(const char* label, Column<float>& column, std::span<const std::uint32_t> ids, float step,
+                         float max = std::numeric_limits<float>::max());
         void edit_cores();
 
         App& app_;

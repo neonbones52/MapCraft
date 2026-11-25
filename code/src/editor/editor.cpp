@@ -2,18 +2,20 @@
 
 #include <algorithm>
 #include <format>
+#include <span>
 
 #include <imgui.h>
 #include <imgui_internal.h>   // ImGuiItemFlags_MixedValue: a checkbox for a field the selection disagrees on
 
 #include "app/app.h"
+#include "game/armies.h"
 #include "view/map_view.h"
 
 namespace mc
 {
     namespace
     {
-        constexpr std::size_t kUndoDepth = 256;
+        constexpr std::size_t kUndoDepth = 64;   // a snapshot is the whole WorldState, ~0.8 MB with the slot tables
         constexpr const char* kMixed = "(mixed)";
 
         ImVec4 imgui_color(std::uint32_t c)
@@ -29,15 +31,15 @@ namespace mc
             ImGui::SameLine();
         }
 
-        // The value the whole selection shares; false if it is mixed (or the selection is empty).
+        // The value all of `ids` share; false if it is mixed (or there are none).
         template <class T>
-        bool shared(const Column<T>& column, const std::vector<std::uint32_t>& selection, T* value)
+        bool shared(const Column<T>& column, std::span<const std::uint32_t> ids, T* value)
         {
-            if (selection.empty()) {
+            if (ids.empty()) {
                 return false;
             }
-            *value = column[selection[0]];
-            for (const std::uint32_t id : selection) {
+            *value = column[ids[0]];
+            for (const std::uint32_t id : ids) {
                 if (column[id] != *value) {
                     return false;
                 }
@@ -251,10 +253,11 @@ namespace mc
         ImGui::EndCombo();
     }
 
-    void Editor::pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column)
+    void Editor::pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column,
+                             std::span<const std::uint32_t> ids)
     {
         std::uint8_t value = 0;
-        const bool same = shared(column, selection_, &value);
+        const bool same = shared(column, ids, &value);
         const std::string preview = !same ? kMixed : value == 0 ? "-" : list.name[value];
         ImGui::BeginDisabled(list.size() <= 1);
         if (ImGui::BeginCombo(label, preview.c_str())) {
@@ -265,7 +268,7 @@ namespace mc
                 }
                 if (ImGui::Selectable(i == 0 ? "-" : list.name[i].c_str(), same && value == i)) {
                     begin_edit();
-                    for (const std::uint32_t id : selection_) {
+                    for (const std::uint32_t id : ids) {
                         column[id] = static_cast<std::uint8_t>(i);
                     }
                     changed();
@@ -281,17 +284,18 @@ namespace mc
         }
     }
 
-    void Editor::edit_number(const char* label, Column<float>& column, float step)
+    void Editor::edit_number(const char* label, Column<float>& column, std::span<const std::uint32_t> ids, float step,
+                             float max)
     {
         float value = 0.0f;
-        const bool same = shared(column, selection_, &value);
+        const bool same = shared(column, ids, &value);
         if (!same) {
             value = 0.0f;
         }
         if (ImGui::InputFloat(label, &value, step, step * 10.0f, "%g")) {
             begin_typing();
-            for (const std::uint32_t id : selection_) {
-                column[id] = std::max(value, 0.0f);
+            for (const std::uint32_t id : ids) {
+                column[id] = std::clamp(value, 0.0f, max);
             }
             changed();
         }
@@ -398,11 +402,16 @@ namespace mc
         edit_cores();
 
         ImGui::SeparatorText("Land");
-        pick_listed("Terrain", game.content.terrain, game.state.provinces.terrain);
+        pick_listed("Terrain", game.content.terrain, game.state.provinces.terrain, selection_);
         ImGui::SeparatorText("Economy");
-        pick_listed("Good", game.content.goods, game.state.provinces.good);
-        edit_number("Base tax", game.state.provinces.base_tax, 1.0f);
-        edit_number("Population", game.state.provinces.population, 1000.0f);
+        pick_listed("Good", game.content.goods, game.state.provinces.good, selection_);
+        edit_number("Base tax", game.state.provinces.base_tax, selection_, 1.0f);
+        edit_number("Population", game.state.provinces.population, selection_, 1000.0f);
+
+        if (selection_.size() == 1 && map.kind[selection_[0]] == ProvinceKind::land) {
+            ImGui::SeparatorText("Armies");
+            army_section(selection_[0]);
+        }
         ImGui::End();
     }
 
@@ -468,6 +477,11 @@ namespace mc
             changed();
         }
         ImGui::EndDisabled();
+        const std::uint32_t country[] = { static_cast<std::uint32_t>(country_) };
+        edit_number("Discipline", states.discipline, country, 0.05f);
+        ImGui::SetItemTooltip("1 = 100%%");
+        edit_number("Morale", states.morale, country, 0.1f);
+        ImGui::SetItemTooltip("The base maximum morale of its regiments");
 
         const auto warnings = game.check(map);
         if (!warnings.empty()) {
@@ -614,6 +628,12 @@ namespace mc
             ImGui::Text("Terrain: %s", p.terrain[id] ? game.content.terrain.name[p.terrain[id]].c_str() : "-");
             ImGui::Text("Good: %s", p.good[id] ? game.content.goods.name[p.good[id]].c_str() : "-");
             ImGui::Text("Base tax: %g, population: %g", p.base_tax[id], p.population[id]);
+            std::size_t armies = 0;
+            for_each_alive(game.state.armies.alive,
+                           [&](std::uint32_t a) { armies += game.state.armies.province[a] == id; });
+            if (armies > 0) {
+                ImGui::Text("Armies: %zu", armies);
+            }
         }
         ImGui::EndTooltip();
     }

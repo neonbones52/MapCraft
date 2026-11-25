@@ -4,11 +4,13 @@
 #include <charconv>
 #include <cmath>
 #include <format>
+#include <map>
 #include <type_traits>
 
 #include "core/csv.h"
 #include "core/log.h"
 #include "core/map_data.h"
+#include "game/armies.h"
 
 namespace mc
 {
@@ -214,6 +216,7 @@ namespace mc
         {
             struct Runtime {};
             struct ByHand {};
+            struct Derived {};
             struct Country {};
             struct Number {};
             struct Key
@@ -229,6 +232,7 @@ namespace mc
 
             inline constexpr Runtime runtime{};
             inline constexpr ByHand by_hand{};
+            inline constexpr Derived derived{};
             inline constexpr Country country{};
             inline constexpr Number number{};
             constexpr Key key(DefinitionList Content::* list) { return { list }; }
@@ -262,6 +266,18 @@ namespace mc
             void each(T& columns, F&& f)
             {
                 MC_COUNTRY_COLUMNS(MC_EACH_START)
+            }
+            template <class T, class F>
+                requires std::is_same_v<std::remove_const_t<T>, Armies>
+            void each(T& columns, F&& f)
+            {
+                MC_ARMY_COLUMNS(MC_EACH_START)
+            }
+            template <class T, class F>
+                requires std::is_same_v<std::remove_const_t<T>, Regiments>
+            void each(T& columns, F&& f)
+            {
+                MC_REGIMENT_COLUMNS(MC_EACH_START)
             }
 #undef MC_EACH_START
 
@@ -445,6 +461,8 @@ namespace mc
         constexpr std::string_view kProvinceHand[] = { "id", "name", "cores" };
         constexpr std::string_view kRegionHand[] = { "region", "name" };
         constexpr std::string_view kCountryHand[] = { "tag", "capital" };
+        constexpr std::string_view kArmyHand[] = { "army", "province" };
+        constexpr std::string_view kRegimentHand[] = { "army" };
 
         // goods.csv (required: every land province has a good): key, name, color, price (the base price, emeralds per
         // unit produced, > 0; the money good is worth 1 whatever it says).
@@ -467,6 +485,34 @@ namespace mc
                 } else if (!parse_number(table.rows[r][column], &(*price)[r + 1], false, true)) {
                     return ctx.fail(r, std::format("price \"{}\": emeralds per unit, > 0", table.rows[r][column]));
                 }
+            }
+            return true;
+        }
+
+        // regiment_types.csv (optional: no file = no regiments): key, name, category (infantry, cavalry, artillery).
+        bool read_regiment_types(Source& src, const std::filesystem::path& path, DefinitionList* types,
+                                 std::vector<RegimentCategory>* category, std::string* error)
+        {
+            csv::Table table;
+            if (!read_list(src, path, false, false, types, error, &table)) {
+                return false;
+            }
+            category->assign(types->size(), RegimentCategory::infantry);
+            if (table.header.empty()) {
+                return true;
+            }
+            const Context ctx{ path, &table, error };
+            int column = 0;
+            if (!need_column(path, table, "category", &column, error)) {
+                return false;
+            }
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                const std::string& text = table.rows[r][column];
+                const auto* found = std::find(std::begin(kRegimentCategories), std::end(kRegimentCategories), text);
+                if (found == std::end(kRegimentCategories)) {
+                    return ctx.fail(r, std::format("category \"{}\": infantry, cavalry or artillery", text));
+                }
+                (*category)[r + 1] = static_cast<RegimentCategory>(found - std::begin(kRegimentCategories));
             }
             return true;
         }
@@ -537,6 +583,20 @@ namespace mc
         const std::size_t n = padded(count);
         MC_COUNTRY_COLUMNS(MC_FILL_COLUMN)
     }
+
+    void Armies::resize()
+    {
+        const std::size_t n = kArmySlots;
+        MC_ARMY_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kArmySlots / 64, 0);
+    }
+
+    void Regiments::resize()
+    {
+        const std::size_t n = kRegimentSlots;
+        MC_REGIMENT_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kRegimentSlots / 64, 0);
+    }
 #undef MC_FILL_COLUMN
 
     bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
@@ -548,7 +608,9 @@ namespace mc
         const auto setup = dir / "setup";
         if (!read_list(src, common / "terrain.csv", true, true, &content.terrain, error) ||
             !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, error) ||
-            !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error)) {
+            !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error) ||
+            !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,
+                                 &content.regiment_category, error)) {
             return false;
         }
 
@@ -600,6 +662,8 @@ namespace mc
         state.regions.resize(map.region_count());
         content.province_region.assign(map.region.begin(), map.region.end());
         state.money = {};   // runtime: no accounts yet (their resize comes with the treasury, M8)
+        state.armies.resize();
+        state.regiments.resize();
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
             const int c = content.countries.find(text);
@@ -727,6 +791,87 @@ namespace mc
                 }
             }
         }
+
+        // Armies at the start (optional, no file = none): army (its number in the file, for regiments.csv) and
+        // province (a land province) by hand, the list's setup columns; each takes the next slot in file order.
+        std::map<std::uint32_t, std::uint16_t> army_slot;   // number in the file -> slot
+        {
+            const auto path = setup / "armies.csv";
+            SetupFile file(state.armies, kArmyHand);
+            setup_layout.armies = file.layout({});
+            if (std::filesystem::exists(path)) {
+                csv::Table table;
+                if (!src.read(path, &table, error)) {
+                    return false;
+                }
+                const Context ctx{ path, &table, error };
+                int number = 0;
+                int province = 0;
+                if (!need_column(path, table, "army", &number, error) ||
+                    !need_column(path, table, "province", &province, error) || !file.find(path, table, error)) {
+                    return false;
+                }
+                setup_layout.armies = file.layout(table.header);
+                for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                    const auto& row = table.rows[r];
+                    std::uint32_t n = 0;
+                    if (!parse_uint(row[number], &n) || n == 0) {
+                        return ctx.fail(r, std::format("army \"{}\": a number from 1", row[number]));
+                    }
+                    if (army_slot.contains(n)) {
+                        return ctx.fail(r, std::format("army {} repeated", n));
+                    }
+                    std::uint32_t id = 0;
+                    if (!parse_uint(row[province], &id) || !land(id)) {
+                        return ctx.fail(r, std::format("province \"{}\" is not a land province", row[province]));
+                    }
+                    std::uint16_t slot = 0;
+                    if (!create_army(state.armies, 0, static_cast<std::uint16_t>(id), &slot)) {
+                        return ctx.fail(r, std::format("more than {} armies", kArmySlots));
+                    }
+                    army_slot[n] = slot;
+                    if (!file.read(ctx, r, slot, content, state.armies)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // Their regiments (optional): army (its number in armies.csv) by hand, the list's setup columns; morale full,
+        // the army owner's.
+        {
+            const auto path = setup / "regiments.csv";
+            SetupFile file(state.regiments, kRegimentHand);
+            setup_layout.regiments = file.layout({});
+            if (std::filesystem::exists(path)) {
+                csv::Table table;
+                if (!src.read(path, &table, error)) {
+                    return false;
+                }
+                const Context ctx{ path, &table, error };
+                int number = 0;
+                if (!need_column(path, table, "army", &number, error) || !file.find(path, table, error)) {
+                    return false;
+                }
+                setup_layout.regiments = file.layout(table.header);
+                for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                    const auto& row = table.rows[r];
+                    std::uint32_t n = 0;
+                    const auto army = parse_uint(row[number], &n) ? army_slot.find(n) : army_slot.end();
+                    if (army == army_slot.end()) {
+                        return ctx.fail(r, std::format("army \"{}\" is not in armies.csv", row[number]));
+                    }
+                    const std::uint16_t owner = state.armies.owner[army->second];
+                    std::uint16_t slot = 0;
+                    if (!add_regiment(state.regiments, army->second, 0, 0.0f, state.countries.morale[owner], &slot)) {
+                        return ctx.fail(r, std::format("more than {} regiments", kRegimentSlots));
+                    }
+                    if (!file.read(ctx, r, slot, content, state.regiments)) {
+                        return false;
+                    }
+                }
+            }
+        }
         if (!src.all_used(error)) {
             return false;
         }
@@ -737,8 +882,14 @@ namespace mc
 
     std::string GameData::summary() const
     {
-        return std::format("{} countries, {} terrain, {} goods, {} trade nodes", content.countries.size() - 1,
-                           content.terrain.size() - 1, content.goods.size() - 1, content.trade_nodes.size() - 1);
+        std::size_t armies = 0;
+        std::size_t regiments = 0;
+        for_each_alive(state.armies.alive, [&](std::uint32_t) { ++armies; });
+        for_each_alive(state.regiments.alive, [&](std::uint32_t) { ++regiments; });
+        return std::format("{} countries, {} terrain, {} goods, {} trade nodes, {} regiment types; {} armies, {} "
+                           "regiments",
+                           content.countries.size() - 1, content.terrain.size() - 1, content.goods.size() - 1,
+                           content.trade_nodes.size() - 1, content.regiment_types.size() - 1, armies, regiments);
     }
 
     std::vector<std::string> GameData::check(const MapData& map) const
@@ -766,6 +917,27 @@ namespace mc
         if (without_good > kNamed) {
             out.push_back(std::format("... {} land provinces without a good in all", without_good));
         }
+
+        // Armies: an owner, at least one regiment; regiments: a type. Armies are named by their slot here, as the
+        // editor and the game name them ("army 3": the 3rd Army).
+        const Armies& armies = state.armies;
+        const Regiments& regiments = state.regiments;
+        std::vector<std::uint32_t> regiments_of(kArmySlots, 0);
+        for_each_alive(regiments.alive, [&](std::uint32_t r) {
+            ++regiments_of[regiments.army[r]];
+            if (regiments.type[r] == 0) {
+                out.push_back(std::format("army {} in {}: a regiment without a type", regiments.army[r] + 1,
+                                          map.province_name(armies.province[regiments.army[r]])));
+            }
+        });
+        for_each_alive(armies.alive, [&](std::uint32_t a) {
+            if (armies.owner[a] == 0) {
+                out.push_back(std::format("army {} in {}: no owner", a + 1, map.province_name(armies.province[a])));
+            }
+            if (regiments_of[a] == 0) {
+                out.push_back(std::format("army {} in {}: no regiments", a + 1, map.province_name(armies.province[a])));
+            }
+        });
 
         // Trade nodes: every region in one, no node empty (once there are nodes at all).
         if (content.trade_nodes.size() > 1) {
@@ -843,6 +1015,30 @@ namespace mc
                 const std::uint16_t capital = state.countries.capital[c];   // "capital"
                 return capital ? std::format("{}", capital) : std::string{};
             });
-        return csv::write_file(dir / "setup" / "countries.csv", countries_text, error);
+        if (!csv::write_file(dir / "setup" / "countries.csv", countries_text, error)) {
+            return false;
+        }
+
+        // The live armies in slot order, numbered 1, 2, ... in it; their regiments in slot order.
+        entries.clear();
+        std::vector<std::uint32_t> number_of(kArmySlots, 0);
+        for_each_alive(state.armies.alive, [&](std::uint32_t a) {
+            entries.push_back(a);
+            number_of[a] = static_cast<std::uint32_t>(entries.size());
+        });
+        const std::string armies_text = SetupFile(state.armies, kArmyHand).write(
+            setup_layout.armies, state.armies, content, entries, [&](std::string_view column, std::uint32_t a) {
+                return std::format("{}", column == "army" ? number_of[a] : state.armies.province[a]);   // "province"
+            });
+        if (!csv::write_file(dir / "setup" / "armies.csv", armies_text, error)) {
+            return false;
+        }
+        entries.clear();
+        for_each_alive(state.regiments.alive, [&](std::uint32_t r) { entries.push_back(r); });
+        const std::string regiments_text = SetupFile(state.regiments, kRegimentHand).write(
+            setup_layout.regiments, state.regiments, content, entries, [&](std::string_view, std::uint32_t r) {
+                return std::format("{}", number_of[state.regiments.army[r]]);   // "army"
+            });
+        return csv::write_file(dir / "setup" / "regiments.csv", regiments_text, error);
     }
 }

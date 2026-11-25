@@ -250,20 +250,20 @@ id,name,owner,controller,cores,terrain,good,base_tax,population
 249,Thornrun,,,,forest,wheat,0,0
 250,Bramblebrook,,,,forest,wheat,0,0
 251,Mushroomdale,,,,hills,wheat,0,0
-252,Cobblefall,,,,mountains,wheat,0,0
+252,Cobblefall,NBR,NBR,NBR,mountains,wheat,0,0
 253,Deepslatepass,,,,mountains,wheat,0,0
 254,Goat Well,,,,mountains,wheat,0,0
 255,Moss Pass,,,,forest,wheat,0,0
-256,Fernreach,,,,forest,wheat,0,0
-257,Coalshire,,,,mountains,wheat,0,0
-258,Azalearest,,,,forest,wheat,0,0
-259,Owlwood,,,,forest,wheat,0,0
-260,Mossvale,,,,forest,wheat,0,0
+256,Fernreach,NBR,NBR,NBR,forest,wheat,0,0
+257,Coalshire,NBR,NBR,NBR,mountains,wheat,0,0
+258,Azalearest,NBR,NBR,NBR,forest,wheat,0,0
+259,Owlwood,NBR,NBR,NBR,forest,wheat,0,0
+260,Mossvale,NBR,NBR,NBR,forest,wheat,0,0
 261,Paleglen,,,,forest,wheat,0,0
 262,Wheat Hold,,,,plains,wheat,0,0
 263,Wolffold,,,,forest,wheat,0,0
 264,Hayden,,,,plains,wheat,0,0
-265,Mushroomwatch,,,,plains,wheat,0,0
+265,Mushroomwatch,NBR,NBR,NBR,plains,wheat,0,0
 266,Dustwell,,,,desert,wheat,0,0
 267,Silverfish Barrow,,,,mountains,wheat,0,0
 268,Lapisheight,,,,mountains,wheat,0,0
@@ -471,14 +471,14 @@ id,name,owner,controller,cores,terrain,good,base_tax,population
 470,Cocoa Dale,,,,jungle,wheat,0,0
 471,Creeperwharf,,,,jungle,wheat,0,0
 472,Oaktop,DUM,DUM,DUM,forest,wheat,0,0
-473,Azalea Heath,,,,forest,wheat,0,0
+473,Azalea Heath,NBR,NBR,NBR,forest,wheat,0,0
 474,Lapishearth,DUM,DUM,DUM,mountains,wheat,0,0
-475,Anvilwick,,,,hills,wheat,0,0
-476,Tulip Pass,,,,plains,wheat,0,0
+475,Anvilwick,NBR,NBR,NBR,hills,wheat,0,0
+476,Tulip Pass,NBR,NBR,NBR,plains,wheat,0,0
 477,Diamond Brook,DUM,DUM,DUM,hills,wheat,0,0
-478,Azaleabrook,,,,forest,wheat,0,0
-479,Zombiecrag,,,,forest,wheat,0,0
-480,Dripstonebarrow,,,,hills,wheat,0,0
+478,Azaleabrook,NBR,NBR,NBR,forest,wheat,0,0
+479,Zombiecrag,NBR,NBR,NBR,forest,wheat,0,0
+480,Dripstonebarrow,NBR,NBR,NBR,hills,wheat,0,0
 481,Bread Hollow,,,,plains,wheat,0,0
 482,Spider Mill,,,,forest,wheat,0,0
 483,Wheatridge,,,,plains,wheat,0,0
@@ -486,13 +486,13 @@ id,name,owner,controller,cores,terrain,good,base_tax,population
 485,Beetrootden,,,,plains,wheat,0,0
 486,Wolfvale,,,,hills,wheat,0,0
 487,Batpass,DUM,DUM,DUM,hills,wheat,0,0
-488,Goatbrook,,,,hills,wheat,0,0
+488,Goatbrook,DUM,DUM,DUM,hills,wheat,0,0
 489,Zombiestrand,,,,hills,wheat,0,0
 490,Deepslateworth,DUM,DUM,DUM,hills,wheat,0,0
 491,Deepslatebay,,,,hills,wheat,0,0
 492,Leaf Field,,,,forest,wheat,0,0
 493,Amethyst Cliff,,,,mountains,wheat,0,0
-494,Wolfshire,,,,hills,wheat,0,0
+494,Wolfshire,DUM,DUM,DUM,hills,wheat,0,0
 495,Golemtor,DUM,DUM,DUM,mountains,wheat,0,0
 496,Golemscar,DUM,DUM,DUM,mountains,emerald,0,0
 497,Frostheath,DUM,DUM,DUM,mountains,emerald,0,0
@@ -568,9 +568,9 @@ id,name,owner,controller,cores,terrain,good,base_tax,population
 567,Honeyridge,,,,plains,wheat,0,0
 568,Sheep Point,,,,plains,wheat,0,0
 569,Rabbit Haven,,,,plains,wheat,0,0
-570,Sunflowerbarrow,,,,plains,wheat,0,0
+570,Sunflowerbarrow,DUM,DUM,DUM,plains,wheat,0,0
 571,Cobblefield,,,,plains,wheat,0,0
-572,Cornflowerglen,,,,hills,wheat,0,0
+572,Cornflowerglen,DUM,DUM,DUM,hills,wheat,0,0
 573,Cocoahearth,,,,jungle,wheat,0,0
 574,Creeperhearth,,,,jungle,wheat,0,0
 575,Lianawood,,,,jungle,wheat,0,0

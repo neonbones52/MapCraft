@@ -83,23 +83,4 @@ namespace mc
         }
         ImGui::End();
     }
-
-    void country_tooltip(const ScreenContext& ui, std::uint32_t province, float cursor_x, float cursor_y)
-    {
-        if (!ui.loaded || province == 0 || province >= ui.state.provinces.count) {
-            return;
-        }
-        const std::uint16_t owner = ui.state.provinces.owner[province];
-        if (owner == 0) {
-            return;
-        }
-        // Below and right of the OS cursor (ImGui does not know its size).
-        ImGui::SetNextWindowPos(ImVec2(cursor_x + 16.0f * ui.scale, cursor_y + 20.0f * ui.scale));
-        if (ImGui::BeginTooltip()) {
-            ui::swatch(ui.content.countries.color[owner]);
-            ImGui::TextUnformatted(ui.content.countries.name[owner].c_str());
-            ImGui::TextDisabled("%s", std::string(ui.map.province_name(province)).c_str());
-            ImGui::EndTooltip();
-        }
-    }
 }

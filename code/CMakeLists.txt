@@ -19,6 +19,7 @@ add_library(mc_sim STATIC
     src/core/log.cpp
     src/core/map_data.cpp
     src/core/map_file.cpp
+    src/game/armies.cpp
     src/game/calendar.cpp
     src/game/countries.cpp
     src/game/economy/ledger.cpp
@@ -76,6 +77,7 @@ add_library(mc_game STATIC
     src/ui/game_ui.cpp
     src/ui/screens/country_select.cpp
     src/ui/screens/player_hud.cpp
+    src/ui/screens/province_tooltip.cpp
     src/ui/screens/time_bar.cpp
 )
 find_package(imgui CONFIG REQUIRED)
@@ -117,7 +119,7 @@ target_compile_definitions(mapcraft_sim PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build
     MC_DEFAULT_DATA="${MC_ROOT}/data" MC_ROOT="${MC_ROOT}")
 
 # Province editor (docs/GAMEDATA.md): the map with Dear ImGui panels over it, edits data/setup.
-add_executable(mapcraft_editor WIN32 src/editor/main.cpp src/editor/editor.cpp)
+add_executable(mapcraft_editor WIN32 src/editor/main.cpp src/editor/editor.cpp src/editor/editor_armies.cpp)
 target_link_libraries(mapcraft_editor PRIVATE mc_game mc_host_win32 imgui::imgui)
 target_compile_definitions(mapcraft_editor PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map/world.mcmap"
     MC_DEFAULT_DATA="${MC_ROOT}/data")

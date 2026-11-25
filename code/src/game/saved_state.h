@@ -14,8 +14,8 @@
 
 namespace mc
 {
-    // Calls visit(name, span) for each saved column (a span over the whole column, padding included) and number (a
-    // span of one); `State` is WorldState or const WorldState.
+    // Calls visit(name, span) for each saved column (a span over the whole column, padding included; over the used
+    // slots of a slot table) and number (a span of one); `State` is WorldState or const WorldState.
     template <class State, class Visit>
         requires std::is_same_v<std::remove_const_t<State>, WorldState>
     void for_each_saved(State& state, Visit&& visit)
@@ -28,18 +28,35 @@ namespace mc
         MC_BALANCE_COLUMNS(MC_VISIT_SAVED)
         MC_COUNTRY_COLUMNS(MC_VISIT_SAVED)
 #undef MC_VISIT_SAVED
+        // Slot tables: only the used part, the slots up to the last live one's mask word (the rest is 0, freed slots
+        // are cleared), so the dump and the checksum do not walk tens of thousands of empty slots every day.
+#define MC_VISIT_SLOTS(table, type, name, start) \
+    visit(std::string_view{ #table "." #name }, std::span(state.table.name).first(used));
+        {
+            const std::size_t used = used_slots(state.armies.alive);
+            MC_ARMY_COLUMNS(MC_VISIT_SLOTS)
+            visit(std::string_view{ "armies.alive" }, std::span(state.armies.alive).first(used / 64));
+        }
+        {
+            const std::size_t used = used_slots(state.regiments.alive);
+            MC_REGIMENT_COLUMNS(MC_VISIT_SLOTS)
+            visit(std::string_view{ "regiments.alive" }, std::span(state.regiments.alive).first(used / 64));
+        }
+#undef MC_VISIT_SLOTS
     }
 
     // A tripwire for what is not a column of a list, not a rule: a list's column passes it by itself, a new field
     // written by hand changes the number. Such a field must be labelled (saved, content or cache, game/game_data.h)
     // and, if saved, visited above before the number is updated. By hand now: the sizes (Provinces::count and
-    // core_words, Regions::count, CountryStates::count) and the cores, 48 bytes with their padding.
+    // core_words, Regions::count, CountryStates::count), the cores and the two slot masks, 96 bytes with their
+    // padding.
 #define MC_COUNT_COLUMN(table, type, name, start) +1
     inline constexpr std::size_t kListedColumns = 0
         MC_PROVINCE_COLUMNS(MC_COUNT_COLUMN) MC_REGION_COLUMNS(MC_COUNT_COLUMN)
-        MC_BALANCE_COLUMNS(MC_COUNT_COLUMN) MC_COUNTRY_COLUMNS(MC_COUNT_COLUMN);
+        MC_BALANCE_COLUMNS(MC_COUNT_COLUMN) MC_COUNTRY_COLUMNS(MC_COUNT_COLUMN)
+        MC_ARMY_COLUMNS(MC_COUNT_COLUMN) MC_REGIMENT_COLUMNS(MC_COUNT_COLUMN);
 #undef MC_COUNT_COLUMN
     static_assert(sizeof(Column<std::uint8_t>) == sizeof(Column<Money>), "a list's columns differ in size");
-    static_assert(sizeof(WorldState) == 48 + kListedColumns * sizeof(Column<std::uint8_t>),
+    static_assert(sizeof(WorldState) == 96 + kListedColumns * sizeof(Column<std::uint8_t>),
                   "WorldState has a new field outside the column lists: label it and visit it in for_each_saved");
 }

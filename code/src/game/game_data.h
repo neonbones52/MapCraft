@@ -81,7 +81,10 @@ namespace mc
     //                              parse is country (a tag, empty = none; u16), key(&Content::list) (a key of that
     //                              list, empty = none; u8) or number (a number >= 0, empty = 0; float)
     //   by_hand                    data/setup, read and written by GameData's own code (a capital: a land province)
-    // What is not a column of a list is written out by hand where the lists expand: the sizes, the cores bit matrix.
+    //   derived                    not in data/setup: GameData sets it at load from other columns (a regiment's
+    //                              morale: full)
+    // What is not a column of a list is written out by hand where the lists expand: the sizes, the cores bit matrix,
+    // the slot masks.
     // A line's own comment is /* */: a // comment would swallow the line continuation.
 #define MC_DECLARE_COLUMN(table, type, name, start) Column<type> name;
 
@@ -144,7 +147,11 @@ namespace mc
 
 #define MC_COUNTRY_COLUMNS(X)                                                                                   \
     /* province id, 0 = none */                                                                                 \
-    X(countries, std::uint16_t, capital, by_hand)
+    X(countries, std::uint16_t, capital, by_hand)                                                               \
+    /* 1 = 100% (EU3's discipline: the damage its regiments deal and take, M6) */                               \
+    X(countries, float, discipline, setup("discipline", number))                                                \
+    /* the base maximum morale of its regiments */                                                              \
+    X(countries, float, morale, setup("morale", number))
 
     // Saved. Country state (data/setup/countries.csv at the start: tag by hand), one column per field, indexed like
     // CountryDefinitions, padded(count) long.
@@ -155,6 +162,70 @@ namespace mc
 
         void resize(std::size_t country_count);
     };
+
+    // Entities that are born and die (armies, regiments) live in slots: a fixed number per table, so the tick never
+    // allocates; a mask of the slots in use; a new entity takes the lowest free slot (game/armies.h). A freed slot's
+    // columns are back to 0. The numbers are the limits: regiments fill the u16 slot index (more needs u32 slots),
+    // which is far above what EU4 fields on a map six times ours.
+    inline constexpr std::uint32_t kArmySlots = 4096;
+    inline constexpr std::uint32_t kRegimentSlots = 65536;
+    static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0, "whole words of the slot masks");
+    static_assert(kArmySlots <= 65536 && kRegimentSlots <= 65536, "u16 slots");
+
+    // The used part of a slot table: the slots up to the end of the last mask word with a live slot (a multiple of 64).
+    [[nodiscard]] inline std::size_t used_slots(const Column<std::uint64_t>& alive)
+    {
+        std::size_t words = alive.size();
+        while (words > 0 && alive[words - 1] == 0) {
+            --words;
+        }
+        return words * 64;
+    }
+
+#define MC_ARMY_COLUMNS(X)                                                                                      \
+    X(armies, std::uint16_t, owner, setup("owner", country))                                                    \
+    /* a land province id */                                                                                    \
+    X(armies, std::uint16_t, province, by_hand)                                                                 \
+    /* grows each time the slot is freed: what a reference from outside checks (ArmyRef, game/armies.h) */     \
+    X(armies, std::uint16_t, generation, runtime)
+
+    // Saved. The armies (land only; fleets are not here), in slots, kArmySlots long. data/setup/armies.csv at the
+    // start: army (its number in the file, for regiments.csv) and province by hand; an army's name is not data.
+    struct Armies
+    {
+        MC_ARMY_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand: bit s % 64 of word s / 64 = slot s holds an army
+
+        void resize();
+    };
+
+#define MC_REGIMENT_COLUMNS(X)                                                                                  \
+    /* its army's slot: a reference within one life, the army frees its regiments when it dies */               \
+    X(regiments, std::uint16_t, army, by_hand)                                                                  \
+    X(regiments, std::uint8_t, type, setup("type", key(&Content::regiment_types)))                              \
+    /* men; a full regiment is 1000 */                                                                          \
+    X(regiments, float, strength, setup("strength", number))                                                    \
+    /* full at the start: the morale of its army's owner */                                                     \
+    X(regiments, float, morale, derived)
+
+    // Saved. The regiments of every army, in slots, kRegimentSlots long. data/setup/regiments.csv at the start: army
+    // (its number in armies.csv) by hand.
+    struct Regiments
+    {
+        MC_REGIMENT_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+
+        void resize();
+    };
+
+    // The regiment types' categories (regiment_types.csv `category`): what a type is in battle (M6).
+    enum class RegimentCategory : std::uint8_t
+    {
+        infantry,
+        cavalry,
+        artillery,
+    };
+    inline constexpr std::string_view kRegimentCategories[] = { "infantry", "cavalry", "artillery" };
 
     // The money good: worth 1 emerald whatever goods.csv says (docs/GAMEDATA.md, "Файлы").
     inline constexpr std::string_view kMoneyGood = "emerald";
@@ -168,6 +239,8 @@ namespace mc
         std::vector<float> goods_price;   // goods.csv `price`: the base price, emeralds per unit produced (the money
                                           // good: 1); no rule reads it yet
         DefinitionList trade_nodes;       // data/common/trade_nodes.csv: a node is made of whole regions (M11 rules)
+        DefinitionList regiment_types;    // data/common/regiment_types.csv: the units (EU4's Latin Knights...)
+        std::vector<RegimentCategory> regiment_category;   // per type; its combat numbers come with M6
         CountryDefinitions countries;
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
     };
@@ -180,6 +253,8 @@ namespace mc
         Regions regions;
         Balances money;
         CountryStates countries;
+        Armies armies;
+        Regiments regiments;
     };
 
     // Loads Content and the start's WorldState from data/ (docs/GAMEDATA.md) and writes the start back (editor). In
@@ -194,11 +269,13 @@ namespace mc
         // each must hit a file the load reads.
         bool load(const std::filesystem::path& dir, const MapData& map, std::string* error,
                   std::span<const csv::Patch> patches = {});
-        // Rewrites data/setup/provinces.csv (every land province, by id), regions.csv (every region, by number) and
-        // countries.csv from `state`, each in its `setup_layout` order.
+        // Rewrites data/setup/provinces.csv (every land province, by id), regions.csv (every region, by number),
+        // countries.csv, armies.csv and regiments.csv (the live ones in slot order, armies numbered 1, 2, ... in it)
+        // from `state`, each in its `setup_layout` order.
         bool save_setup(const std::filesystem::path& dir, const MapData& map, std::string* error) const;
         // The checks that are warnings at load, for the current state: a capital its country does not own; a land
-        // province without a good; once there are trade nodes, a region without one and a node without regions.
+        // province without a good; an army without an owner or regiments, a regiment without a type; once there are
+        // trade nodes, a region without one and a node without regions.
         [[nodiscard]] std::vector<std::string> check(const MapData& map) const;
         // "11 countries, 5 terrain, ..." for the logs.
         [[nodiscard]] std::string summary() const;
@@ -214,6 +291,8 @@ namespace mc
             std::vector<std::string> provinces;
             std::vector<std::string> regions;
             std::vector<std::string> countries;
+            std::vector<std::string> armies;
+            std::vector<std::string> regiments;
         } setup_layout;
     };
 }
