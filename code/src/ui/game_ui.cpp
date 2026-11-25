@@ -5,7 +5,6 @@
 #include "game/world.h"
 #include "ui/screens/country_select.h"
 #include "ui/screens/player_hud.h"
-#include "ui/screens/prices_panel.h"
 #include "ui/screens/time_bar.h"
 
 namespace mc
@@ -30,14 +29,14 @@ namespace mc
     }
 
     UiCommands GameUi::build(const MapView& map, const World& world, const Session& session, const Pace& pace,
-                             std::uint32_t hovered, std::uint8_t price_good, const Input& input)
+                             std::uint32_t hovered, const Input& input)
     {
         UiCommands commands;
         if (!ready_) {
             return commands;
         }
         const ScreenContext ui{ map,    world.content(), world.state(), world.loaded(), session, pace, flags_,
-                                width_, height_,         layer_.scale(), world.date(), price_good };
+                                width_, height_,         layer_.scale(), world.date() };
         switch (session.phase()) {
         case Session::Phase::choose_country:
             country_select_screen(ui, &commands);
@@ -46,7 +45,6 @@ namespace mc
         case Session::Phase::playing:
             player_hud(ui, &commands);
             time_bar(ui, &commands);
-            prices_panel(ui, &commands);
             country_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
             break;
         }

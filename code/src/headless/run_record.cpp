@@ -1,15 +1,12 @@
 #include "headless/run_record.h"
 
-#include <array>
 #include <chrono>
 #include <format>
 #include <fstream>
 #include <sstream>
 #include <string_view>
 
-#include "core/money.h"
 #include "game/calendar.h"
-#include "game/economy/ledger.h"
 #include "game/world.h"
 #include "headless/scenario.h"
 #include "headless/snapshot.h"
@@ -18,23 +15,6 @@ namespace mc::headless
 {
     namespace
     {
-        // Grains as exact emeralds: "153999.998600".
-        std::string emeralds(Money grains)
-        {
-            const char* sign = grains < 0 ? "-" : "";
-            const std::uint64_t magnitude = grains < 0 ? 0 - static_cast<std::uint64_t>(grains)
-                                                       : static_cast<std::uint64_t>(grains);
-            const auto per = static_cast<std::uint64_t>(kGrainsPerEmerald);
-            return std::format("{}{}.{:06}", sign, magnitude / per, magnitude % per);
-        }
-
-        // The row's leading columns: the day, and its date's year and month.
-        std::string when(const World& world)
-        {
-            const Date date = world.date();
-            return std::format("{},{},{}", world.day(), date.year, date.month);
-        }
-
         std::string json_string(std::string_view text)
         {
             std::string out = "\"";
@@ -103,72 +83,8 @@ namespace mc::headless
         }
     }
 
-    RunRecord::RunRecord()
-        : prices_("day,year,month,market,good,price\n"),
-          pops_("day,year,month,pop_type,size,cash,essential,everyday,luxury\n"),
-          money_("day,year,month,total,start,minted")
-    {
-        for (const std::string_view flow : kFlowKeys) {
-            money_ += std::format(",{}", flow);
-        }
-        money_ += '\n';
-    }
-
-    void RunRecord::month(const World& world)
-    {
-        const Content& content = world.content();
-        const WorldState& state = world.state();
-        const std::string at = when(world);
-
-        // Prices: every market and good but the money good (always 1).
-        for (std::size_t m = 1; m < content.markets.size(); ++m) {
-            for (std::size_t g = 1; g < content.goods.size(); ++g) {
-                if (content.goods.key[g] != kMoneyGood) {
-                    prices_ += std::format("{},{},{},{}\n", at, content.markets.key[m], content.goods.key[g],
-                                           state.prices.at(g, m));
-                }
-            }
-        }
-
-        // Pops, per type over all provinces: people, cash, and how much of each tier they got on the last day
-        // (weighted by people; empty when nobody of the type needs the tier).
-        const Pops& pops = state.pops;
-        for (std::size_t t = 1; t < pops.types && t < content.pop_types.size(); ++t) {
-            double people = 0.0;
-            Money cash = 0;
-            std::array<double, kNeedTiers> got{};
-            for (std::uint32_t p = 1; p < state.provinces.count; ++p) {
-                const std::size_t a = t * pops.stride + p;
-                people += pops.size[a];
-                cash += state.money.cash[a];
-                for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
-                    got[tier] += static_cast<double>(pops.size[a]) * pops.filled[tier][a];
-                }
-            }
-            pops_ += std::format("{},{},{:.0f},{}", at, content.pop_types.list.key[t], people, emeralds(cash));
-            for (std::size_t tier = 0; tier < kNeedTiers; ++tier) {
-                if (people > 0.0 && content.pop_types.need[t][tier] > 0.0f) {
-                    pops_ += std::format(",{:.6f}", got[tier] / people);
-                } else {
-                    pops_ += ',';
-                }
-            }
-            pops_ += '\n';
-        }
-
-        // Money: the ledger's totals and its counter per flow, since the start.
-        const Balances& money = state.money;
-        money_ += std::format("{},{},{},{}", at, emeralds(ledger::total(money)), emeralds(money.start),
-                              emeralds(money.minted));
-        for (const Money flow : money.flows) {
-            money_ += std::format(",{}", emeralds(flow));
-        }
-        money_ += '\n';
-    }
-
-    bool RunRecord::write(const std::filesystem::path& dir, const std::filesystem::path& root,
-                          const Scenario& scenario, const World& end, std::span<const std::uint64_t> hashes,
-                          std::string* error) const
+    bool write_run(const std::filesystem::path& dir, const std::filesystem::path& root, const Scenario& scenario,
+                   const World& end, std::span<const std::uint64_t> hashes, std::string* error)
     {
         std::error_code made;
         std::filesystem::create_directories(dir, made);
@@ -204,9 +120,7 @@ namespace mc::headless
             days += std::format("{},{:016x}\n", kStartDay + d, hashes[d]);
         }
 
-        return write_file(dir / "meta.json", meta, error) && write_file(dir / "prices.csv", prices_, error) &&
-               write_file(dir / "pops.csv", pops_, error) && write_file(dir / "money.csv", money_, error) &&
-               write_file(dir / "hashes.csv", days, error) && write_file(dir / "state.csv", dump(end), error) &&
+        return write_file(dir / "meta.json", meta, error) && write_file(dir / "hashes.csv", days, error) && write_file(dir / "state.csv", dump(end), error) &&
                write_file(dir / "checksum.txt", std::format("{:016x}\n", checksum(end)), error);
     }
 }

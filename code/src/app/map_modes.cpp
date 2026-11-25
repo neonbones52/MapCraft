@@ -101,39 +101,24 @@ namespace mc
             return group_names(map, raster, font, std::move(owner), std::move(names));
         }
 
-        // The market of a province's region, 0 = none.
-        std::uint8_t market_of(const MapView& map, const GameData& game, std::uint32_t id)
+        // The trade node of a province's region, 0 = none.
+        std::uint8_t trade_node_of(const MapView& map, const GameData& game, std::uint32_t id)
         {
             const std::uint16_t r = map.region[id];
-            return r < game.state.regions.count ? game.state.regions.market[r] : std::uint8_t{ 0 };
+            return r < game.state.regions.count ? game.state.regions.trade_node[r] : std::uint8_t{ 0 };
         }
 
-        // A good's price on a market against its start: grey even, to blue at a tenth, to red at ten times.
-        ProvinceFill price_color(const GameData& game, std::uint8_t market, std::uint8_t good)
-        {
-            const MarketPrices& prices = game.state.prices;
-            if (market == 0 || good == 0 || good >= prices.goods || good >= game.content.goods_price.size()) {
-                return kNone;
-            }
-            const float start = game.content.goods_price[good];
-            const float t = start > 0.0f ? std::clamp(std::log10(prices.at(good, market) / start), -1.0f, 1.0f) : 0.0f;
-            const ProvinceFill even{ 0.62f, 0.62f, 0.60f, 1.0f };
-            const ProvinceFill cheap{ 0.20f, 0.42f, 0.85f, 1.0f };
-            const ProvinceFill dear{ 0.86f, 0.22f, 0.16f, 1.0f };
-            return t < 0.0f ? mix(even, cheap, -t) : mix(even, dear, t);
-        }
-
-        std::vector<MapLabel> market_names(const MapView& map, const GameData& game, const LabelRaster& raster,
-                                           const LabelFont& font)
+        std::vector<MapLabel> trade_node_names(const MapView& map, const GameData& game, const LabelRaster& raster,
+                                               const LabelFont& font)
         {
             std::vector<std::int32_t> owner(map.count, -1);
             for (std::uint32_t id = 1; id < map.count; ++id) {
-                const std::uint8_t m = market_of(map, game, id);
-                if (map.kind[id] == ProvinceKind::land && m != 0) {
-                    owner[id] = m;
+                const std::uint8_t n = trade_node_of(map, game, id);
+                if (map.kind[id] == ProvinceKind::land && n != 0) {
+                    owner[id] = n;
                 }
             }
-            return group_names(map, raster, font, std::move(owner), game.content.markets.name);
+            return group_names(map, raster, font, std::move(owner), game.content.trade_nodes.name);
         }
 
         std::vector<MapLabel> country_names(const MapView& map, const GameData& game, const LabelRaster& raster,
@@ -188,8 +173,7 @@ namespace mc
         case MapMode::regions: return "Regions";
         case MapMode::terrain_type: return "Terrain (logical)";
         case MapMode::rgo: return "RGO";
-        case MapMode::markets: return "Markets";
-        case MapMode::prices: return "Prices";
+        case MapMode::trade_nodes: return "Trade nodes";
         case MapMode::unfilled: return "Unfilled";
         }
         return "?";
@@ -204,9 +188,8 @@ namespace mc
             return has_game(game) ? country_names(map, *game, raster, font) : region_names(map, raster, font);
         case MapMode::regions:
             return region_names(map, raster, font);
-        case MapMode::markets:
-        case MapMode::prices:
-            return has_game(game) ? market_names(map, *game, raster, font) : std::vector<MapLabel>{};
+        case MapMode::trade_nodes:
+            return has_game(game) ? trade_node_names(map, *game, raster, font) : std::vector<MapLabel>{};
         default:
             return {};
         }
@@ -226,16 +209,15 @@ namespace mc
                 keys[id] = data ? game->state.provinces.owner[id] : map.region[id];
                 break;
             case MapMode::regions: keys[id] = map.region[id]; break;
-            case MapMode::markets:
-            case MapMode::prices: keys[id] = data ? market_of(map, *game, id) : 0; break;
+            case MapMode::trade_nodes: keys[id] = data ? trade_node_of(map, *game, id) : 0; break;
             default: break;
             }
         }
         return keys;
     }
 
-    void map_mode_colors(const MapView& map, const GameData* game, MapMode mode, std::uint8_t price_good,
-                         std::vector<ProvinceFill>* fills, std::vector<BorderStyle>* styles)
+    void map_mode_colors(const MapView& map, const GameData* game, MapMode mode, std::vector<ProvinceFill>* fills,
+                         std::vector<BorderStyle>* styles)
     {
         const bool data = has_game(game);
         const bool by_region = !data || mode == MapMode::regions;
@@ -268,9 +250,8 @@ namespace mc
             case MapMode::terrain: f = political; f.a = 0.0f; break;
             case MapMode::political: f = political; break;
             case MapMode::terrain_type: f = listed(game->content.terrain, p.terrain[id]); break;
-            case MapMode::rgo: f = listed(game->content.rgo_types.list, p.rgo[id]); break;
-            case MapMode::markets: f = listed(game->content.markets, market_of(map, *game, id)); break;
-            case MapMode::prices: f = price_color(*game, market_of(map, *game, id), price_good); break;
+            case MapMode::rgo: f = listed(game->content.rgo_types, p.rgo[id]); break;
+            case MapMode::trade_nodes: f = listed(game->content.trade_nodes, trade_node_of(map, *game, id)); break;
             case MapMode::unfilled: {
                 const int missing = missing_fields(p, id);
                 f = missing == 0 ? ProvinceFill{ 0.30f, 0.62f, 0.32f, 1.0f }
@@ -296,11 +277,11 @@ namespace mc
             auto dry = [](ProvinceKind k) { return k == ProvinceKind::land || k == ProvinceKind::wasteland; };
             if (dry(ka) && dry(kb)) {
                 // A wasteland has no region and no owner: next to it every land province shows its realm's edge.
-                const bool by_market = data && (mode == MapMode::markets || mode == MapMode::prices);
-                const bool apart = by_region   ? map.region[a] != map.region[b]
-                                   : by_market ? market_of(map, *game, a) != market_of(map, *game, b) || ka != kb
-                                               : game->state.provinces.owner[a] != game->state.provinces.owner[b] ||
-                                                     ka != kb;
+                const bool by_node = data && mode == MapMode::trade_nodes;
+                const bool apart = by_region ? map.region[a] != map.region[b]
+                                   : by_node ? trade_node_of(map, *game, a) != trade_node_of(map, *game, b) || ka != kb
+                                             : game->state.provinces.owner[a] != game->state.provinces.owner[b] ||
+                                                   ka != kb;
                 (*styles)[c] = apart ? BorderStyle::country : BorderStyle::province;
             } else if (ka == ProvinceKind::sea && kb == ProvinceKind::sea) {
                 (*styles)[c] = BorderStyle::sea;

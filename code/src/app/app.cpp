@@ -139,14 +139,6 @@ namespace mc
         }
     }
 
-    void App::set_price_good(std::uint8_t good)
-    {
-        if (good != price_good_) {
-            price_good_ = good;
-            fills_dirty_ = true;
-        }
-    }
-
     void App::set_map_mode(MapMode mode)
     {
         if (mode != map_mode_) {
@@ -175,12 +167,12 @@ namespace mc
     {
         ensure_camera(view_width, view_height);
         if (fills_dirty_ && !colors_dirty_) {
-            map_mode_colors(map_, game_, map_mode_, price_good_, &fills_, &styles_);
+            map_mode_colors(map_, game_, map_mode_, &fills_, &styles_);
             renderer_.set_colors(context, fills_, styles_);
         }
         fills_dirty_ = false;
         if (colors_dirty_) {
-            map_mode_colors(map_, game_, map_mode_, price_good_, &fills_, &styles_);
+            map_mode_colors(map_, game_, map_mode_, &fills_, &styles_);
             renderer_.set_colors(context, fills_, styles_);
             const auto started = std::chrono::steady_clock::now();
             labels_ = map_mode_labels(map_, game_, label_raster_, label_font_, map_mode_);

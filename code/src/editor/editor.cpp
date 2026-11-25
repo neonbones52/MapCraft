@@ -8,7 +8,6 @@
 
 #include "app/app.h"
 #include "view/map_view.h"
-#include "game/economy/ledger.h"
 
 namespace mc
 {
@@ -44,15 +43,6 @@ namespace mc
                 }
             }
             return true;
-        }
-
-        double population(const Pops& pops, std::uint32_t province)
-        {
-            double people = 0.0;
-            for (std::size_t t = 1; t < pops.types; ++t) {
-                people += pops.at(t, province);
-            }
-            return people;
         }
 
         std::string country_label(const CountryDefinitions& countries, std::size_t c)
@@ -91,7 +81,6 @@ namespace mc
 
     void Editor::changed()
     {
-        ledger::start(game_.content, &game_.state);   // the start money follows the pops
         dirty_ = true;
         app_.refresh_map_mode();
     }
@@ -165,7 +154,7 @@ namespace mc
         const MapView& map = app_.map();
         const std::uint32_t id = app_.hovered();
         const bool land = id != 0 && id < map.count && map.kind[id] == ProvinceKind::land;
-        if (app_.map_mode() == MapMode::markets && !ctrl && !shift && !alt) {
+        if (app_.map_mode() == MapMode::trade_nodes && !ctrl && !shift && !alt) {
             // One stroke (press, drag, release) is one undo step, taken at its first change.
             if ((input.pressed & mouse_left) != 0) {
                 last_painted_region_ = 0;
@@ -175,12 +164,12 @@ namespace mc
                 const std::uint16_t region = map.region[id];
                 Regions& regions = game_.state.regions;
                 if (region != last_painted_region_ && region < regions.count &&
-                    regions.market[region] != paint_market_) {
+                    regions.trade_node[region] != paint_node_) {
                     if (!stroke_edited_) {
                         begin_edit();
                         stroke_edited_ = true;
                     }
-                    regions.market[region] = static_cast<std::uint8_t>(paint_market_);
+                    regions.trade_node[region] = static_cast<std::uint8_t>(paint_node_);
                     changed();
                 }
                 last_painted_region_ = region;
@@ -327,68 +316,6 @@ namespace mc
         ImGui::EndTable();
     }
 
-    void Editor::rgo_info()
-    {
-        const GameData& game = game_;
-        const RgoTypes& rgos = game.content.rgo_types;
-        std::uint8_t rgo = 0;
-        if (!shared(game.state.provinces.rgo, selection_, &rgo) || rgo == 0) {
-            return;
-        }
-        std::string makes;
-        for (std::uint32_t o = rgos.output_first[rgo]; o < rgos.output_first[rgo + 1]; ++o) {
-            makes += std::format("{}{} {:g}", makes.empty() ? "" : ", ", game.content.goods.name[rgos.output_good[o]],
-                                 rgos.output_amount[o]);
-        }
-        ImGui::TextDisabled("worked by %s; a worker a day: %s",
-                            game.content.pop_types.list.name[rgos.workers[rgo]].c_str(), makes.c_str());
-    }
-
-    void Editor::edit_pops()
-    {
-        GameData& game = game_;
-        const DefinitionList& types = game.content.pop_types.list;
-        Pops& pops = game.state.pops;
-        if (types.size() <= 1) {
-            ImGui::TextDisabled("No pop types in data/common/pop_types.csv");
-            return;
-        }
-        double total = 0.0;
-        for (std::size_t t = 1; t < types.size(); ++t) {
-            double sum = 0.0;
-            bool same = true;
-            const float first = pops.at(t, selection_[0]);
-            for (const std::uint32_t id : selection_) {
-                sum += pops.at(t, id);
-                same = same && pops.at(t, id) == first;
-            }
-            total += sum;
-            ImGui::PushID(static_cast<int>(t));
-            // Typed: every selected province gets the number.
-            int typed = static_cast<int>(first);
-            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
-            if (ImGui::InputInt("##size", &typed, 0, 0)) {
-                begin_typing();
-                for (const std::uint32_t id : selection_) {
-                    pops.at(t, id) = static_cast<float>(std::max(typed, 0));
-                }
-                changed();
-            }
-            ImGui::SameLine();
-            ImGui::TextUnformatted(types.name[t].c_str());
-            if (!same) {
-                ImGui::SameLine();
-                ImGui::TextDisabled("%s, %.0f in all", kMixed, sum);
-            }
-            ImGui::PopID();
-        }
-        Money cash = 0;
-        for (const std::uint32_t id : selection_) {
-            cash += ledger::province_cash(game.state, id);
-        }
-        ImGui::TextDisabled("Population: %.0f, money at the start: %.2f emeralds", total, to_emeralds(cash));
-    }
-
     // ------------------------------------------------------------------------------------------------ panels
 
     void Editor::province_panel()
@@ -452,11 +379,7 @@ namespace mc
 
         ImGui::SeparatorText("Land");
         pick_listed("Terrain", game.content.terrain, game.state.provinces.terrain);
-        pick_listed("RGO", game.content.rgo_types.list, game.state.provinces.rgo);
-        rgo_info();
-
-        ImGui::SeparatorText("Pops");
-        edit_pops();
+        pick_listed("RGO", game.content.rgo_types, game.state.provinces.rgo);
         ImGui::End();
     }
 
@@ -495,11 +418,7 @@ namespace mc
                 owned.push_back(id);
             }
         }
-        double people = 0.0;
-        for (const std::uint32_t id : owned) {
-            people += population(game.state.pops, id);
-        }
-        ImGui::Text("%zu provinces, population %.0f", owned.size(), people);
+        ImGui::Text("%zu provinces", owned.size());
         const std::uint16_t capital = states.capital[country_];
         ImGui::Text("Capital: %s", capital ? std::string(map.province_name(capital)).c_str() : "-");
         ImGui::BeginDisabled(owned.empty());
@@ -556,35 +475,35 @@ namespace mc
         ImGui::End();
     }
 
-    void Editor::market_panel()
+    void Editor::trade_node_panel()
     {
         const GameData& game = game_;
-        const DefinitionList& markets = game.content.markets;
+        const DefinitionList& nodes = game.content.trade_nodes;
         const MapView& map = app_.map();
         ImGui::SetNextWindowPos(ImVec2(440, 10), ImGuiCond_FirstUseEver);
-        if (!ImGui::Begin("Markets", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (!ImGui::Begin("Trade nodes", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::End();
             return;
         }
-        if (markets.size() <= 1) {
-            ImGui::TextDisabled("No markets in data/common/markets.csv");
+        if (nodes.size() <= 1) {
+            ImGui::TextDisabled("No trade nodes in data/common/trade_nodes.csv");
             ImGui::End();
             return;
         }
-        paint_market_ = std::clamp(paint_market_, 0, static_cast<int>(markets.size()) - 1);
-        std::vector<std::size_t> regions_of(markets.size(), 0);
+        paint_node_ = std::clamp(paint_node_, 0, static_cast<int>(nodes.size()) - 1);
+        std::vector<std::size_t> regions_of(nodes.size(), 0);
         for (std::uint32_t r = 1; r < game.state.regions.count; ++r) {
-            ++regions_of[game.state.regions.market[r]];
+            ++regions_of[game.state.regions.trade_node[r]];
         }
         ImGui::TextUnformatted("Click or drag on the map: the regions go to");
-        for (std::size_t m = 0; m < markets.size(); ++m) {
-            ImGui::PushID(static_cast<int>(m));
-            if (m != 0) {
-                swatch(markets.color[m]);
+        for (std::size_t n = 0; n < nodes.size(); ++n) {
+            ImGui::PushID(static_cast<int>(n));
+            if (n != 0) {
+                swatch(nodes.color[n]);
             }
-            const std::string label = std::format("{} ({} regions)", m == 0 ? "none" : markets.name[m], regions_of[m]);
-            if (ImGui::RadioButton(label.c_str(), paint_market_ == static_cast<int>(m))) {
-                paint_market_ = static_cast<int>(m);
+            const std::string label = std::format("{} ({} regions)", n == 0 ? "none" : nodes.name[n], regions_of[n]);
+            if (ImGui::RadioButton(label.c_str(), paint_node_ == static_cast<int>(n))) {
+                paint_node_ = static_cast<int>(n);
             }
             ImGui::PopID();
         }
@@ -592,38 +511,9 @@ namespace mc
         if (id != 0 && id < map.count && map.kind[id] == ProvinceKind::land) {
             ImGui::Separator();
             const std::uint16_t region = map.region[id];
-            const std::uint8_t m = region < game.state.regions.count ? game.state.regions.market[region] : 0;
+            const std::uint8_t n = region < game.state.regions.count ? game.state.regions.trade_node[region] : 0;
             ImGui::TextDisabled("%s: %s", std::string(map.region_name(region)).c_str(),
-                                m == 0 ? "no market" : markets.name[m].c_str());
-        }
-        ImGui::End();
-    }
-
-    void Editor::price_panel()
-    {
-        const DefinitionList& goods = game_.content.goods;
-        ImGui::SetNextWindowPos(ImVec2(440, 10), ImGuiCond_FirstUseEver);
-        if (!ImGui::Begin("Prices", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::End();
-            return;
-        }
-        ImGui::TextDisabled("The start: every market at goods.csv price (they move in the game)");
-        if (app_.price_good() == 0) {
-            for (std::size_t g = 1; g < goods.size(); ++g) {
-                if (goods.key[g] != kMoneyGood) {
-                    app_.set_price_good(static_cast<std::uint8_t>(g));
-                    break;
-                }
-            }
-        }
-        for (std::size_t g = 1; g < goods.size(); ++g) {
-            if (goods.key[g] == kMoneyGood) {
-                continue;
-            }
-            const std::string label = std::format("{} ({:g})", goods.name[g], game_.content.goods_price[g]);
-            if (ImGui::RadioButton(label.c_str(), app_.price_good() == g)) {
-                app_.set_price_good(static_cast<std::uint8_t>(g));
-            }
+                                n == 0 ? "no trade node" : nodes.name[n].c_str());
         }
         ImGui::End();
     }
@@ -699,9 +589,7 @@ namespace mc
             ImGui::TextDisabled("%s", std::string(map.region_name(map.region[id])).c_str());
             ImGui::Text("Owner: %s", country_label(game.content.countries, p.owner[id]).c_str());
             ImGui::Text("Terrain: %s", p.terrain[id] ? game.content.terrain.name[p.terrain[id]].c_str() : "-");
-            ImGui::Text("RGO: %s", p.rgo[id] ? game.content.rgo_types.list.name[p.rgo[id]].c_str() : "-");
-            ImGui::Text("Population: %.0f", population(game.state.pops, id));
-            ImGui::Text("Money: %.2f emeralds", to_emeralds(ledger::province_cash(game.state, id)));
+            ImGui::Text("RGO: %s", p.rgo[id] ? game.content.rgo_types.name[p.rgo[id]].c_str() : "-");
         }
         ImGui::EndTooltip();
     }
@@ -738,11 +626,8 @@ namespace mc
         province_panel();
         country_panel(view_width, view_height);
         map_mode_panel();
-        if (app_.map_mode() == MapMode::markets) {
-            market_panel();
-        }
-        if (app_.map_mode() == MapMode::prices) {
-            price_panel();
+        if (app_.map_mode() == MapMode::trade_nodes) {
+            trade_node_panel();
         }
         status_panel(view_width, view_height);
         hover_tooltip();

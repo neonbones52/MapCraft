@@ -10,7 +10,6 @@ namespace mc
     // right. Countries are chosen by clicking the map (app/shell.h).
     void country_select_screen(const ScreenContext& ui, UiCommands* commands);
 
-    // The owner, name, money and needs met of the province under the cursor, beside the cursor (both phases; owned
-    // provinces only).
+    // The owner and name of the province under the cursor, beside the cursor (both phases; owned provinces only).
     void country_tooltip(const ScreenContext& ui, std::uint32_t province, float cursor_x, float cursor_y);
 }

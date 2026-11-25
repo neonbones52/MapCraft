@@ -49,9 +49,6 @@ namespace mc
         void refresh_map_mode() { colors_dirty_ = true; }
         // After the state moved on (a day passed): only the mode's colours are rebuilt, the names stay.
         void refresh_colors() { fills_dirty_ = true; }
-        // The good the prices mode shows (Content::goods index).
-        void set_price_good(std::uint8_t good);
-        [[nodiscard]] std::uint8_t price_good() const { return price_good_; }
         // Provinces drawn as selected (editor): one flag per province id, empty = none.
         void set_selection(std::vector<std::uint8_t> selected);
         [[nodiscard]] std::uint32_t hovered() const { return hovered_; }
@@ -74,7 +71,6 @@ namespace mc
         MapMode map_mode_ = MapMode::political;
         bool colors_dirty_ = true;
         bool fills_dirty_ = false;
-        std::uint8_t price_good_ = 0;
         std::vector<ProvinceFill> fills_;
         std::vector<BorderStyle> styles_;
         bool camera_ready_ = false;

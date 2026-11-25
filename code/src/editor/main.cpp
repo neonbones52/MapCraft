@@ -1,5 +1,5 @@
 // Province editor: the map as in mapcraft.exe, with Dear ImGui panels to set each province's owner, controller, cores,
-// terrain, RGO and pops; saves data/setup (docs/GAMEDATA.md).
+// terrain and RGO, and each region's trade node; saves data/setup (docs/GAMEDATA.md).
 //   mapcraft_editor [--check]
 //   --check: load the data, log errors and warnings (mapcraft_editor.log), exit 1 on an error; no window.
 

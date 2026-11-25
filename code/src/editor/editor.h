@@ -16,7 +16,7 @@ namespace mc
     // The province editor over the map (mapcraft_editor.exe): select provinces on the map, set their fields in ImGui
     // panels, undo, save to data/setup (docs/GAMEDATA.md).
     //   click: select one; Ctrl+click: toggle; Shift+click or Shift+drag: add; Alt+click: the whole region
-    //   in the Markets map mode, click or drag: put the regions under the cursor into the market picked in its panel
+    //   in the Trade nodes map mode, click or drag: put the regions under the cursor into the node picked in its panel
     //   Ctrl+S save, Ctrl+Z undo, Ctrl+Y / Ctrl+Shift+Z redo, Esc clear the selection
     class Editor
     {
@@ -49,8 +49,7 @@ namespace mc
         void province_panel();
         void country_panel(float view_width, float view_height);
         void map_mode_panel();
-        void market_panel();        // the Markets map mode: the market to paint regions with
-        void price_panel();         // the Prices map mode: the good it shows
+        void trade_node_panel();    // the Trade nodes map mode: the node to paint regions with
         void status_panel(float view_width, float view_height);
         void hover_tooltip();
 
@@ -58,8 +57,6 @@ namespace mc
         void pick_country(const char* label, Column<std::uint16_t>& column, bool owner);
         void pick_listed(const char* label, const DefinitionList& list, Column<std::uint8_t>& column);
         void edit_cores();
-        void rgo_info();            // who works the selection's RGO and what it makes
-        void edit_pops();           // each pop type's size, typed for the whole selection
 
         App& app_;
         GameData& game_;
@@ -74,9 +71,9 @@ namespace mc
         int country_ = 1;                          // country panel's country
         std::string message_;                      // last save / load message
         std::uint32_t last_painted_ = 0;
-        int paint_market_ = 0;                     // the market the Markets mode paints with, 0 = none (clears)
-        std::uint16_t last_painted_region_ = 0;    // the region the current market stroke painted last
-        bool stroke_edited_ = false;               // the current market stroke has changed something (undo taken)
+        int paint_node_ = 0;                       // the node the Trade nodes mode paints with, 0 = none (clears)
+        std::uint16_t last_painted_region_ = 0;    // the region the current node stroke painted last
+        bool stroke_edited_ = false;               // the current node stroke has changed something (undo taken)
         unsigned typing_item_ = 0;                 // ImGui id of the field being typed into, 0 = none
     };
 }

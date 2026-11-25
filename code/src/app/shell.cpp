@@ -119,9 +119,8 @@ namespace mc
             toggle_pause();
         }
         // Before the map and the UI draw: they show today's state.
-        if (session_.playing() && pace_.advance(dt, [this](std::uint32_t days) { world_.advance_days(days); }) > 0 &&
-            app_.map_mode() == MapMode::prices) {
-            app_.refresh_colors();   // the prices moved
+        if (session_.playing()) {
+            pace_.advance(dt, [this](std::uint32_t days) { world_.advance_days(days); });
         }
         if (fly_) {
             // After any pending camera reset, or the reset would cancel the flight.
@@ -141,8 +140,7 @@ namespace mc
             select(world_.state().provinces.owner[app_.hovered()]);
         }
 
-        const std::uint8_t price_good = app_.map_mode() == MapMode::prices ? app_.price_good() : 0;
-        const UiCommands commands = ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), price_good, input);
+        const UiCommands commands = ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), input);
         ui_.render(context, target);   // the frame order: the map above, then the UI over it
         if (commands.play) {
             play();
@@ -152,12 +150,6 @@ namespace mc
         }
         if (commands.toggle_pause) {
             toggle_pause();
-        }
-        if (commands.show_prices > 0) {
-            app_.set_price_good(static_cast<std::uint8_t>(commands.show_prices));
-            app_.set_map_mode(MapMode::prices);
-        } else if (commands.show_prices == 0) {
-            app_.set_map_mode(MapMode::political);
         }
         if (commands.new_game) {
             new_game();
