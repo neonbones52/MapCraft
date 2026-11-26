@@ -2,12 +2,14 @@
 
 #include <array>
 #include <filesystem>
+#include <span>
 #include <vector>
 #include <string>
 
 #include <d3d11.h>
 
 #include "view/camera.h"
+#include "app/army_figures.h"
 #include "app/map_modes.h"
 #include "view/map_view.h"
 #include "render/map_renderer.h"
@@ -52,6 +54,12 @@ namespace mc
         // Provinces drawn as selected (editor): one flag per province id, empty = none.
         void set_selection(std::vector<std::uint8_t> selected);
         [[nodiscard]] std::uint32_t hovered() const { return hovered_; }
+        // This frame's army plates: the screen point under each army's figure (app/army_figures.h), and how much
+        // they show (the houses' fade: 0 hidden, 1 whole).
+        [[nodiscard]] ArmyMarkers army_markers() const
+        {
+            return { armies_.markers(), model_fades_[static_cast<std::size_t>(ModelSet::Group::settlements)] };
+        }
 
     private:
         [[nodiscard]] std::uint32_t province_under(const CameraView& view, float screen_x, float screen_y) const;
@@ -75,6 +83,8 @@ namespace mc
         std::vector<BorderStyle> styles_;
         bool camera_ready_ = false;
         double time_ = 0.0;   // s, the clock of animated block textures (stopped when zoomed out)
+        ArmyFigures armies_;
+        double figure_time_ = 0.0;   // s, the clock of the figures' idle movement
         std::uint32_t hovered_ = 0;
     };
 }

@@ -45,7 +45,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show)
         mc::log::error("{}", error);
         MessageBoxA(window.hwnd(), error.c_str(), "MapCraft: game data", MB_ICONWARNING);
     }
-    shell.init(target.device(), target.context(), MC_DEFAULT_FLAGS);
+    shell.init(target.device(), target.context(), MC_DEFAULT_FLAGS, MC_DEFAULT_FONTS);
     window.show(show);
 
     auto previous = std::chrono::steady_clock::now();

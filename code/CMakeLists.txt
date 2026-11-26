@@ -57,9 +57,11 @@ add_library(mc_game STATIC
     src/minecraft/nbt.cpp
     src/minecraft/blocks.cpp
     src/minecraft/voxels.cpp
+    src/minecraft/entity_models.cpp
     src/render/map_renderer.cpp
     src/render/terrain.cpp
     src/render/models.cpp
+    src/render/figures.cpp
     src/render/d3d_util.cpp
     src/render/labels.cpp
     src/render/shaders.cpp
@@ -68,6 +70,7 @@ add_library(mc_game STATIC
     src/app/terrain_look.cpp
     src/app/biome_table.cpp
     src/app/scenery.cpp
+    src/app/army_figures.cpp
     src/app/shell.cpp
     src/app/bindings.cpp
     src/ui/imgui_layer.cpp
@@ -76,6 +79,7 @@ add_library(mc_game STATIC
     src/ui/widgets.cpp
     src/ui/game_ui.cpp
     src/ui/screens/country_select.cpp
+    src/ui/screens/army_plates.cpp
     src/ui/screens/player_hud.cpp
     src/ui/screens/province_tooltip.cpp
     src/ui/screens/time_bar.cpp
@@ -104,7 +108,7 @@ add_dependencies(mc_host_win32 mc_layers_lint)
 add_executable(mapcraft WIN32 src/host/win32/main.cpp)
 target_link_libraries(mapcraft PRIVATE mc_game mc_host_win32)
 target_compile_definitions(mapcraft PRIVATE MC_DEFAULT_MAP="${MC_ROOT}/build/map/world.mcmap"
-    MC_DEFAULT_DATA="${MC_ROOT}/data" MC_DEFAULT_FLAGS="${MC_ROOT}/assets/flags")
+    MC_DEFAULT_DATA="${MC_ROOT}/data" MC_DEFAULT_FLAGS="${MC_ROOT}/assets/flags" MC_DEFAULT_FONTS="${MC_ROOT}/fonts")
 
 # The headless simulator (docs/SIMULATION.md, "Headless-симулятор"): mc_sim alone, no window, no graphics.
 add_executable(mapcraft_sim

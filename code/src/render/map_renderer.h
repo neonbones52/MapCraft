@@ -10,6 +10,7 @@
 #include <wrl/client.h>
 
 #include "view/camera.h"
+#include "render/figures.h"
 #include "render/labels.h"
 #include "render/models.h"
 #include "render/terrain.h"
@@ -27,6 +28,9 @@ namespace mc
         float mode_names_alpha = 1.0f;       // the map mode's names (countries, regions)
         float province_names_alpha = 0.0f;   // the provinces' names, instead of those when zoomed in
         std::array<float, ModelSet::kGroups> model_fades{};   // per model group: 0 hidden, 1 whole (zoomed in)
+        std::span<const FigureDraw> figures;            // the figures on the map this frame (render/figures.h)
+        std::span<const FigureMatrix> figure_matrices;
+        float figure_fade = 0.0f;   // 0 hidden, 1 whole: the houses' fade (the settlements group)
     };
 
     // RGBA per province: rgb colour, a = how strongly it covers the land (0 for water in political modes).
@@ -47,7 +51,7 @@ namespace mc
     };
 
     // The map (docs/RENDER.md): the voxel surface (render/terrain.h) with the map mode's colour applied in its pixel
-    // shader as in EU4, the models standing on it (render/models.h), borders as strips along province outlines lying
+    // shader as in EU4, the models standing on it (render/models.h), the animated figures (render/figures.h), borders as strips along province outlines lying
     // on the blocks, and the map names. Sets every
     // piece of pipeline state it uses, so it can run on a context whose state was cleared; keeps its own depth
     // buffer.
@@ -55,7 +59,7 @@ namespace mc
     {
     public:
         bool init(ID3D11Device* device, const MapView& map, const TerrainLook& look, const ModelSet& models,
-                  std::string* error);
+                  const FigureSet& figures, std::string* error);
         // Map mode data: one fill per province id, one style per border chain (MapView::border_chains order).
         void set_colors(ID3D11DeviceContext* context, std::span<const ProvinceFill> fills,
                         std::span<const BorderStyle> styles);
@@ -88,6 +92,7 @@ namespace mc
         ComPtr<ID3D11ShaderResourceView> province_ids_;
         TerrainLayer terrain_;
         ModelLayer models_;
+        FigureLayer figures_;
         ComPtr<ID3D11Buffer> fills_buffer_;
         ComPtr<ID3D11ShaderResourceView> fills_;
         ComPtr<ID3D11Buffer> selection_buffer_;

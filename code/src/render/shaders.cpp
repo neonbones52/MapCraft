@@ -448,6 +448,80 @@ float4 ps_model(ModelOut input) : SV_Target
     return float4(color, 1.0);
 }
 
+// ---------------------------------------------------------------------------------------------------- figures
+
+struct FigureVertex
+{
+    float3 pos;      // in its part's space
+    float3 normal;
+    float2 uv;
+    uint   layer_part;   // texture layer | part << 16
+};
+struct FigureMatrix
+{
+    float4 r0;
+    float4 r1;
+    float4 r2;
+};
+StructuredBuffer<FigureVertex> figure_vertices  : register(t22);
+StructuredBuffer<uint>         figure_instances : register(t23);   // per figure: its first part matrix
+StructuredBuffer<FigureMatrix> figure_matrices  : register(t24);
+Texture2DArray<float4>         figure_layers    : register(t25);
+
+cbuffer FigureDraw : register(b4)
+{
+    uint  figure_first;          // the draw's first instance in figure_instances
+    uint  figure_first_vertex;   // its model's first vertex
+    float figure_fade;           // 0 hidden, 1 whole
+    uint  figure_pad;
+};
+
+struct FigureOut
+{
+    float4 pos   : SV_Position;
+    float2 uv    : TEXCOORD0;
+    float2 map   : TEXCOORD1;
+    nointerpolation uint layer : TEXCOORD2;
+    float shade  : TEXCOORD3;
+    nointerpolation float phase : TEXCOORD4;   // the figure's own offset into the dither
+};
+
+FigureOut vs_figure(uint vid : SV_VertexID, uint iid : SV_InstanceID)
+{
+    FigureVertex v = figure_vertices[figure_first_vertex + vid];
+    uint first = figure_instances[figure_first + iid];
+    FigureMatrix m = figure_matrices[first + (v.layer_part >> 16)];
+    FigureMatrix root = figure_matrices[first];
+    float4 p = float4(v.pos, 1.0);
+    float3 world = float3(dot(m.r0, p), dot(m.r1, p), dot(m.r2, p));
+    float3 n = normalize(float3(dot(m.r0.xyz, v.normal), dot(m.r1.xyz, v.normal), dot(m.r2.xyz, v.normal)));
+    FigureOut o;
+    o.pos = mul(float4(world, 1.0), view_proj);
+    o.uv = v.uv;
+    o.map = float2(world.x, -world.z);
+    o.layer = v.layer_part & 0xFFFF;
+    // Minecraft's directional shade (top 1, bottom 0.5, north and south 0.8, east and west 0.6), by the turned normal.
+    o.shade = n.x * n.x * 0.6 + n.z * n.z * 0.8 + n.y * n.y * (n.y > 0.0 ? 1.0 : 0.5);
+    o.phase = frac(sin(dot(float2(root.r0.w, root.r2.w), float2(12.9898, 78.233))) * 43758.5453);
+    return o;
+}
+
+float4 ps_figure(FigureOut input) : SV_Target
+{
+    float4 texel = figure_layers.Sample(s_point, float3(input.uv, input.layer));
+    clip(texel.a - 0.5);
+    if (figure_fade < 1.0) {   // fading: a share figure_fade of the pixels stays, as the models' (ps_model)
+        static const float BAYER[16] = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
+        uint2 p = uint2(input.pos.xy) & 3;
+        clip(figure_fade - frac((BAYER[p.y * 4 + p.x] + 0.5) / 16.0 + input.phase));
+    }
+    float3 color = texel.rgb * input.shade;
+    float2 m = input.map;
+    float edge = min(min(m.x, m.y), min(map_size.x - m.x, map_size.y - m.y));
+    color = lerp(color, FOG_COLOR, 1.0 - smoothstep(0.0, FOG_WIDTH, edge));
+    return float4(color, 1.0);
+}
+
 // ---------------------------------------------------------------------------------------------------- borders
 
 struct BorderVertex

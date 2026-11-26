@@ -25,9 +25,10 @@ namespace mc
         return loaded;
     }
 
-    void Shell::init(ID3D11Device* device, ID3D11DeviceContext* context, std::filesystem::path flags)
+    void Shell::init(ID3D11Device* device, ID3D11DeviceContext* context, std::filesystem::path flags,
+                     const std::filesystem::path& fonts)
     {
-        ui_.init(device, context, std::move(flags));
+        ui_.init(device, context, std::move(flags), fonts);
         new_game();
     }
 
@@ -140,7 +141,8 @@ namespace mc
             select(world_.state().provinces.owner[app_.hovered()]);
         }
 
-        const UiCommands commands = ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), input);
+        const UiCommands commands =
+            ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), app_.army_markers(), input);
         ui_.render(context, target);   // the frame order: the map above, then the UI over it
         if (commands.play) {
             play();

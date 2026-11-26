@@ -110,13 +110,14 @@ namespace mc
         std::span<const float> province_glyphs;
         std::span<const std::uint16_t> province_glyph_owner;   // per glyph: the province it names
 
-        // Map px points of a province (positions): its city, and its name's anchor.
+        // Map px points of a province (positions): its city, where its armies stand, and its name's anchor.
         struct Point
         {
             float x = 0.0f;
             float y = 0.0f;
         };
         [[nodiscard]] Point city_position(std::uint32_t id) const { return position(id, 0); }
+        [[nodiscard]] Point unit_position(std::uint32_t id) const { return position(id, 1); }
         [[nodiscard]] Point text_position(std::uint32_t id) const { return position(id, 2); }
 
     private:

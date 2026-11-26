@@ -4,6 +4,8 @@
 
 #include "game/calendar.h"
 
+struct ImFont;
+
 namespace mc
 {
     class MapView;
@@ -27,6 +29,7 @@ namespace mc
         float height = 0.0f;
         float scale = 1.0f;    // UI scale (ImGuiLayer::scale)
         Date date;             // the world's today
+        ImFont* bold = nullptr;   // the plates' font (ImGuiLayer::bold)
     };
 
     // What the player asked for this frame; app/shell.h carries it out on the Session and the Pace (screens change

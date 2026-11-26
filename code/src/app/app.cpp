@@ -68,6 +68,12 @@ namespace mc
         log::info("models: {} meshes, {} vertices, {} textures, {} placed, {:.0f} ms", models.meshes.size(),
                   models.vertices.size(), models.layer_count, models.instances.size(),
                   std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - models_started).count());
+        FigureSet figures;
+        if (!armies_.init(assets, &figures, error)) {
+            return false;
+        }
+        log::info("army figures: {} models, {} vertices, {} textures", figures.models.size(), figures.vertices.size(),
+                  figures.layer_count);
         // The camera picks and zooms on the top of the blocks (water or ground).
         camera_.set_ground([this](float map_x, float map_y) {
             const float size = static_cast<float>(map_.block_size);
@@ -89,7 +95,7 @@ namespace mc
         label_font_.build(map_);
         log::info("label raster: {} provinces with pixels, {:.0f} ms", label_raster_.used.size(),
                   std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
-        if (!renderer_.init(device, map_, look, models, error)) {
+        if (!renderer_.init(device, map_, look, models, figures, error)) {
             return false;
         }
         log::info("blocks: {} face runs", renderer_.terrain_quads());
@@ -212,6 +218,12 @@ namespace mc
             time_ += dt;
         }
         view.time = static_cast<float>(std::fmod(time_, 3600.0));
+        figure_time_ = std::fmod(figure_time_ + dt, 3600.0);
+        armies_.update(map_, game_, static_cast<float>(figure_time_), view.camera);
+        view.figures = armies_.draws();
+        view.figure_matrices = armies_.matrices();
+        // The armies come and go with the houses (the user's decision), plates and all.
+        view.figure_fade = model_fades_[static_cast<std::size_t>(ModelSet::Group::settlements)];
         const float step = dt / kNamesFade;
         province_names_ = std::clamp(province_names_ + (provinces_shown ? step : -step), 0.0f, 1.0f);
         view.mode_names_alpha = 1.0f - province_names_;

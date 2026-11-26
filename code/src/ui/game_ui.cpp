@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "game/session.h"
 #include "game/world.h"
+#include "ui/screens/army_plates.h"
 #include "ui/screens/country_select.h"
 #include "ui/screens/player_hud.h"
 #include "ui/screens/province_tooltip.h"
@@ -10,9 +11,10 @@
 
 namespace mc
 {
-    bool GameUi::init(ID3D11Device* device, ID3D11DeviceContext* context, std::filesystem::path flags)
+    bool GameUi::init(ID3D11Device* device, ID3D11DeviceContext* context, std::filesystem::path flags,
+                      const std::filesystem::path& fonts)
     {
-        ready_ = layer_.init(device, context);
+        ready_ = layer_.init(device, context, fonts);
         if (!ready_) {
             log::error("ImGui DX11 backend failed: the game runs without its UI");
         }
@@ -30,14 +32,15 @@ namespace mc
     }
 
     UiCommands GameUi::build(const MapView& map, const World& world, const Session& session, const Pace& pace,
-                             std::uint32_t hovered, const Input& input)
+                             std::uint32_t hovered, const ArmyMarkers& armies, const Input& input)
     {
         UiCommands commands;
         if (!ready_) {
             return commands;
         }
-        const ScreenContext ui{ map,    world.content(), world.state(), world.loaded(), session, pace, flags_,
-                                width_, height_,         layer_.scale(), world.date() };
+        const ScreenContext ui{ map,    world.content(), world.state(),  world.loaded(), session,      pace, flags_,
+                                width_, height_,         layer_.scale(), world.date(),   layer_.bold() };
+        army_plates(ui, armies);
         switch (session.phase()) {
         case Session::Phase::choose_country:
             country_select_screen(ui, &commands);

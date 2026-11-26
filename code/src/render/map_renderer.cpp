@@ -100,7 +100,7 @@ namespace mc
     }
 
     bool MapRenderer::init(ID3D11Device* device, const MapView& map, const TerrainLook& look, const ModelSet& models,
-                           std::string* error)
+                           const FigureSet& figures, std::string* error)
     {
         device_ = device;
         map_width_ = static_cast<float>(map.width);
@@ -121,6 +121,7 @@ namespace mc
         return create_shaders(error) && create_borders(map, error) && create_states(error) &&
                terrain_.init(device, map, look, error) &&
                models_.init(device, models, static_cast<float>(map.width), static_cast<float>(map.height), error) &&
+               figures_.init(device, figures, error) &&
                texture(device, map.width, map.height, DXGI_FORMAT_R16_UINT, map.pixel_province.data(), map.width * 2,
                        &province_ids_, "province ids", error) &&
                structured(device, no_fill.size(), no_fill.data(), true, &fills_buffer_, &fills_, "fills", error) &&
@@ -435,9 +436,14 @@ namespace mc
         labels_.draw(context, view.mode_names_alpha);
         province_labels_.draw(context, view.province_names_alpha);
 
-        ID3D11ShaderResourceView* nulls[22] = {};
-        context->VSSetShaderResources(0, 22, nulls);
-        context->PSSetShaderResources(0, 22, nulls);
+        // The army figures over the names (the user's decision): depth-tested against the map, not the names.
+        context->OMSetBlendState(opaque_.Get(), nullptr, 0xFFFFFFFF);
+        context->OMSetDepthStencilState(depth_write_.Get(), 0);
+        figures_.draw(context, view.figures, view.figure_matrices, view.figure_fade);
+
+        ID3D11ShaderResourceView* nulls[26] = {};
+        context->VSSetShaderResources(0, 26, nulls);
+        context->PSSetShaderResources(0, 26, nulls);
         ID3D11RenderTargetView* no_target = nullptr;
         context->OMSetRenderTargets(1, &no_target, nullptr);
     }

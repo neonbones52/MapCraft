@@ -8,6 +8,8 @@
 #include <imgui.h>
 #include <imgui_impl_dx11.h>
 
+#include "core/log.h"
+
 namespace mc
 {
     namespace
@@ -43,7 +45,7 @@ namespace mc
         ImGui::DestroyContext(context_);
     }
 
-    bool ImGuiLayer::init(ID3D11Device* device, ID3D11DeviceContext* context)
+    bool ImGuiLayer::init(ID3D11Device* device, ID3D11DeviceContext* context, const std::filesystem::path& fonts)
     {
         context_ = ImGui::CreateContext();
         ImGui::SetCurrentContext(context_);
@@ -53,12 +55,24 @@ namespace mc
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;   // the host owns the OS cursor
         io.MouseDrawCursor = false;
         set_style();
-        const char* font = "C:\\Windows\\Fonts\\segoeui.ttf";
-        if (std::filesystem::exists(font)) {
-            io.Fonts->AddFontFromFileTTF(font, kFontSize);
-        } else {
-            io.Fonts->AddFontDefault();
+        const std::filesystem::path text = fonts / "ChakraPetch-Medium.ttf";
+        const std::filesystem::path bold = fonts / "ChakraPetch-Bold.ttf";
+        const char* fallback = "C:\\Windows\\Fonts\\segoeui.ttf";
+        ImFont* font = nullptr;
+        if (std::filesystem::exists(text)) {
+            font = io.Fonts->AddFontFromFileTTF(text.string().c_str(), kFontSize);
+        } else if (std::filesystem::exists(fallback)) {
+            log::warn("ui font: no {}, Segoe UI instead", text.string());
+            font = io.Fonts->AddFontFromFileTTF(fallback, kFontSize);
         }
+        if (font == nullptr) {
+            font = io.Fonts->AddFontDefault();
+        }
+        bold_ = std::filesystem::exists(bold) ? io.Fonts->AddFontFromFileTTF(bold.string().c_str(), kFontSize) : nullptr;
+        if (bold_ == nullptr) {
+            bold_ = font;
+        }
+        io.FontDefault = font;
         ImGui::GetStyle().FontSizeBase = kFontSize;
         g_base_style.FontSizeBase = kFontSize;
         backend_ = ImGui_ImplDX11_Init(device, context);
