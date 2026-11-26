@@ -60,15 +60,18 @@ namespace mc
         heap_size_ = 0;
         arrived_.assign(kArmySlots / 64, 0);
         army_step_.assign(kArmySlots, 0.0f);
+        army_after_.assign(kArmySlots, 0);
     }
 
     void Movement::rebuild_steps(const WorldState& state)
     {
         const Armies& armies = state.armies;
         std::fill(army_step_.begin(), army_step_.end(), 0.0f);
+        std::fill(army_after_.begin(), army_after_.end(), std::uint16_t{ 0 });
         for_each_alive(armies.alive, [&](std::uint32_t a) {
             if (armies.next[a] != 0) {
                 army_step_[a] = step_cost(armies.province[a], armies.next[a]);
+                look_ahead(armies, static_cast<std::uint16_t>(a));
             }
         });
     }
@@ -93,8 +96,14 @@ namespace mc
         army_step_[slot] = step_cost(from, to);
     }
 
+    void Movement::look_ahead(const Armies& armies, std::uint16_t slot)
+    {
+        army_after_[slot] = first_step(armies.next[slot], armies.destination[slot]);   // 0 if next is the destination
+    }
+
     void Movement::stop(Armies& armies, std::uint16_t slot)
     {
+        army_after_[slot] = 0;
         armies.next[slot] = 0;
         armies.destination[slot] = 0;
         armies.progress[slot] = 0.0f;
@@ -112,6 +121,7 @@ namespace mc
                 return false;
             }
             armies.destination[slot] = destination;
+            look_ahead(armies, slot);
             return true;
         }
         // Standing, or free to turn: from the province it is in.
@@ -127,6 +137,7 @@ namespace mc
             begin_step(armies, slot, here, step);
         }
         armies.destination[slot] = destination;
+        look_ahead(armies, slot);
         return true;
     }
 
@@ -165,13 +176,14 @@ namespace mc
                 const std::uint16_t here = armies.next[s];
                 const float done = army_step_[s];
                 armies.province[s] = here;
-                const std::uint16_t step = here == armies.destination[s] ? 0 : first_step(here, armies.destination[s]);
+                const std::uint16_t step = army_after_[s];   // found when this step began
                 if (step == 0) {
                     stop(armies, s);
                 } else {
                     armies.next[s] = step;
                     armies.progress[s] -= done;
                     army_step_[s] = step_cost(here, step);
+                    look_ahead(armies, s);
                 }
             }
         }

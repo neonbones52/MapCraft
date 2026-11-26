@@ -21,7 +21,11 @@ namespace mc
     //   the graph    the land provinces' steps (wasteland, seas and lakes are not crossed): to each land neighbour,
     //                the px between the two provinces' unit points times the movement_cost (data/common/terrain.csv)
     //                of the province the step goes into
-    //   the steps    per army slot, the cost of the step it is on (0 standing)
+    //   the steps    per army slot, the cost of the step it is on (0 standing) and the step after it (the
+    //                province the march goes on to from the next one; 0 where it ends there): found one step ahead,
+    //                when a step begins, so the map's figure walks on through a province without a stop, and
+    //                taken as the next step when the army arrives (the graph does not change, so it is exactly the
+    //                step a search would find then)
     //   the search   the working columns of the path search, reused (no allocation in a day)
     // An army on a step stays in its province until the step's progress reaches its cost; then it is in the next
     // province, the rest of the progress carried into the following step (EU4's ProgressMovementOneDay), or 0 where
@@ -49,11 +53,15 @@ namespace mc
         [[nodiscard]] float step_cost(std::uint16_t from, std::uint16_t to) const;
         // The cost of the step the army in `slot` is on; 0 while it stands.
         [[nodiscard]] float army_step(std::uint16_t slot) const { return army_step_[slot]; }
+        // The province the march of the army in `slot` goes on to after its next one; 0 if it ends there.
+        [[nodiscard]] std::uint16_t army_after(std::uint16_t slot) const { return army_after_[slot]; }
 
     private:
         // The first step from `from` on the way to `to`: the neighbour, or 0 if there is no way (or from == to).
         [[nodiscard]] std::uint16_t first_step(std::uint16_t from, std::uint16_t to);
         void begin_step(Armies& armies, std::uint16_t slot, std::uint16_t from, std::uint16_t to);
+        // The step after the next, for the army's destination as it is now.
+        void look_ahead(const Armies& armies, std::uint16_t slot);
         void stop(Armies& armies, std::uint16_t slot);
         void push(float cost, std::uint16_t province);
         [[nodiscard]] std::uint16_t pop(float* cost);
@@ -64,7 +72,8 @@ namespace mc
         Column<std::uint16_t> to_;
         Column<float> cost_;
         Column<float> back_;
-        Column<float> army_step_;   // per army slot
+        Column<float> army_step_;            // per army slot
+        Column<std::uint16_t> army_after_;   // per army slot
 
         // The search: per province, the cost of the way to the destination and the step toward it, valid where
         // seen_ is this search's stamp; settled_ marks the final ones. The heap holds (cost, province) pairs,

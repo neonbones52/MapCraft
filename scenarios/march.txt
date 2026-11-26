@@ -19,7 +19,7 @@ day 5 = DUM move 0:0 495
 # first step there another one.
 day 6 = DUM move 0:0 476
 day 14 = DUM move 0:0 562
-# From Honeyford to Tulip Pass; past half of the first step (into Sunflowerbarrow, 5 days of 9) it is locked: the
+# From Honeyford to Tulip Pass; past half of the first step (into Sunflowerbarrow, 5 days of 8) it is locked: the
 # order back to Honeyford takes effect from Sunflowerbarrow.
 day 60 = DUM move 0:0 476
 day 65 = DUM move 0:0 562

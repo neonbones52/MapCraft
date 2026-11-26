@@ -219,15 +219,29 @@ namespace mc
                         ? movement->army_step(static_cast<std::uint16_t>(army))
                         : 0.0f;
                 const bool marching = step > 0.0f;
+                bool arrived = false;   // the figure is at the end of its march before the day that ends it
                 if (marching) {
-                    const MapView::Point to = map.unit_position(next);
-                    // The fraction stands still in the pause, so the figure does too, where it was.
-                    const float between = kMarchPerDay * clock.day_fraction;
-                    const float t = std::clamp((armies.progress[army] + between) / step, 0.0f, 1.0f);
-                    at = { unit.x + (to.x - unit.x) * t, unit.y + (to.y - unit.y) * t };
+                    // The fraction stands still in the pause, so the figure does too, where it was. Past the end
+                    // of the step it walks on into the step after it, as far as the day's carry will take the army
+                    // there (so it does not stand at the province's point until the day comes); where the march
+                    // ends there, it waits.
+                    const float walked = armies.progress[army] + kMarchPerDay * clock.day_fraction;
+                    MapView::Point from = unit;
+                    MapView::Point to = map.unit_position(next);
+                    float t = std::clamp(walked / step, 0.0f, 1.0f);
+                    const std::uint16_t after = movement->army_after(static_cast<std::uint16_t>(army));
+                    const float after_step = after != 0 && after < map.count ? movement->step_cost(next, after) : 0.0f;
+                    if (walked > step && after_step > 0.0f) {
+                        from = to;
+                        to = map.unit_position(after);
+                        t = std::clamp((walked - step) / after_step, 0.0f, 1.0f);
+                    } else if (walked >= step) {
+                        arrived = true;
+                    }
+                    at = { from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t };
                     // Map y grows to the south; the yaw turns from the south toward the east.
-                    if (to.x != unit.x || to.y != unit.y) {
-                        yaw = std::atan2(to.x - unit.x, to.y - unit.y);
+                    if (to.x != from.x || to.y != from.y) {
+                        yaw = std::atan2(to.x - from.x, to.y - from.y);
                     }
                 }
 
@@ -267,7 +281,7 @@ namespace mc
                                      m[static_cast<std::size_t>(RegimentCategory::cavalry)] >=
                                          m[static_cast<std::size_t>(RegimentCategory::artillery)];
                 // Legs go while it marches and days pass, and while it walks back (in the pause too).
-                const bool legs = (marching && clock.running) || motion.returning;
+                const bool legs = (marching && !arrived && clock.running) || motion.returning;
                 const float walking = legs ? (mounted ? kHorseWalk : kSoldierWalk) : 0.0f;
                 motion.amount += (walking - motion.amount) * ease;
                 motion.walk = std::fmod(motion.walk + motion.amount * dt * kTicks, kWalkCycle);

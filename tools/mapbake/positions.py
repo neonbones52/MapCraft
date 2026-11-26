@@ -5,7 +5,9 @@ Runs after tools/labels/provinces.py: the city keeps clear of the province's nam
          (ground levels equal), among those the one with the most room round it, CITY_MARGIN px from the province's
          border, the coast, lakes, rivers and the names; city_x, city_y is its centre (map px), city_bx, city_by its
          north-west block, city_facing the way the house faces (0 north, 1 east, 2 south, 3 west), varied by province
-  unit   well inside the province, a short walk from the city
+  unit   well inside the province, a short walk from the city, on dry land: a land block (no river, lake or sea)
+         whose eight neighbours are land too, off the rivers' water (RIVER_PAD), so the army's figure never stands
+         in or over water; where the province has no such point a short walk away, the next of unit_tiers
   text   the deepest point (water provinces: their only locator besides the unit)
   port   every land province touching a sea province by a block side has a pier: one of its land blocks on the coast
          (pier_bx, pier_by) and the PIER_BLOCKS sea blocks in a row beside it the pier reaches over (pier_dir, as
@@ -41,6 +43,10 @@ LABEL_PAD = 2.0            # px the city keeps from the province names' glyph qu
 RIVER_PAD = 2.0            # px the city keeps from a river's water
 STEPS = ((0, -1), (1, 0), (0, 1), (-1, 0))   # (dx, dy) of facing / pier direction 0 north, 1 east, 2 south, 3 west
 PIER_BLOCKS = 2            # sea blocks a pier reaches over
+# Where an army point may stand, best first (the first a province has, more than 2 px inside it): a land block with
+# land all round a short walk (UNIT_DISTANCE) from the city; such a block anywhere in the province; any dry pixel a
+# short walk away; anywhere; the city's site.
+UNIT_TIERS = ('firm, near the city', 'firm, anywhere', 'dry, near the city', 'dry, anywhere', 'the city')
 
 
 def deepest(mask):
@@ -139,6 +145,10 @@ def main():
     blocks = surface()
     bcls, ground = blocks['cls'], blocks['ground']
     dry = np.repeat(np.repeat(bcls == LAND, BLOCK, 0), BLOCK, 1)
+    # Land blocks with land all round (8 neighbours; past the map's edge counts as land).
+    firm_blocks = ndimage.binary_erosion(np.pad(bcls == LAND, 1, constant_values=True), np.ones((3, 3), bool))
+    firm = np.repeat(np.repeat(firm_blocks[1:-1, 1:-1], BLOCK, 0), BLOCK, 1)
+    unit_fallbacks = {}
     pairs = [(int(r['a']), int(r['b'])) for r in read_csv(ROOT / 'adjacency.csv')]
     coastal = {a if provinces[b]['type'] == 'sea' else b for a, b in pairs
                if {provinces[a]['type'], provinces[b]['type']} == {'land', 'sea'}}
@@ -185,11 +195,21 @@ def main():
             out.update(city_bx=site[0], city_by=site[1], city_facing=facing(pid))
         out.update(city_x=cx, city_y=cy)
 
-        # Unit: well inside the province, a short walk away from the city.
+        # Unit: well inside the province, a short walk away from the city, on dry land (unit_tiers).
         yy, xx = np.indices(mask.shape)
         distance = np.hypot(xx + x0 - cx, yy + y0 - cy)
-        score = np.where(mask & (distance >= UNIT_DISTANCE[0]) & (distance <= UNIT_DISTANCE[1]), depth, -1)
-        uy, ux = np.unravel_index(np.argmax(score), score.shape) if score.max() > 2 else (cy - y0, cx - x0)
+        walk = (distance >= UNIT_DISTANCE[0]) & (distance <= UNIT_DISTANCE[1])
+        firm_ground = open_ground & firm[y0:y1, x0:x1]
+        ux, uy = cx - x0, cy - y0   # the last resort: the city's own dry site
+        for tier, allowed in enumerate((firm_ground & walk, firm_ground, open_ground & walk, open_ground)):
+            score = np.where(allowed, depth, -1)
+            if score.max() > 2:
+                uy, ux = np.unravel_index(np.argmax(score), score.shape)
+                break
+        else:
+            tier = 4
+        if tier > 0:
+            unit_fallbacks.setdefault(UNIT_TIERS[tier], []).append(pid)
         out.update(unit_x=int(ux) + x0, unit_y=int(uy) + y0, _site=site)
 
     # Piers: the provinces with the fewest choices first; a pier's sea block keeps a block clear of every other.
@@ -220,6 +240,9 @@ def main():
     sites = sum(1 for r in rows.values() if 'city_bx' in r)
     piers = sum(1 for r in rows.values() if 'pier_bx' in r)
     print(f'{len(rows)} provinces, {sites} house sites, {piers} piers -> positions.csv')
+    for tier, pids in unit_fallbacks.items():
+        print(f'army point {tier}: {len(pids)} provinces ({", ".join(map(str, pids[:12]))}'
+              f'{", ..." if len(pids) > 12 else ""})')
 
 
 if __name__ == '__main__':
