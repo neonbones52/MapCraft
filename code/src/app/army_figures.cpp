@@ -33,6 +33,29 @@ namespace mc
         // A figure walking back along the path of a step given up: map px a second (faster than a march looks at
         // speed 4).
         constexpr float kReturnSpeed = 40.0f;
+        // A battle (the user's decision): the attacker's figure on the left (west) of the unit position, the
+        // defender's on the right, facing each other this many blocks apart, centre to centre, on foot and mounted
+        // alike (the horses' heads just clear); the province's other armies stand in the row on from the defender's.
+        constexpr float kBattleGap = 3.0f;
+        // A sword's swing every 20 / 1.6 ticks (a full blow at the sword's attack speed), give or take this share.
+        constexpr float kSwingEvery = kTicks / 1.6f;
+        constexpr float kSwingSpread = 0.15f;
+        // Where an army of a province stands (ArmyFigures::place_): its place in the row, or one of these.
+        constexpr std::int32_t kAttacker = -1;
+        constexpr std::int32_t kDefender = -2;
+        constexpr std::int32_t kUnseen = -3;   // a side's army after its first: not shown in the battle
+
+        // 0..1, a hash of an army slot and a count: each swing's spread (view only).
+        float spread(std::uint32_t army, std::uint32_t n)
+        {
+            std::uint32_t h = army * 0x9E3779B1u ^ (n + 1u) * 0x85EBCA77u;
+            h ^= h >> 15;
+            h *= 0x2C1B3C6Du;
+            h ^= h >> 12;
+            h *= 0x297A2D39u;
+            h ^= h >> 15;
+            return static_cast<float>(h >> 8) * (1.0f / 16777216.0f);
+        }
 
         // A part's 3 x 3 turn as the game's PartPose: Rz * Ry * Rx.
         void rotation(const minecraft::PartRotation& r, float out[3][3])
@@ -195,6 +218,7 @@ namespace mc
         }
         const Armies& armies = game->state.armies;
         const Regiments& regiments = game->state.regiments;
+        const Battles& battles = game->state.battles;
         const auto& category = game->content.regiment_category;
         motion_.resize(kArmySlots);
 
@@ -220,7 +244,7 @@ namespace mc
         const float px = kBlock / 16.0f;   // world units per model px
         // The walk's speed eases as the game's does (WalkAnimationState: 0.4 of the way a tick).
         const float ease = 1.0f - std::pow(1.0f - kWalkEase, dt * kTicks);
-        std::array<minecraft::PartRotation, minecraft::villager_part_count> soldier_parts{};
+        minecraft::SoldierPose pose{};
         std::array<minecraft::PartRotation, minecraft::horse_part_count> horse_parts{};
         for (std::size_t i = 0; i < order_.size();) {
             const std::uint16_t province = armies.province[order_[i]];
@@ -229,8 +253,35 @@ namespace mc
                 ++end;
             }
             const MapView::Point unit = map.unit_position(province);
+
+            // Where each of the province's armies stands: the first army of each side of its battle (by slot) faces
+            // the other's, the side's others are not shown; the rest stand in the row, in slot order.
+            place_.assign(end - i, 0);
+            bool battle = false;
+            bool side_shown[2] = { false, false };
+            std::int32_t row = 0;
             for (std::size_t k = i; k < end; ++k) {
                 const std::uint32_t army = order_[k];
+                const std::uint16_t b = armies.battle[army];
+                if (b != 0 && b <= kBattleSlots) {
+                    const int side = armies.owner[army] == battles.attacker[b - 1u] ? 0 : 1;
+                    place_[k - i] = side_shown[side] ? kUnseen : side == 0 ? kAttacker : kDefender;
+                    side_shown[side] = true;
+                    battle = true;
+                } else {
+                    place_[k - i] = row++;
+                }
+            }
+
+            for (std::size_t k = i; k < end; ++k) {
+                const std::uint32_t army = order_[k];
+                const std::int32_t where = place_[k - i];
+                const float target = where == kAttacker ? -kBattleGap * 0.5f * kBlock
+                                     : where == kDefender ? kBattleGap * 0.5f * kBlock
+                                     : where == kUnseen   ? 0.0f
+                                     : battle ? (kBattleGap * 0.5f + kSpacing * static_cast<float>(where + 1)) * kBlock
+                                              : (static_cast<float>(where) - static_cast<float>(row - 1) * 0.5f) *
+                                                    kSpacing * kBlock;
                 Motion& motion = motion_[army];
                 if (!motion.seen || motion.generation != armies.generation[army]) {
                     motion = Motion{};
@@ -273,6 +324,11 @@ namespace mc
                     }
                     at = along(map, shown_from, shown_to, shown_t, &yaw);
                 }
+                // In its battle (its march stopped when it joined): facing the other side, east or west.
+                const bool fighting = armies.battle[army] != 0 && !marching;
+                if (fighting && where != kUnseen) {
+                    yaw = where == kAttacker ? kPi * 0.5f : -kPi * 0.5f;
+                }
 
                 // A step given up halfway (turned elsewhere or stopped: the same province, another or no next) puts
                 // the army back in its province at once; the figure walks back there along the step's path instead
@@ -301,14 +357,20 @@ namespace mc
                 motion.shown_from = shown_from;
                 motion.shown_to = shown_to;
                 motion.shown_t = shown_t;
-                const float most = kTurnRate * dt;
-                const float turn = std::clamp(std::remainder(yaw - motion.yaw, 2.0f * kPi), -most, most);
-                motion.yaw = std::remainder(motion.yaw + turn, 2.0f * kPi);
+                // It turns toward where it goes; into a battle and out of it, at once (as EU4's units: the user's
+                // decision).
+                if (fighting != motion.fighting) {
+                    motion.yaw = std::remainder(yaw, 2.0f * kPi);
+                } else {
+                    const float most = kTurnRate * dt;
+                    const float turn = std::clamp(std::remainder(yaw - motion.yaw, 2.0f * kPi), -most, most);
+                    motion.yaw = std::remainder(motion.yaw + turn, 2.0f * kPi);
+                }
                 const Vec3 forward{ std::sin(motion.yaw), 0.0f, -std::cos(motion.yaw) };
 
-                const float shift = (static_cast<float>(k - i) - static_cast<float>(end - i - 1) * 0.5f) * kSpacing *
-                                    kBlock;
-                const float x = at.x + shift;
+                // Off its point along x, where its place is (the row, a side of the battle): it is there at once
+                // when the province's armies change, as EU4's units are (the user's decision).
+                const float x = at.x + target;
                 const Vec3 ground{ x, ground_at(map, x, at.y), -at.y };
                 const float* m = &men_[std::size_t{ army } * kCategories];
                 const bool mounted = m[static_cast<std::size_t>(RegimentCategory::cavalry)] >
@@ -321,6 +383,33 @@ namespace mc
                 motion.amount += (walking - motion.amount) * ease;
                 motion.walk = std::fmod(motion.walk + motion.amount * dt * kTicks, kWalkCycle);
                 const float age = time * kTicks + static_cast<float>(army) * 13.7f;   // each its own phase
+
+                // The sword: a swing begun runs to its end (in the pause too); while it fights and days pass, a new
+                // one every kSwingEvery ticks, give or take; the first a share of that after it joins, so each
+                // figure has its own beat.
+                if (motion.swing >= 0.0f) {
+                    motion.swing += dt * kTicks;
+                    if (motion.swing >= minecraft::kSwingTicks) {
+                        motion.swing = -1.0f;
+                    }
+                }
+                if (fighting && !motion.fighting) {
+                    motion.wait = kSwingEvery * spread(army, motion.swings++);
+                }
+                motion.fighting = fighting;
+                if (fighting && clock.running) {
+                    motion.wait -= dt * kTicks;
+                    if (motion.wait <= 0.0f && motion.swing < 0.0f) {
+                        motion.swing = 0.0f;
+                        const float every =
+                            kSwingEvery * (1.0f - kSwingSpread + 2.0f * kSwingSpread * spread(army, motion.swings++));
+                        motion.wait = std::max(motion.wait + every, 0.0f);
+                    }
+                }
+                const float attack = motion.swing >= 0.0f ? motion.swing / minecraft::kSwingTicks : 0.0f;
+                if (where == kUnseen) {
+                    continue;
+                }
 
                 Placement rider(ground, forward, px);
                 if (mounted) {
@@ -336,10 +425,14 @@ namespace mc
                 }
                 // A rider does not walk: the horse does.
                 minecraft::soldier_pose(age, mounted, mounted ? 0.0f : motion.walk, mounted ? 0.0f : motion.amount,
-                                        &soldier_parts);
+                                        attack, &pose);
                 draws_.push_back({ soldier, static_cast<std::uint32_t>(matrices_.size()) });
-                for (std::size_t p = 0; p < soldier_parts.size(); ++p) {
-                    matrices_.push_back(rider.part(pivots_[soldier][p], soldier_parts[p]));
+                for (std::size_t p = 0; p < pose.turn.size(); ++p) {
+                    std::array<float, 3> pivot = pivots_[soldier][p];
+                    for (std::size_t c = 0; c < 3; ++c) {
+                        pivot[c] += pose.shift[p][c];
+                    }
+                    matrices_.push_back(rider.part(pivot, pose.turn[p]));
                 }
 
                 // The plate under the feet: the ground point on the screen (in front of the camera), lowered by a

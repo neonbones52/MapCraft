@@ -32,7 +32,11 @@ namespace mc
     // by side, in slot order), and the point under each figure where its plate goes. A marching army's figure walks
     // the line from its province's unit position to the next's, as far as its step's progress (game/movement.h) and
     // the day's fraction take it, turned the way it goes, its legs (or its horse's) in the game's walk while days
-    // pass; standing, it turns back to the viewer and its pose is the idle one. The figure is its men's plurality:
+    // pass; standing, it turns back to the viewer and its pose is the idle one. In a battle the two sides face each
+    // other across the unit position, the attacker on the left (west), the defender on the right, a figure a side
+    // (its first army by slot; the side's others are not shown), and swing their swords at the sword's pace while
+    // days pass; into a battle and out of it a figure is at its place and turned at once, as EU4's units are. The
+    // figure is its men's plurality:
     // cavalry rides the armoured horse; infantry and, until it has a model of its own, artillery stand on foot (the
     // user's decision). Reads the state only; owned by App; keeps only how each figure moves (view state).
     class ArmyFigures
@@ -58,13 +62,17 @@ namespace mc
         std::array<std::vector<std::array<float, 3>>, 2> pivots_;   // per model, per part (model px)
         // How each army slot's figure moves (view state): the walk's position and speed (minecraft/entity_models.h),
         // its heading (radians from the south toward the east), the march it showed last frame (to tell an arrival
-        // from a step given up) and where on a step's path it was shown, the walk back along a step given up, and
-        // the army's generation they belong to.
+        // from a step given up) and where on a step's path it was shown, the walk back along a step given up, whether
+        // it fought last frame and its sword's swing, and the army's generation they belong to.
         struct Motion
         {
             float walk = 0.0f;
             float amount = 0.0f;
             float yaw = 0.0f;
+            float swing = -1.0f;          // ticks into its swing, < 0: none
+            float wait = 0.0f;            // ticks to its next swing while it fights
+            std::uint32_t swings = 0;     // swings begun: the seed of the next one's spread
+            bool fighting = false;
             std::uint16_t province = 0;
             std::uint16_t next = 0;
             std::uint16_t shown_from = 0;
@@ -79,6 +87,7 @@ namespace mc
         std::vector<Motion> motion_;                               // per army slot
         std::vector<float> men_;                                   // scratch: per army slot, per category
         std::vector<std::uint32_t> order_;                         // scratch: live armies by province, then slot
+        std::vector<std::int32_t> place_;                          // scratch: per army of a province, where it stands
         std::vector<FigureDraw> draws_;
         std::vector<FigureMatrix> matrices_;
         std::vector<ArmyMarker> markers_;

@@ -86,9 +86,16 @@ namespace mc::minecraft
     // its position (it grows by `amount` a tick) and `amount` its speed (0 standing, 1 at full speed).
     // The soldier holds the sword up (ArmPose.ITEM) and its arms bob as a humanoid's do (AnimationUtils.bobArms);
     // walking, its legs and arms swing as HumanoidModel's (the sword arm's swing halved by the item pose); `riding`:
-    // the rider's legs and arms (HumanoidModel while riding), which do not walk.
-    void soldier_pose(float age, bool riding, float walk, float amount,
-                      std::array<PartRotation, villager_part_count>* out);
+    // the rider's legs and arms (HumanoidModel while riding), which do not walk. `attack`: the game's attackTime, how
+    // far into a swing of the sword (0 none, up to 1; HumanoidModel.setupAttackAnimation, the WHACK swing of
+    // kSwingTicks): the body turns, the arms go round with it, the sword arm strikes down.
+    inline constexpr float kSwingTicks = 6.0f;   // SwingAnimation.DEFAULT
+    struct SoldierPose
+    {
+        std::array<PartRotation, villager_part_count> turn{};
+        std::array<std::array<float, 3>, villager_part_count> shift{};   // of each part's pivot from the model's, px
+    };
+    void soldier_pose(float age, bool riding, float walk, float amount, float attack, SoldierPose* out);
     // The horse: its neck and tail at their rest angles; walking, its legs swing as AbstractEquineModel's, the head
     // nods and the tail lifts.
     void horse_pose(float age, float walk, float amount, std::array<PartRotation, horse_part_count>* out);

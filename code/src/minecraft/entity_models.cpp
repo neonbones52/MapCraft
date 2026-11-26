@@ -401,11 +401,10 @@ namespace mc::minecraft
         return true;
     }
 
-    void soldier_pose(float age, bool riding, float walk, float amount,
-                      std::array<PartRotation, villager_part_count>* out)
+    void soldier_pose(float age, bool riding, float walk, float amount, float attack, SoldierPose* out)
     {
-        auto& p = *out;
-        p = {};
+        *out = {};
+        auto& p = out->turn;
         if (riding) {
             // HumanoidModel while riding: legs forward and apart, arms forward; the sword arm then ArmPose.ITEM
             // (x * 0.5 - pi / 10).
@@ -422,6 +421,26 @@ namespace mc::minecraft
             p[villager_arm_left].x = swing * amount;
             p[villager_leg_right] = { swing * 1.4f * amount, 0.005f, 0.005f };
             p[villager_leg_left] = { back * 1.4f * amount, -0.005f, -0.005f };
+        }
+        if (attack > 0.0f) {
+            // HumanoidModel.setupAttackAnimation, the right arm (after the arm poses, before the bob): the body turns
+            // sin(sqrt(t) * 2pi) * 0.2 and the arms' pivots (at x -5 and 5) go round with it, both arms turn with it
+            // and the left one tips by it; the sword arm strikes down by Ease.outQuart, its turn doubled on top
+            // (WHACK) and rolled in. The head does not turn with the body; its pitch is 0.
+            const float body = std::sin(std::sqrt(attack) * 2.0f * kPi) * 0.2f;
+            p[villager_body].y = body;
+            const float c = std::cos(body), s = std::sin(body);
+            out->shift[villager_arm_right] = { 5.0f - c * 5.0f, 0.0f, s * 5.0f };
+            out->shift[villager_arm_left] = { c * 5.0f - 5.0f, 0.0f, -s * 5.0f };
+            p[villager_arm_right].y += body;
+            p[villager_arm_left].y += body;
+            p[villager_arm_left].x += body;
+            const float rest = 1.0f - attack;
+            const float eased = 1.0f - rest * rest * rest * rest;
+            const float strike = std::sin(eased * kPi) * 1.2f + std::sin(attack * kPi) * 0.7f * 0.75f;
+            p[villager_arm_right].x -= strike;
+            p[villager_arm_right].y += body * 2.0f;
+            p[villager_arm_right].z += std::sin(attack * kPi) * -0.4f;
         }
         // AnimationUtils.bobArms: the right arm with +1, the left with -1.
         const float sway = std::cos(age * 0.09f) * 0.05f + 0.05f;
