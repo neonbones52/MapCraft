@@ -138,8 +138,9 @@
   (`C:\Dev\vcpkg`), триплет x64-windows-static. vcvars64 подменяет `VCPKG_ROOT` на встроенный vcpkg, `build.cmd`
   возвращает значение пользователя.
   - LNK1168 — открыт `mapcraft.exe` или редактор: переименуй запущенный exe, процесс пользователя не убивай.
-  - LNK1235 «corrupt or invalid COFF symbol table» у `mc_game.lib` — два exe линковались параллельно: запусти
-    `build.cmd` ещё раз; падает снова — удали `code/build/release/mc_game.lib` и собери заново.
+  - LNK1235 «corrupt or invalid COFF symbol table» у `mc_game.lib` — причина не найдена («Известные долги»). Lib
+    не удалять: сначала сохранить копию и проверить её (`lib /list`, `dumpbin /linkermember`), потом повторить
+    сборку как есть, и записать результат в «Известные долги».
   - В оболочке агента задана `NoDefaultCurrentDirectoryInExePath` (vcvars пишет безвредное «'vswhere.exe' is not
     recognized»): перед `build.cmd` из PowerShell — `Remove-Item Env:NoDefaultCurrentDirectoryInExePath`.
 - Шейдеры компилируются только при запуске; проверка без запуска — `fxc.exe` (docs/RENDER.md). Python — README,
@@ -160,5 +161,8 @@
     Blender-модели, хост SKSE. Код оттуда не переносить без решения пользователя.
 
 ## Известные долги
-- Линковка часто падает с LNK1235 на `mc_game.lib`/`mc_sim.lib` (обходится удалением lib и пересборкой, см.
-  «Окружение»); вероятное лечение — линковать два exe по очереди (пул линковки в `code/CMakeLists.txt`).
+- LNK1235 на `mc_game.lib` (дважды 26.11.2026, обе — при пересборке `mc_sim` и `mc_game` разом): причина не найдена.
+  Параллельная линковка двух exe — не причина: в графе Ninja оба exe ждут готовый lib и только читают его; семь
+  пересборок в тех же условиях ошибку не дали — она случайная. Версии: lib на диске битый (тогда — `mc_game`/`mc_sim`
+  как OBJECT-библиотеки CMake, без архива) или свежий файл трогал внешний процесс; 26.11.2026 пользователь добавил
+  `C:\Dev` в исключения Defender — повторится, значит не Defender. При повторе — «Окружение», LNK1235.
