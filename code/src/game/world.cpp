@@ -80,6 +80,7 @@ namespace mc
     {
         day_ = kStartDay;
         data_.state = start_;
+        data_.rebuild_cache();
         movement_.rebuild_steps(data_.state);
         commands_ = {};
     }

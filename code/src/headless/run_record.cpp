@@ -124,6 +124,7 @@ namespace mc::headless
 
         return write_file(dir / "meta.json", meta, error) && write_file(dir / "hashes.csv", days, error) &&
                write_file(dir / "moves.csv", moves, error) && write_file(dir / "state.csv", dump(end), error) &&
+               write_file(dir / "cache.csv", dump_cache(end), error) &&
                write_file(dir / "checksum.txt", std::format("{:016x}\n", checksum(end)), error);
     }
 }

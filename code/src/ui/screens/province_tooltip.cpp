@@ -7,6 +7,7 @@
 
 #include "game/armies.h"
 #include "game/game_data.h"
+#include "game/modifiers.h"
 #include "ui/army_name.h"
 #include "ui/widgets.h"
 #include "view/map_view.h"
@@ -53,7 +54,7 @@ namespace mc
                 ImGui::TextDisabled("(%s)", countries.name[army_owner].c_str());
             }
             ImGui::Text("%u regiments, %.0f men", totals.regiments, totals.men);
-            ImGui::Text("Morale %.2f / %.2f", totals.morale, ui.state.countries.morale[army_owner]);
+            ImGui::Text("Morale %.2f / %.2f", totals.morale, max_morale(ui.cache.country_modifiers, army_owner));
         }
         ImGui::EndTooltip();
     }

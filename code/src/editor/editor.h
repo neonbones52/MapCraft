@@ -66,6 +66,8 @@ namespace mc
         void edit_number(const char* label, Column<float>& column, std::span<const std::uint32_t> ids, float step,
                          float max = std::numeric_limits<float>::max());
         void edit_cores();
+        // The modifier bundles of one country (checkboxes; the base bundle is every country's) and what they sum to.
+        void edit_bundles(std::size_t country);
 
         App& app_;
         GameData& game_;

@@ -10,6 +10,7 @@
 #include <imgui.h>
 
 #include "game/armies.h"
+#include "game/modifiers.h"
 #include "ui/army_name.h"
 
 namespace mc
@@ -81,7 +82,8 @@ namespace mc
             if (ImGui::SmallButton("Add regiment")) {
                 std::uint16_t slot = 0;
                 begin_edit();
-                if (add_regiment(state.regiments, army, 1, kFullRegiment, state.countries.morale[army_owner], &slot)) {
+                if (add_regiment(state.regiments, army, 1, kFullRegiment,
+                                 max_morale(game.cache.country_modifiers, army_owner), &slot)) {
                     changed();
                 } else {
                     message_ = std::format("Every one of the {} regiment slots is taken", kRegimentSlots);
@@ -103,8 +105,8 @@ namespace mc
             begin_edit();
             if (!create_army(state.armies, owner, static_cast<std::uint16_t>(province), &army)) {
                 message_ = std::format("Every one of the {} army slots is taken", kArmySlots);
-            } else if (!add_regiment(state.regiments, army, 1, kFullRegiment, state.countries.morale[owner],
-                                     &regiment)) {
+            } else if (!add_regiment(state.regiments, army, 1, kFullRegiment,
+                                     max_morale(game.cache.country_modifiers, owner), &regiment)) {
                 destroy_army(state, army);
                 message_ = std::format("Every one of the {} regiment slots is taken", kRegimentSlots);
             } else {

@@ -5,7 +5,7 @@
 // Loads the scenario (headless/scenario.h), the map's simulation part, and data/ with the scenario's changes twice,
 // into two worlds of their own; runs each the scenario's years a day at a time through World::advance_days, posting
 // the scenario's commands of each day before it (World::post), taking the state's checksum (CLAUDE.md, rule 11: here
-// and only here) after every day; checks that both runs match day for day. The first run's record goes to <run dir>
+// and only here) after every day; checks that both runs match day for day, and their caches at the end. The first run's record goes to <run dir>
 // (headless/run_record.h), the arrivals of its armies' marches also to stderr.
 // Exit codes: 0 the runs match, 1 bad arguments or a load or write failed, 3 the runs differ.
 
@@ -157,6 +157,11 @@ int main(int argc, char** argv)
             return kDiverged;
         }
     }
-    mc::log::info("both runs match bit for bit every day");
+    // The cache is not in the checksum (never saved): the runs' caches at the end, compared whole.
+    if (mc::headless::dump_cache(*a.world) != mc::headless::dump_cache(*b.world)) {
+        mc::log::error("the two runs' caches differ at the end (cache.csv)");
+        return kDiverged;
+    }
+    mc::log::info("both runs match bit for bit every day, and their caches at the end");
     return kOk;
 }

@@ -23,8 +23,8 @@ namespace mc
     //   saved    the state: what the days change and a save holds (WorldState and its parts, listed column by column
     //            in game/saved_state.h; the dump and the checksum of mapcraft_sim walk that list)
     //   content  what the game is made of, fixed once loaded from data/common and the map (Content and its parts)
-    //   cache    rebuilt from the other two after a load, deterministically, never saved (none yet: the day's
-    //            working columns of the rules to come)
+    //   cache    rebuilt from the other two after a load, a restart and an edit, deterministically, never saved
+    //            (Cache: the countries' modifier sums; the rules' own, like the march's graph, live with the rules)
     // Sizes (counts, strides) are neither: they follow from the content and the map.
     inline constexpr std::size_t kLanes = 16;
     inline constexpr std::size_t padded(std::size_t n) { return (n + kLanes - 1) / kLanes * kLanes; }
@@ -83,8 +83,8 @@ namespace mc
     //   by_hand                    data/setup, read and written by GameData's own code (a capital: a land province)
     //   derived                    not in data/setup: GameData sets it at load from other columns (a regiment's
     //                              morale: full)
-    // What is not a column of a list is written out by hand where the lists expand: the sizes, the cores bit matrix,
-    // the slot masks.
+    // What is not a column of a list is written out by hand where the lists expand: the sizes, the bit matrices of
+    // the cores and of the countries' modifier bundles, the slot masks.
     // A line's own comment is /* */: a // comment would swallow the line continuation.
 #define MC_DECLARE_COLUMN(table, type, name, start) Column<type> name;
 
@@ -147,20 +147,80 @@ namespace mc
 
 #define MC_COUNTRY_COLUMNS(X)                                                                                   \
     /* province id, 0 = none */                                                                                 \
-    X(countries, std::uint16_t, capital, by_hand)                                                               \
-    /* 1 = 100% (EU3's discipline: the damage its regiments deal and take, M6) */                               \
-    X(countries, float, discipline, setup("discipline", number))                                                \
-    /* the base maximum morale of its regiments */                                                              \
-    X(countries, float, morale, setup("morale", number))
+    X(countries, std::uint16_t, capital, by_hand)
 
     // Saved. Country state (data/setup/countries.csv at the start: tag by hand), one column per field, indexed like
     // CountryDefinitions, padded(count) long.
     struct CountryStates
     {
         std::size_t count = 0;                  // countries, 0 = none included
+        // The modifier bundles it has (by hand; the sources of its modifiers, game/modifiers.h): a bit matrix,
+        // modifier_words u64 per country (64 bundles a word): bit b of country c. The base bundle is not in it: every
+        // country has that one.
+        std::uint32_t modifier_words = 1;
         MC_COUNTRY_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> modifiers;
 
-        void resize(std::size_t country_count);
+        void resize(std::size_t country_count, std::size_t bundle_count);
+        [[nodiscard]] bool has_bundle(std::size_t country, std::size_t bundle) const
+        {
+            return (modifiers[country * modifier_words + bundle / 64] >> (bundle % 64)) & 1u;
+        }
+        void set_bundle(std::size_t country, std::size_t bundle, bool on)
+        {
+            std::uint64_t& word = modifiers[country * modifier_words + bundle / 64];
+            const std::uint64_t bit = std::uint64_t{ 1 } << (bundle % 64);
+            word = on ? (word | bit) : (word & ~bit);
+        }
+    };
+
+    // The modifiers (docs/SIMULATION.md, "Модификаторы"): what a source gives a country. A source is a bundle of
+    // data/common/modifiers.csv (bundle, modifier, value); a country's sum of a modifier is the sum of the values of
+    // the base bundle and of every bundle it has (EU4's way: values add up, whatever they mean). What a sum means is
+    // its formula's (game/modifiers.h): a flat value, or a share where 0.1 = +10%. The set of modifiers is the code's:
+    // one line each, X(name), the name being the modifier's key in the data; a new modifier is one line here and
+    // the formula that reads it.
+#define MC_COUNTRY_MODIFIERS(X)                                                                                 \
+    /* flat, 1 = 100%: EU3's discipline, the damage its regiments deal and take (the base gives 1) */           \
+    X(discipline)                                                                                               \
+    /* flat: the base of its regiments' maximum morale, before land_morale (the base bundle; technology, M9) */ \
+    X(base_morale)                                                                                              \
+    /* a share: the maximum morale is base_morale × (1 + land_morale), EU4's "morale of armies" */             \
+    X(land_morale)
+
+#define MC_MODIFIER_NAME(name) #name,
+    inline constexpr std::string_view kCountryModifiers[] = { MC_COUNTRY_MODIFIERS(MC_MODIFIER_NAME) };
+#undef MC_MODIFIER_NAME
+    inline constexpr std::size_t kCountryModifierCount = std::size(kCountryModifiers);
+
+    // Content. The modifier bundles of data/common/modifiers.csv: a list (index 0 = none, the rest in the order of
+    // their first line), and one column per modifier over the bundles, the bundle's value (0 = it does not give it).
+#define MC_DECLARE_BUNDLE_VALUES(name) std::vector<float> name;
+    struct ModifierBundles
+    {
+        DefinitionList list;
+        std::uint8_t base = 0;   // the bundle every country has (key kBaseBundle), 0 = none in the file
+        MC_COUNTRY_MODIFIERS(MC_DECLARE_BUNDLE_VALUES)
+    };
+#undef MC_DECLARE_BUNDLE_VALUES
+    inline constexpr std::string_view kBaseBundle = "base";   // EU4's base_values
+
+    // Cache. Every country's sum of each modifier, one column per modifier, indexed like CountryStates, padded(count)
+    // long: rebuilt from the bundles and the countries' sets after a load, a restart and an edit of a set
+    // (GameData::rebuild_cache); the formulas read them (game/modifiers.h).
+#define MC_DECLARE_SUM(name) Column<float> name;
+    struct CountryModifiers
+    {
+        std::size_t count = 0;
+        MC_COUNTRY_MODIFIERS(MC_DECLARE_SUM)
+    };
+#undef MC_DECLARE_SUM
+
+    // Cache: the rules' data rebuilt from Content and WorldState (deterministically: CLAUDE.md, rule 9), never saved.
+    // for_each_cached (game/modifiers.h) walks it for mapcraft_sim's cache dump.
+    struct Cache
+    {
+        CountryModifiers country_modifiers;
     };
 
     // Entities that are born and die (armies, regiments) live in slots: a fixed number per table, so the tick never
@@ -211,7 +271,7 @@ namespace mc
     X(regiments, std::uint8_t, type, setup("type", key(&Content::regiment_types)))                              \
     /* men; a full regiment is 1000 */                                                                          \
     X(regiments, float, strength, setup("strength", number))                                                    \
-    /* full at the start: the morale of its army's owner */                                                     \
+    /* full at the start: the maximum morale of its army's owner (game/modifiers.h) */                          \
     X(regiments, float, morale, derived)
 
     // Saved. The regiments of every army, in slots, kRegimentSlots long. data/setup/regiments.csv at the start: army
@@ -249,6 +309,7 @@ namespace mc
         DefinitionList trade_nodes;       // data/common/trade_nodes.csv: a node is made of whole regions (M11 rules)
         DefinitionList regiment_types;    // data/common/regiment_types.csv: the units (EU4's Latin Knights...)
         std::vector<RegimentCategory> regiment_category;   // per type; its combat numbers come with M6
+        ModifierBundles modifiers;        // data/common/modifiers.csv
         CountryDefinitions countries;
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
     };
@@ -281,16 +342,19 @@ namespace mc
         // countries.csv, armies.csv and regiments.csv (the live ones in slot order, armies numbered 1, 2, ... in it)
         // from `state`, each in its `setup_layout` order.
         bool save_setup(const std::filesystem::path& dir, const MapData& map, std::string* error) const;
-        // The checks that are warnings at load, for the current state: a capital its country does not own; a land
-        // province without a good; an army without an owner or regiments, a regiment without a type; once there are
+        // The checks that are warnings at load, for the current state (and its cache): a capital its country does not
+        // own; a country whose discipline or maximum morale is not above 0; a land province without a good; an army without an owner or regiments, a regiment without a type; once there are
         // trade nodes, a region without one and a node without regions.
         [[nodiscard]] std::vector<std::string> check(const MapData& map) const;
         // "11 countries, 5 terrain, ..." for the logs.
         [[nodiscard]] std::string summary() const;
+        // The cache from the content and the state (load does it; then a restart and every edit of a source).
+        void rebuild_cache();
 
         bool loaded = false;
         Content content;
         WorldState state;
+        Cache cache;
         std::vector<std::string> warnings;
         // The columns of each data/setup file in the order they were loaded (the game's own only; an absent file: the
         // default order), which save_setup keeps. Neither state nor content: how the files are laid out.

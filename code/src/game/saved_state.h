@@ -27,6 +27,7 @@ namespace mc
         MC_REGION_COLUMNS(MC_VISIT_SAVED)
         MC_BALANCE_COLUMNS(MC_VISIT_SAVED)
         MC_COUNTRY_COLUMNS(MC_VISIT_SAVED)
+        visit(std::string_view{ "countries.modifiers" }, std::span(state.countries.modifiers));
 #undef MC_VISIT_SAVED
         // Slot tables: only the used part, the slots up to the last live one's mask word (the rest is 0, freed slots
         // are cleared), so the dump and the checksum do not walk tens of thousands of empty slots every day.
@@ -48,8 +49,8 @@ namespace mc
     // A tripwire for what is not a column of a list, not a rule: a list's column passes it by itself, a new field
     // written by hand changes the number. Such a field must be labelled (saved, content or cache, game/game_data.h)
     // and, if saved, visited above before the number is updated. By hand now: the sizes (Provinces::count and
-    // core_words, Regions::count, CountryStates::count), the cores and the two slot masks, 96 bytes with their
-    // padding.
+    // core_words, Regions::count, CountryStates::count and modifier_words), the cores, the countries' modifier
+    // bundles and the two slot masks, 128 bytes with their padding.
 #define MC_COUNT_COLUMN(table, type, name, start) +1
     inline constexpr std::size_t kListedColumns = 0
         MC_PROVINCE_COLUMNS(MC_COUNT_COLUMN) MC_REGION_COLUMNS(MC_COUNT_COLUMN)
@@ -57,6 +58,6 @@ namespace mc
         MC_ARMY_COLUMNS(MC_COUNT_COLUMN) MC_REGIMENT_COLUMNS(MC_COUNT_COLUMN);
 #undef MC_COUNT_COLUMN
     static_assert(sizeof(Column<std::uint8_t>) == sizeof(Column<Money>), "a list's columns differ in size");
-    static_assert(sizeof(WorldState) == 96 + kListedColumns * sizeof(Column<std::uint8_t>),
+    static_assert(sizeof(WorldState) == 128 + kListedColumns * sizeof(Column<std::uint8_t>),
                   "WorldState has a new field outside the column lists: label it and visit it in for_each_saved");
 }

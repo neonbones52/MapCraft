@@ -9,6 +9,7 @@
 
 #include "app/app.h"
 #include "game/armies.h"
+#include "game/modifiers.h"
 #include "view/map_view.h"
 
 namespace mc
@@ -83,6 +84,7 @@ namespace mc
 
     void Editor::changed()
     {
+        game_.rebuild_cache();   // the modifier sums follow the countries' bundles
         dirty_ = true;
         app_.refresh_map_mode();
     }
@@ -340,6 +342,56 @@ namespace mc
         ImGui::EndTable();
     }
 
+    void Editor::edit_bundles(std::size_t country)
+    {
+        GameData& game = game_;
+        const ModifierBundles& bundles = game.content.modifiers;
+        const CountryModifiers& sums = game.cache.country_modifiers;
+        ImGui::SeparatorText("Modifiers");
+        if (bundles.list.size() <= 1) {
+            ImGui::TextDisabled("No bundles in data/common/modifiers.csv");
+        }
+        // A bundle's values, for its tooltip.
+        auto values_of = [&](std::size_t b) {
+            std::string text;
+            const std::vector<float>* values[] = {
+#define MC_VALUES_OF(name) &bundles.name,
+                MC_COUNTRY_MODIFIERS(MC_VALUES_OF)
+#undef MC_VALUES_OF
+            };
+            for (std::size_t m = 0; m < kCountryModifierCount; ++m) {
+                if ((*values[m])[b] != 0.0f) {
+                    text += std::format("{}{} {:+}", text.empty() ? "" : "\n", kCountryModifiers[m], (*values[m])[b]);
+                }
+            }
+            return text.empty() ? std::string("(gives nothing)") : text;
+        };
+        for (std::size_t b = 1; b < bundles.list.size(); ++b) {
+            ImGui::PushID(static_cast<int>(b));
+            if (b == bundles.base) {
+                ImGui::BeginDisabled();
+                bool on = true;
+                ImGui::Checkbox(bundles.list.name[b].c_str(), &on);
+                ImGui::EndDisabled();
+                ImGui::SetItemTooltip("Every country's\n%s", values_of(b).c_str());
+            } else {
+                bool on = game.state.countries.has_bundle(country, b);
+                if (ImGui::Checkbox(bundles.list.name[b].c_str(), &on)) {
+                    begin_edit();
+                    game.state.countries.set_bundle(country, b, on);
+                    changed();
+                }
+                ImGui::SetItemTooltip("%s", values_of(b).c_str());
+            }
+            ImGui::PopID();
+        }
+        if (country < sums.count) {
+            ImGui::Text("Discipline %.2f, maximum morale %.2f", discipline(sums, country), max_morale(sums, country));
+            ImGui::SetItemTooltip("The sums of its modifiers (game/modifiers.h); a regiment put down now starts at the "
+                                  "maximum morale");
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------ panels
 
     void Editor::province_panel()
@@ -477,11 +529,7 @@ namespace mc
             changed();
         }
         ImGui::EndDisabled();
-        const std::uint32_t country[] = { static_cast<std::uint32_t>(country_) };
-        edit_number("Discipline", states.discipline, country, 0.05f);
-        ImGui::SetItemTooltip("1 = 100%%");
-        edit_number("Morale", states.morale, country, 0.1f);
-        ImGui::SetItemTooltip("The base maximum morale of its regiments");
+        edit_bundles(static_cast<std::size_t>(country_));
 
         const auto warnings = game.check(map);
         if (!warnings.empty()) {

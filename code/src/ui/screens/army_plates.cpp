@@ -10,6 +10,7 @@
 
 #include "game/armies.h"
 #include "game/game_data.h"
+#include "game/modifiers.h"
 #include "game/session.h"
 #include "ui/flags.h"
 
@@ -86,7 +87,8 @@ namespace mc
         for (const ArmyMarker& marker : armies.markers) {
             const std::uint16_t owner = ui.state.armies.owner[marker.army];
             const ArmyTotals totals = army_totals(ui.state.regiments, marker.army);
-            const float full = owner < ui.state.countries.count ? ui.state.countries.morale[owner] : 0.0f;
+            const CountryModifiers& sums = ui.cache.country_modifiers;
+            const float full = owner < sums.count ? max_morale(sums, owner) : 0.0f;
             const float morale = full > 0.0f ? std::clamp(totals.morale / full, 0.0f, 1.0f) : 0.0f;
             const Relation relation = owner != 0 && owner == me ? Relation::own : Relation::neutral;
 

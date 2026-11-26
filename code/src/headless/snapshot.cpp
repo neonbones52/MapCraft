@@ -6,6 +6,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "game/modifiers.h"
 #include "game/saved_state.h"
 #include "game/world.h"
 
@@ -60,22 +61,37 @@ namespace mc::headless
         return hash.value();
     }
 
+    namespace
+    {
+        // Rows column,index,value for every element of `column`.
+        template <class T>
+        void dump_column(std::string_view name, std::span<T> column, std::string* out)
+        {
+            using V = std::remove_cv_t<T>;
+            for (std::size_t i = 0; i < column.size(); ++i) {
+                if constexpr (std::is_floating_point_v<V>) {
+                    *out += std::format("{},{},{}\n", name, i, column[i]);
+                } else if constexpr (std::is_signed_v<V>) {
+                    *out += std::format("{},{},{}\n", name, i, static_cast<std::int64_t>(column[i]));
+                } else {
+                    *out += std::format("{},{},{}\n", name, i, static_cast<std::uint64_t>(column[i]));
+                }
+            }
+        }
+    }
+
     std::string dump(const World& world)
     {
         std::string out = "column,index,value\n";
         out += std::format("day,0,{}\n", world.day());
-        for_each_saved(world.state(), [&](std::string_view name, auto column) {
-            using T = std::remove_cv_t<typename decltype(column)::element_type>;
-            for (std::size_t i = 0; i < column.size(); ++i) {
-                if constexpr (std::is_floating_point_v<T>) {
-                    out += std::format("{},{},{}\n", name, i, column[i]);
-                } else if constexpr (std::is_signed_v<T>) {
-                    out += std::format("{},{},{}\n", name, i, static_cast<std::int64_t>(column[i]));
-                } else {
-                    out += std::format("{},{},{}\n", name, i, static_cast<std::uint64_t>(column[i]));
-                }
-            }
-        });
+        for_each_saved(world.state(), [&](std::string_view name, auto column) { dump_column(name, column, &out); });
+        return out;
+    }
+
+    std::string dump_cache(const World& world)
+    {
+        std::string out = "column,index,value\n";
+        for_each_cached(world.cache(), [&](std::string_view name, auto column) { dump_column(name, column, &out); });
         return out;
     }
 }

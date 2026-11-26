@@ -11,6 +11,7 @@
 #include "core/log.h"
 #include "core/map_data.h"
 #include "game/armies.h"
+#include "game/modifiers.h"
 
 namespace mc
 {
@@ -460,7 +461,7 @@ namespace mc
         // The by-hand columns of each data/setup file (SetupFile).
         constexpr std::string_view kProvinceHand[] = { "id", "name", "cores" };
         constexpr std::string_view kRegionHand[] = { "region", "name" };
-        constexpr std::string_view kCountryHand[] = { "tag", "capital" };
+        constexpr std::string_view kCountryHand[] = { "tag", "capital", "modifiers" };
         constexpr std::string_view kArmyHand[] = { "army", "province" };
         constexpr std::string_view kRegimentHand[] = { "army" };
 
@@ -510,6 +511,92 @@ namespace mc
                     return ctx.fail(r, std::format("price \"{}\": emeralds per unit, > 0", table.rows[r][column]));
                 }
             }
+            return true;
+        }
+
+        // modifiers.csv (optional: no file = no bundles, every sum 0): key, name, modifier, value, a line per pair of
+        // a bundle and a modifier it gives (game/modifiers.h). A bundle is its key's lines, in the order of its first;
+        // `name` (for people, the key by default) may be on any of them, and the ones that give it agree; `modifier`
+        // is one of MC_COUNTRY_MODIFIERS, once per bundle; `value` any finite number.
+        bool read_modifiers(Source& src, const std::filesystem::path& path, ModifierBundles* out, std::string* error)
+        {
+            *out = {};
+            out->list.key.assign(1, "");
+            out->list.name.assign(1, "");
+            out->list.color.assign(1, 0);
+            std::vector<float>* values[] = {
+#define MC_VALUES_OF(name) &out->name,
+                MC_COUNTRY_MODIFIERS(MC_VALUES_OF)
+#undef MC_VALUES_OF
+            };
+            for (std::vector<float>* v : values) {
+                v->assign(1, 0.0f);
+            }
+            if (!std::filesystem::exists(path)) {
+                return true;
+            }
+            csv::Table table;
+            if (!src.read(path, &table, error)) {
+                return false;
+            }
+            const Context ctx{ path, &table, error };
+            int key = 0;
+            int name = 0;
+            int modifier = 0;
+            int value = 0;
+            if (!need_column(path, table, "key", &key, error) || !need_column(path, table, "name", &name, error) ||
+                !need_column(path, table, "modifier", &modifier, error) ||
+                !need_column(path, table, "value", &value, error)) {
+                return false;
+            }
+            std::vector<std::uint8_t> named(1, 0);
+            std::vector<std::uint8_t> given(kCountryModifierCount, 0);   // bundle × modifier
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                const auto& row = table.rows[r];
+                if (!valid_key(row[key])) {
+                    return ctx.fail(r, std::format("key \"{}\": lower-case latin, digits, _", row[key]));
+                }
+                int b = out->list.find(row[key]);
+                if (b < 0) {
+                    if (out->list.size() >= kMaxListSize) {
+                        return ctx.fail(r, std::format("more than {} bundles", kMaxListSize - 1));
+                    }
+                    b = static_cast<int>(out->list.size());
+                    out->list.key.push_back(row[key]);
+                    out->list.name.push_back(row[key]);
+                    out->list.color.push_back(0xFF808080u);
+                    named.push_back(0);
+                    given.resize(given.size() + kCountryModifierCount, 0);
+                    for (std::vector<float>* v : values) {
+                        v->push_back(0.0f);
+                    }
+                }
+                if (!row[name].empty()) {
+                    if (named[b] && out->list.name[b] != row[name]) {
+                        return ctx.fail(r, std::format("bundle {}: name \"{}\", another line says \"{}\"", row[key],
+                                                       row[name], out->list.name[b]));
+                    }
+                    out->list.name[b] = row[name];
+                    named[b] = 1;
+                }
+                const auto* found = std::find(std::begin(kCountryModifiers), std::end(kCountryModifiers), row[modifier]);
+                if (found == std::end(kCountryModifiers)) {
+                    return ctx.fail(r, std::format("modifier \"{}\": not one the game knows", row[modifier]));
+                }
+                const auto m = static_cast<std::size_t>(found - std::begin(kCountryModifiers));
+                if (given[std::size_t(b) * kCountryModifierCount + m]++) {
+                    return ctx.fail(r, std::format("bundle {}: modifier {} repeated", row[key], row[modifier]));
+                }
+                float v = 0.0f;
+                const std::string& text = row[value];
+                const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), v);
+                if (text.empty() || ec != std::errc{} || ptr != text.data() + text.size() || !std::isfinite(v)) {
+                    return ctx.fail(r, std::format("value \"{}\": a number", text));
+                }
+                (*values[m])[b] = v;
+            }
+            const int base = out->list.find(kBaseBundle);
+            out->base = static_cast<std::uint8_t>(base > 0 ? base : 0);
             return true;
         }
 
@@ -601,11 +688,16 @@ namespace mc
         MC_REGION_COLUMNS(MC_FILL_COLUMN)
     }
 
-    void CountryStates::resize(std::size_t country_count)
+    void CountryStates::resize(std::size_t country_count, std::size_t bundle_count)
     {
         count = country_count;
         const std::size_t n = padded(count);
         MC_COUNTRY_COLUMNS(MC_FILL_COLUMN)
+        modifier_words = static_cast<std::uint32_t>((bundle_count + 63) / 64);
+        if (modifier_words == 0) {
+            modifier_words = 1;
+        }
+        modifiers.assign(n * modifier_words, 0);
     }
 
     void Armies::resize()
@@ -634,7 +726,8 @@ namespace mc
             !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, error) ||
             !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error) ||
             !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,
-                                 &content.regiment_category, error)) {
+                                 &content.regiment_category, error) ||
+            !read_modifiers(src, common / "modifiers.csv", &content.modifiers, error)) {
             return false;
         }
 
@@ -681,7 +774,7 @@ namespace mc
                 content.countries.color.push_back(c);
             }
         }
-        state.countries.resize(content.countries.size());
+        state.countries.resize(content.countries.size(), content.modifiers.list.size());
         state.provinces.resize(map.count, content.countries.size());
         state.regions.resize(map.region_count());
         content.province_region.assign(map.region.begin(), map.region.end());
@@ -779,7 +872,8 @@ namespace mc
             }
         }
 
-        // Country setup (optional: no file = every column at 0, no capitals): tag and capital (a land province) by
+        // Country setup (optional: no file = every column at 0, no capitals, no bundles but the base): tag, capital (a
+        // land province) and modifiers (the keys of its bundles in modifiers.csv, space-separated, never the base) by
         // hand; the list's setup columns.
         {
             const auto path = setup / "countries.csv";
@@ -793,8 +887,10 @@ namespace mc
                 const Context ctx{ path, &table, error };
                 int tag = 0;
                 int capital = 0;
+                int modifiers = 0;
                 if (!need_column(path, table, "tag", &tag, error) ||
-                    !need_column(path, table, "capital", &capital, error) || !file.find(path, table, error)) {
+                    !need_column(path, table, "capital", &capital, error) ||
+                    !need_column(path, table, "modifiers", &modifiers, error) || !file.find(path, table, error)) {
                     return false;
                 }
                 setup_layout.countries = file.layout(table.header);
@@ -809,12 +905,31 @@ namespace mc
                         return ctx.fail(r, std::format("capital \"{}\" is not a land province", row[capital]));
                     }
                     state.countries.capital[c] = static_cast<std::uint16_t>(id);
+                    std::string_view bundles_text = row[modifiers];
+                    while (!bundles_text.empty()) {
+                        const std::size_t space = bundles_text.find(' ');
+                        const std::string_view k = bundles_text.substr(0, space);
+                        if (!k.empty()) {
+                            const int b = content.modifiers.list.find(k);
+                            if (b <= 0) {
+                                return ctx.fail(r, std::format("modifiers: \"{}\" is not a bundle of modifiers.csv", k));
+                            }
+                            if (b == content.modifiers.base) {
+                                return ctx.fail(r, std::format("modifiers: {} is every country's already", k));
+                            }
+                            state.countries.set_bundle(std::size_t(c), std::size_t(b), true);
+                        }
+                        bundles_text =
+                            space == std::string_view::npos ? std::string_view{} : bundles_text.substr(space + 1);
+                    }
                     if (!file.read(ctx, r, std::size_t(c), content, state.countries)) {
                         return false;
                     }
                 }
             }
         }
+        // The modifier sums, for the regiments' full morale below.
+        rebuild_cache();
 
         // Armies at the start (optional, no file = none): army (its number in the file, for regiments.csv) and
         // province (a land province) by hand, the list's setup columns; each takes the next slot in file order.
@@ -862,7 +977,7 @@ namespace mc
         }
 
         // Their regiments (optional): army (its number in armies.csv) by hand, the list's setup columns; morale full,
-        // the army owner's.
+        // the army owner's maximum (game/modifiers.h).
         {
             const auto path = setup / "regiments.csv";
             SetupFile file(state.regiments, kRegimentHand);
@@ -887,7 +1002,8 @@ namespace mc
                     }
                     const std::uint16_t owner = state.armies.owner[army->second];
                     std::uint16_t slot = 0;
-                    if (!add_regiment(state.regiments, army->second, 0, 0.0f, state.countries.morale[owner], &slot)) {
+                    if (!add_regiment(state.regiments, army->second, 0, 0.0f,
+                                      max_morale(cache.country_modifiers, owner), &slot)) {
                         return ctx.fail(r, std::format("more than {} regiments", kRegimentSlots));
                     }
                     if (!file.read(ctx, r, slot, content, state.regiments)) {
@@ -910,10 +1026,16 @@ namespace mc
         std::size_t regiments = 0;
         for_each_alive(state.armies.alive, [&](std::uint32_t) { ++armies; });
         for_each_alive(state.regiments.alive, [&](std::uint32_t) { ++regiments; });
-        return std::format("{} countries, {} terrain, {} goods, {} trade nodes, {} regiment types; {} armies, {} "
-                           "regiments",
+        return std::format("{} countries, {} terrain, {} goods, {} trade nodes, {} regiment types, {} modifier "
+                           "bundles; {} armies, {} regiments",
                            content.countries.size() - 1, content.terrain.size() - 1, content.goods.size() - 1,
-                           content.trade_nodes.size() - 1, content.regiment_types.size() - 1, armies, regiments);
+                           content.trade_nodes.size() - 1, content.regiment_types.size() - 1,
+                           content.modifiers.list.size() - 1, armies, regiments);
+    }
+
+    void GameData::rebuild_cache()
+    {
+        sum_country_modifiers(content.modifiers, state.countries, &cache.country_modifiers);
     }
 
     std::vector<std::string> GameData::check(const MapData& map) const
@@ -924,6 +1046,13 @@ namespace mc
             if (capital != 0 && state.provinces.owner[capital] != c) {
                 out.push_back(std::format("{}: capital {} ({}) is not its own", content.countries.tag_text(c), capital,
                                           map.province_name(capital)));
+            }
+            // The cache is the state's: rebuilt after every edit (rebuild_cache).
+            const CountryModifiers& sums = cache.country_modifiers;
+            if (c < sums.count && (discipline(sums, c) <= 0.0f || max_morale(sums, c) <= 0.0f)) {
+                out.push_back(std::format("{}: discipline {} and maximum morale {}: both are to be above 0 (the base "
+                                          "bundle of modifiers.csv)",
+                                          content.countries.tag_text(c), discipline(sums, c), max_morale(sums, c)));
             }
         }
 
@@ -1035,6 +1164,18 @@ namespace mc
             setup_layout.countries, state.countries, content, entries, [&](std::string_view column, std::uint32_t c) {
                 if (column == "tag") {
                     return countries.tag_text(c);
+                }
+                if (column == "modifiers") {
+                    std::string bundles_text;
+                    for (std::size_t b = 1; b < content.modifiers.list.size(); ++b) {
+                        if (state.countries.has_bundle(c, b)) {
+                            if (!bundles_text.empty()) {
+                                bundles_text += ' ';
+                            }
+                            bundles_text += content.modifiers.list.key[b];
+                        }
+                    }
+                    return bundles_text;
                 }
                 const std::uint16_t capital = state.countries.capital[c];   // "capital"
                 return capital ? std::format("{}", capital) : std::string{};

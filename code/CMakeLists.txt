@@ -25,6 +25,7 @@ add_library(mc_sim STATIC
     src/game/countries.cpp
     src/game/economy/ledger.cpp
     src/game/game_data.cpp
+    src/game/modifiers.cpp
     src/game/movement.cpp
     src/game/session.cpp
     src/game/world.cpp

@@ -79,7 +79,7 @@
 | `view/` | ввод, камера, раскладка названий EU4, темп `Pace`; карта для вида `MapView` | платформу, D3D |
 | `minecraft/` | ассеты из jar игрока: zip, PNG, `.mcmeta`, биомы, структуры, модели, деревья, меши | D3D, игру, карту |
 | `render/` | D3D11, вся карта: блоки, модели, границы, названия | игру, UI |
-| `game/` | (`mc_sim`) `GameData` = `Content` + `WorldState`; `World`; `Session`; экономика `game/economy/` | вид, UI, D3D |
+| `game/` | (`mc_sim`) `GameData` = `Content` + `WorldState` + `Cache`; `World`; `Session`; модификаторы; экономика `game/economy/` | вид, UI, D3D |
 | `ui/` | экраны Dear ImGui; читают состояние, возвращают `UiCommands` | как меняется состояние |
 | `app/` | `App` — карта и её облик из ассетов; `bindings.cpp` — все клавиши игры; `Shell` — склейка для хоста | — |
 | `host/win32` | всё о платформе — только здесь (окно, ввод, D3D-цель, лог); `main.cpp` — `mapcraft.exe` | — |

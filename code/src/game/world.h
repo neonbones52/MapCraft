@@ -17,7 +17,8 @@ namespace mc
     //   Content     what the game is made of (lists, country definitions, strings): fixed once loaded
     //   WorldState  the state (SoA columns): changed only by the World's own rules (the daily tick)
     //   the day     the date, as a day count (game/calendar.h): one number, so it lives here and not among the columns
-    //   the rules   their cache (the armies' march, game/movement.h), rebuilt after a load and a restart
+    //   the rules   their cache (the modifier sums in GameData, the armies' march, game/movement.h), rebuilt after a
+    //               load and a restart
     //   commands    the queue (game/commands.h): what the players ask, run between days
     // Everyone else reads: the map (App) through a const GameData pointer to colour its modes, the UI and the
     // Session through the const accessors. Lifetime: as long as whatever shows it (Shell declares it before App).
@@ -47,7 +48,9 @@ namespace mc
         [[nodiscard]] bool loaded() const { return data_.loaded; }
         [[nodiscard]] const Content& content() const { return data_.content; }
         [[nodiscard]] const WorldState& state() const { return data_.state; }
-        // Both, for the map modes (App::set_game).
+        // The cache rebuilt from both (the countries' modifier sums, game/modifiers.h).
+        [[nodiscard]] const Cache& cache() const { return data_.cache; }
+        // All three, for the map modes (App::set_game).
         [[nodiscard]] const GameData& data() const { return data_; }
         [[nodiscard]] std::uint32_t day() const { return day_; }
         [[nodiscard]] Date date() const { return date_of(day_); }
