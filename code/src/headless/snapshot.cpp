@@ -58,6 +58,7 @@ namespace mc::headless
             hash.add(std::as_bytes(column));
         });
         hash.add_value(world.day());
+        hash.add_value(world.seed());
         return hash.value();
     }
 
@@ -84,6 +85,7 @@ namespace mc::headless
     {
         std::string out = "column,index,value\n";
         out += std::format("day,0,{}\n", world.day());
+        out += std::format("seed,0,{}\n", world.seed());
         for_each_saved(world.state(), [&](std::string_view name, auto column) { dump_column(name, column, &out); });
         return out;
     }

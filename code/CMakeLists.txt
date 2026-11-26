@@ -21,6 +21,7 @@ add_library(mc_sim STATIC
     src/core/map_file.cpp
     src/game/armies.cpp
     src/game/calendar.cpp
+    src/game/combat.cpp
     src/game/commands.cpp
     src/game/countries.cpp
     src/game/economy/ledger.cpp

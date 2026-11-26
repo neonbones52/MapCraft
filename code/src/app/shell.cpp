@@ -1,6 +1,7 @@
 #include "app/shell.h"
 
 #include <chrono>
+#include <random>
 #include <vector>
 
 #include "app/bindings.h"
@@ -13,12 +14,19 @@ namespace mc
     {
         // Play's zoom, counted from the closest: two or three notches out from where the province names take over.
         constexpr int kPlayZoomLevel = 7;
+
+        // A new game's seed (core/random.h): drawn here, on the host, outside the simulation; from then on it is the
+        // world's (and later the save's and the network's).
+        std::uint32_t new_seed()
+        {
+            return std::random_device{}();
+        }
     }
 
     bool Shell::load_world(const std::filesystem::path& dir, std::string* error)
     {
         const auto started = std::chrono::steady_clock::now();
-        const bool loaded = world_.load(dir, app_.map(), error);
+        const bool loaded = world_.load(dir, app_.map(), new_seed(), error);
         log::info("world load: {:.0f} ms",
                   std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
         app_.set_game(&world_.data());
@@ -37,7 +45,7 @@ namespace mc
         session_.new_game();
         orders_.clear();
         pace_ = Pace{};   // paused, speed 3
-        world_.restart();
+        world_.restart(new_seed());
         fly_ = false;
         app_.request_camera_reset();
         app_.set_map_mode(MapMode::political);

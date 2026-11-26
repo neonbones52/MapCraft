@@ -45,8 +45,9 @@ namespace mc
     // The army and all its regiments die; their slots are cleared, the army's generation grows.
     void destroy_army(WorldState& state, std::uint16_t slot);
 
-    // A new regiment of the army in the lowest free slot, at full morale `morale`; false when every slot is taken.
-    bool add_regiment(Regiments& regiments, std::uint16_t army, std::uint8_t type, float strength, float morale,
+    // A new regiment of the army in the lowest free slot, `strength` men at full morale `morale` (Fixed); false when
+    // every slot is taken.
+    bool add_regiment(Regiments& regiments, std::uint16_t army, std::uint8_t type, std::int32_t strength, Fixed morale,
                       std::uint16_t* slot);
     void remove_regiment(Regiments& regiments, std::uint16_t slot);
 
@@ -54,8 +55,8 @@ namespace mc
     struct ArmyTotals
     {
         std::uint32_t regiments = 0;
-        float men = 0.0f;
-        float morale = 0.0f;   // the regiments' average
+        std::int64_t men = 0;
+        Fixed morale = 0;   // the regiments' average, truncated
     };
     [[nodiscard]] ArmyTotals army_totals(const Regiments& regiments, std::uint16_t army);
 }

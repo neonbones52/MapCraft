@@ -220,6 +220,7 @@ namespace mc
             struct Derived {};
             struct Country {};
             struct Number {};
+            struct Whole {};
             struct Key
             {
                 DefinitionList Content::* list;
@@ -236,6 +237,7 @@ namespace mc
             inline constexpr Derived derived{};
             inline constexpr Country country{};
             inline constexpr Number number{};
+            inline constexpr Whole whole{};
             constexpr Key key(DefinitionList Content::* list) { return { list }; }
             template <class Parse>
             constexpr Setup<Parse> setup(std::string_view csv, Parse parse)
@@ -284,8 +286,9 @@ namespace mc
 
 #define MC_RUNTIME_ONLY(table, type, name, start)                                                                     \
     static_assert(std::is_same_v<std::remove_cvref_t<decltype(start)>, Runtime>,                                      \
-                  #table "." #name ": balances have no setup file, they start at 0");
+                  #table "." #name ": balances and battles have no setup file, they start at 0");
             MC_BALANCE_COLUMNS(MC_RUNTIME_ONLY)
+            MC_BATTLE_COLUMNS(MC_RUNTIME_ONLY)
 #undef MC_RUNTIME_ONLY
         }
 
@@ -320,6 +323,21 @@ namespace mc
             return true;
         }
 
+        bool parse_field(const Context& ctx, std::size_t r, const Content&, std::string_view csv, start::Whole,
+                         std::string_view text, std::int32_t* out)
+        {
+            std::uint32_t n = 0;
+            if (text.empty()) {
+                *out = 0;
+                return true;
+            }
+            if (!parse_uint(text, &n) || n > 2'000'000'000u) {
+                return ctx.fail(r, std::format("{} \"{}\": a whole number >= 0", csv, text));
+            }
+            *out = static_cast<std::int32_t>(n);
+            return true;
+        }
+
         // The text of one field of a setup column, as the file holds it.
         std::string format_field(const Content& content, start::Country, std::uint16_t value)
         {
@@ -332,6 +350,10 @@ namespace mc
         std::string format_field(const Content&, start::Number, float value)
         {
             return std::format("{}", value);   // the shortest text that reads back to the same float
+        }
+        std::string format_field(const Content&, start::Whole, std::int32_t value)
+        {
+            return std::format("{}", value);
         }
 
         // One data/setup file through a table's column list. Its columns are the table's by-hand ones (named by the
@@ -517,20 +539,20 @@ namespace mc
         // modifiers.csv (optional: no file = no bundles, every sum 0): key, name, modifier, value, a line per pair of
         // a bundle and a modifier it gives (game/modifiers.h). A bundle is its key's lines, in the order of its first;
         // `name` (for people, the key by default) may be on any of them, and the ones that give it agree; `modifier`
-        // is one of MC_COUNTRY_MODIFIERS, once per bundle; `value` any finite number.
+        // is one of MC_COUNTRY_MODIFIERS, once per bundle; `value` a decimal number, read exactly as Fixed.
         bool read_modifiers(Source& src, const std::filesystem::path& path, ModifierBundles* out, std::string* error)
         {
             *out = {};
             out->list.key.assign(1, "");
             out->list.name.assign(1, "");
             out->list.color.assign(1, 0);
-            std::vector<float>* values[] = {
+            std::vector<Fixed>* values[] = {
 #define MC_VALUES_OF(name) &out->name,
                 MC_COUNTRY_MODIFIERS(MC_VALUES_OF)
 #undef MC_VALUES_OF
             };
-            for (std::vector<float>* v : values) {
-                v->assign(1, 0.0f);
+            for (std::vector<Fixed>* v : values) {
+                v->assign(1, 0);
             }
             if (!std::filesystem::exists(path)) {
                 return true;
@@ -567,8 +589,8 @@ namespace mc
                     out->list.color.push_back(0xFF808080u);
                     named.push_back(0);
                     given.resize(given.size() + kCountryModifierCount, 0);
-                    for (std::vector<float>* v : values) {
-                        v->push_back(0.0f);
+                    for (std::vector<Fixed>* v : values) {
+                        v->push_back(0);
                     }
                 }
                 if (!row[name].empty()) {
@@ -587,11 +609,10 @@ namespace mc
                 if (given[std::size_t(b) * kCountryModifierCount + m]++) {
                     return ctx.fail(r, std::format("bundle {}: modifier {} repeated", row[key], row[modifier]));
                 }
-                float v = 0.0f;
-                const std::string& text = row[value];
-                const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), v);
-                if (text.empty() || ec != std::errc{} || ptr != text.data() + text.size() || !std::isfinite(v)) {
-                    return ctx.fail(r, std::format("value \"{}\": a number", text));
+                Fixed v = 0;
+                if (!fx_parse(row[value], &v)) {
+                    return ctx.fail(r, std::format("value \"{}\": a number, at most 3 digits after the point",
+                                                   row[value]));
                 }
                 (*values[m])[b] = v;
             }
@@ -600,15 +621,30 @@ namespace mc
             return true;
         }
 
-        // regiment_types.csv (optional: no file = no regiments): key, name, category (infantry, cavalry, artillery).
+        // regiment_types.csv (optional: no file = no regiments): key, name, category (infantry, cavalry, artillery),
+        // then the numbers of MC_REGIMENT_TYPE_NUMBERS (maneuver and pips), whole numbers 0..255.
         bool read_regiment_types(Source& src, const std::filesystem::path& path, DefinitionList* types,
-                                 std::vector<RegimentCategory>* category, std::string* error)
+                                 std::vector<RegimentCategory>* category, RegimentTypeNumbers* numbers,
+                                 std::string* error)
         {
             csv::Table table;
             if (!read_list(src, path, false, false, types, error, &table)) {
                 return false;
             }
             category->assign(types->size(), RegimentCategory::infantry);
+            std::vector<std::uint8_t>* columns[] = {
+#define MC_NUMBER_OF(name) &numbers->name,
+                MC_REGIMENT_TYPE_NUMBERS(MC_NUMBER_OF)
+#undef MC_NUMBER_OF
+            };
+            constexpr const char* kNames[] = {
+#define MC_NAME_OF(name) #name,
+                MC_REGIMENT_TYPE_NUMBERS(MC_NAME_OF)
+#undef MC_NAME_OF
+            };
+            for (std::vector<std::uint8_t>* c : columns) {
+                c->assign(types->size(), 0);
+            }
             if (table.header.empty()) {
                 return true;
             }
@@ -617,6 +653,12 @@ namespace mc
             if (!need_column(path, table, "category", &column, error)) {
                 return false;
             }
+            int number_column[std::size(kNames)] = {};
+            for (std::size_t k = 0; k < std::size(kNames); ++k) {
+                if (!need_column(path, table, kNames[k], &number_column[k], error)) {
+                    return false;
+                }
+            }
             for (std::size_t r = 0; r < table.rows.size(); ++r) {
                 const std::string& text = table.rows[r][column];
                 const auto* found = std::find(std::begin(kRegimentCategories), std::end(kRegimentCategories), text);
@@ -624,6 +666,84 @@ namespace mc
                     return ctx.fail(r, std::format("category \"{}\": infantry, cavalry or artillery", text));
                 }
                 (*category)[r + 1] = static_cast<RegimentCategory>(found - std::begin(kRegimentCategories));
+                for (std::size_t k = 0; k < std::size(kNames); ++k) {
+                    const std::string& field = table.rows[r][number_column[k]];
+                    std::uint32_t n = 0;
+                    if (!parse_uint(field, &n) || n > 255) {
+                        return ctx.fail(r, std::format("{} \"{}\": a whole number 0..255", kNames[k], field));
+                    }
+                    (*columns[k])[r + 1] = static_cast<std::uint8_t>(n);
+                }
+            }
+            return true;
+        }
+
+        // defines.csv (required): key, value; a line for every define of MC_COMBAT_DEFINES, once each: a whole one a
+        // whole number >= 1 (max_combat_width at most kMaxCombatWidth), a fixed one a decimal number.
+        bool parse_define_whole(std::string_view text, int* out)
+        {
+            std::uint32_t n = 0;
+            if (!parse_uint(text, &n) || n < 1 || n > 1'000'000u) {
+                return false;
+            }
+            *out = static_cast<int>(n);
+            return true;
+        }
+        bool parse_define_fixed(std::string_view text, Fixed* out) { return fx_parse(text, out); }
+
+        bool read_defines(Source& src, const std::filesystem::path& path, CombatDefines* out, std::string* error)
+        {
+            *out = {};
+            csv::Table table;
+            if (!src.read(path, &table, error)) {
+                return false;
+            }
+            const Context ctx{ path, &table, error };
+            int key = 0;
+            int value = 0;
+            if (!need_column(path, table, "key", &key, error) || !need_column(path, table, "value", &value, error)) {
+                return false;
+            }
+            constexpr std::string_view kNames[] = {
+#define MC_NAME_OF(type, name) #name,
+                MC_COMBAT_DEFINES(MC_NAME_OF)
+#undef MC_NAME_OF
+            };
+            std::uint8_t seen[std::size(kNames)] = {};
+            for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                const auto& row = table.rows[r];
+                const auto* found = std::find(std::begin(kNames), std::end(kNames), row[key]);
+                if (found == std::end(kNames)) {
+                    return ctx.fail(r, std::format("define \"{}\": not one the game knows", row[key]));
+                }
+                const auto k = static_cast<std::size_t>(found - std::begin(kNames));
+                if (seen[k]++) {
+                    return ctx.fail(r, std::format("define {} repeated", row[key]));
+                }
+                bool ok = false;
+                std::size_t i = 0;
+#define MC_PARSE_DEFINE(type, name)                                                                             \
+    if (i++ == k) {                                                                                             \
+        ok = parse_define_##type(row[value], &out->name);                                                              \
+    }
+                MC_COMBAT_DEFINES(MC_PARSE_DEFINE)
+#undef MC_PARSE_DEFINE
+                if (!ok) {
+                    return ctx.fail(r, std::format("{} \"{}\": a whole number >= 1, or a decimal number with at most "
+                                                   "3 digits after the point",
+                                                   row[key], row[value]));
+                }
+            }
+            for (std::size_t k = 0; k < std::size(kNames); ++k) {
+                if (!seen[k]) {
+                    *error = std::format("{}: no define {}", path.string(), kNames[k]);
+                    return false;
+                }
+            }
+            if (out->max_combat_width > kMaxCombatWidth) {
+                *error = std::format("{}: max_combat_width {}: at most {}", path.string(), out->max_combat_width,
+                                     kMaxCombatWidth);
+                return false;
             }
             return true;
         }
@@ -705,6 +825,14 @@ namespace mc
         const std::size_t n = kArmySlots;
         MC_ARMY_COLUMNS(MC_FILL_COLUMN)
         alive.assign(kArmySlots / 64, 0);
+        retreating.assign(kArmySlots / 64, 0);
+    }
+
+    void Battles::resize()
+    {
+        const std::size_t n = kBattleSlots;
+        MC_BATTLE_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kBattleSlots / 64, 0);
     }
 
     void Regiments::resize()
@@ -726,8 +854,9 @@ namespace mc
             !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, error) ||
             !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error) ||
             !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,
-                                 &content.regiment_category, error) ||
-            !read_modifiers(src, common / "modifiers.csv", &content.modifiers, error)) {
+                                 &content.regiment_category, &content.regiment_numbers, error) ||
+            !read_modifiers(src, common / "modifiers.csv", &content.modifiers, error) ||
+            !read_defines(src, common / "defines.csv", &content.combat, error)) {
             return false;
         }
 
@@ -781,6 +910,7 @@ namespace mc
         state.money = {};   // runtime: no accounts yet (their resize comes with the treasury, M8)
         state.armies.resize();
         state.regiments.resize();
+        state.battles.resize();
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
             const int c = content.countries.find(text);
@@ -1002,8 +1132,8 @@ namespace mc
                     }
                     const std::uint16_t owner = state.armies.owner[army->second];
                     std::uint16_t slot = 0;
-                    if (!add_regiment(state.regiments, army->second, 0, 0.0f,
-                                      max_morale(cache.country_modifiers, owner), &slot)) {
+                    if (!add_regiment(state.regiments, army->second, 0, 0, max_morale(cache.country_modifiers, owner),
+                                      &slot)) {
                         return ctx.fail(r, std::format("more than {} regiments", kRegimentSlots));
                     }
                     if (!file.read(ctx, r, slot, content, state.regiments)) {
@@ -1049,10 +1179,13 @@ namespace mc
             }
             // The cache is the state's: rebuilt after every edit (rebuild_cache).
             const CountryModifiers& sums = cache.country_modifiers;
-            if (c < sums.count && (discipline(sums, c) <= 0.0f || max_morale(sums, c) <= 0.0f)) {
-                out.push_back(std::format("{}: discipline {} and maximum morale {}: both are to be above 0 (the base "
-                                          "bundle of modifiers.csv)",
-                                          content.countries.tag_text(c), discipline(sums, c), max_morale(sums, c)));
+            if (c < sums.count && (discipline(sums, c) <= 0 || max_morale(sums, c) <= 0 || tactics(sums, c) <= 0 ||
+                                   combat_width(sums, c) < 1)) {
+                out.push_back(std::format("{}: discipline {}, maximum morale {}, tactics {} and combat width {}: all "
+                                          "are to be above 0 (the base bundle of modifiers.csv)",
+                                          content.countries.tag_text(c), fx_to_double(discipline(sums, c)),
+                                          fx_to_double(max_morale(sums, c)), fx_to_double(tactics(sums, c)),
+                                          combat_width(sums, c)));
             }
         }
 

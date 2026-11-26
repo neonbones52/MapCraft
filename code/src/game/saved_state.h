@@ -37,11 +37,17 @@ namespace mc
             const std::size_t used = used_slots(state.armies.alive);
             MC_ARMY_COLUMNS(MC_VISIT_SLOTS)
             visit(std::string_view{ "armies.alive" }, std::span(state.armies.alive).first(used / 64));
+            visit(std::string_view{ "armies.retreating" }, std::span(state.armies.retreating).first(used / 64));
         }
         {
             const std::size_t used = used_slots(state.regiments.alive);
             MC_REGIMENT_COLUMNS(MC_VISIT_SLOTS)
             visit(std::string_view{ "regiments.alive" }, std::span(state.regiments.alive).first(used / 64));
+        }
+        {
+            const std::size_t used = used_slots(state.battles.alive);
+            MC_BATTLE_COLUMNS(MC_VISIT_SLOTS)
+            visit(std::string_view{ "battles.alive" }, std::span(state.battles.alive).first(used / 64));
         }
 #undef MC_VISIT_SLOTS
     }
@@ -50,14 +56,14 @@ namespace mc
     // written by hand changes the number. Such a field must be labelled (saved, content or cache, game/game_data.h)
     // and, if saved, visited above before the number is updated. By hand now: the sizes (Provinces::count and
     // core_words, Regions::count, CountryStates::count and modifier_words), the cores, the countries' modifier
-    // bundles and the two slot masks, 128 bytes with their padding.
+    // bundles, the three slot masks and the armies' retreating mask, 176 bytes with their padding.
 #define MC_COUNT_COLUMN(table, type, name, start) +1
     inline constexpr std::size_t kListedColumns = 0
         MC_PROVINCE_COLUMNS(MC_COUNT_COLUMN) MC_REGION_COLUMNS(MC_COUNT_COLUMN)
         MC_BALANCE_COLUMNS(MC_COUNT_COLUMN) MC_COUNTRY_COLUMNS(MC_COUNT_COLUMN)
-        MC_ARMY_COLUMNS(MC_COUNT_COLUMN) MC_REGIMENT_COLUMNS(MC_COUNT_COLUMN);
+        MC_ARMY_COLUMNS(MC_COUNT_COLUMN) MC_REGIMENT_COLUMNS(MC_COUNT_COLUMN) MC_BATTLE_COLUMNS(MC_COUNT_COLUMN);
 #undef MC_COUNT_COLUMN
     static_assert(sizeof(Column<std::uint8_t>) == sizeof(Column<Money>), "a list's columns differ in size");
-    static_assert(sizeof(WorldState) == 128 + kListedColumns * sizeof(Column<std::uint8_t>),
+    static_assert(sizeof(WorldState) == 176 + kListedColumns * sizeof(Column<std::uint8_t>),
                   "WorldState has a new field outside the column lists: label it and visit it in for_each_saved");
 }

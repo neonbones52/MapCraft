@@ -230,6 +230,44 @@ namespace mc
         return 0;
     }
 
+    void Movement::search_from(std::uint16_t from)
+    {
+        if (++stamp_ == 0) {
+            std::fill(seen_.begin(), seen_.end(), 0u);
+            std::fill(settled_.begin(), settled_.end(), 0u);
+            stamp_ = 1;
+        }
+        if (std::size_t{ from } + 1 >= offsets_.size()) {
+            return;
+        }
+        // Dijkstra forward: popping u, its neighbour v is reached by the step u -> v (cost_). Every province it
+        // reaches is settled with its way's cost.
+        heap_size_ = 0;
+        way_[from] = 0.0f;
+        seen_[from] = stamp_;
+        push(0.0f, from);
+        while (heap_size_ > 0) {
+            float cost = 0.0f;
+            const std::uint16_t u = pop(&cost);
+            if (settled_[u] == stamp_) {
+                continue;   // a stale pair
+            }
+            settled_[u] = stamp_;
+            for (std::uint32_t k = offsets_[u]; k < offsets_[u + 1]; ++k) {
+                const std::uint16_t v = to_[k];
+                if (settled_[v] == stamp_) {
+                    continue;
+                }
+                const float way = cost + cost_[k];
+                if (seen_[v] != stamp_ || way < way_[v]) {
+                    seen_[v] = stamp_;
+                    way_[v] = way;
+                    push(way, v);
+                }
+            }
+        }
+    }
+
     // A binary min-heap of (cost, province), ordered by cost, then by province: a full order.
     void Movement::push(float cost, std::uint16_t province)
     {

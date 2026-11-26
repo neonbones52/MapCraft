@@ -150,8 +150,8 @@ namespace mc::headless
                 if (has_seed) {
                     return fail("seed repeated");
                 }
-                if (!parse_whole(value, &scenario->seed)) {
-                    return fail(std::format("seed \"{}\": a whole number >= 0", value));
+                if (!parse_whole(value, &scenario->seed) || scenario->seed > 0xFFFFFFFFull) {
+                    return fail(std::format("seed \"{}\": a whole number 0..4294967295", value));
                 }
                 has_seed = true;
             } else {

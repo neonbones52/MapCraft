@@ -1,0 +1,11 @@
+# The battle (M6, step 2): DUM's army of the start (slot 0, three infantry) marches into Anvilwick, where NBR's army
+# (slot 1, two infantry and a cavalry) stands. NBR defends, DUM attacks; the battle goes day after day (phases of
+# three days, the dice from the seed), the loser retreats to its own province the farthest away, or is wiped out.
+# Orders to an army in the battle or retreating from it are refused. The battle's start and end go to stderr, the
+# marches (the retreat's too) to moves.csv, the battle's columns to state.csv while it lasts.
+years = 1
+seed = 1
+
+day 0 = DUM move 0:0 475
+# Refused once the battle is on: in a battle.
+day 40 = NBR move 1:0 476

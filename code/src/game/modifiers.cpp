@@ -12,21 +12,21 @@ namespace mc
         const std::size_t words = countries.modifier_words;
         const std::size_t bundle_count = bundles.list.size();
         const std::uint64_t* sets = countries.modifiers.data();
-        auto sum = [&](const std::vector<float>& value, Column<float>& column) {
+        auto sum = [&](const std::vector<Fixed>& value, Column<Fixed>& column) {
             column.resize(n);   // the same size after the first time: no allocation
-            std::fill(column.begin(), column.end(), bundles.base != 0 ? value[bundles.base] : 0.0f);
-            float* s = column.data();
+            std::fill(column.begin(), column.end(), bundles.base != 0 ? value[bundles.base] : 0);
+            Fixed* s = column.data();
             for (std::size_t b = 1; b < bundle_count; ++b) {
-                const float v = value[b];
-                if (b == bundles.base || v == 0.0f) {
+                const Fixed v = value[b];
+                if (b == bundles.base || v == 0) {
                     continue;
                 }
                 const std::size_t word = b / 64;
                 const unsigned shift = static_cast<unsigned>(b % 64);
                 for (std::size_t c = 0; c < n; ++c) {
-                    // v or a zero, so every country takes the same additions in the same order.
-                    const auto has = static_cast<std::int32_t>((sets[c * words + word] >> shift) & 1u);
-                    s[c] += v * static_cast<float>(has);
+                    // v where the country has the bundle, else 0: a mask, no branch.
+                    const auto has = static_cast<Fixed>((sets[c * words + word] >> shift) & 1u);
+                    s[c] += v & -has;
                 }
             }
         };

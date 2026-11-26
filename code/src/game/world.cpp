@@ -5,7 +5,7 @@
 
 namespace mc
 {
-    bool World::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
+    bool World::load(const std::filesystem::path& dir, const MapData& map, std::uint32_t seed, std::string* error,
                      std::span<const csv::Patch> patches)
     {
         if (!data_.load(dir, map, error, patches)) {
@@ -13,8 +13,10 @@ namespace mc
         }
         start_ = data_.state;
         day_ = kStartDay;
+        seed_ = seed;
         movement_.build(map, data_.content, data_.state);
         movement_.rebuild_steps(data_.state);
+        combat_.build(map);
         commands_ = {};
         log::info("world {}: {}", dir.string(), data_.summary());
         for (const std::string& w : data_.warnings) {
@@ -59,6 +61,12 @@ namespace mc
             if (command.country == 0 || state.armies.owner[slot] != command.country) {
                 return reject("not the country's army");
             }
+            if (state.armies.battle[slot] != 0) {
+                return reject("in a battle");
+            }
+            if ((state.armies.retreating[slot / 64] >> (slot % 64)) & 1u) {
+                return reject("retreating");
+            }
             if (!movement_.order(state, slot, command.province)) {
                 return reject("no way there over land");
             }
@@ -73,12 +81,14 @@ namespace mc
     void World::tick_day()
     {
         movement_.day(data_.state);
+        combat_.day(data_.state, data_.content, data_.cache.country_modifiers, movement_, seed_, day_);
         ++day_;
     }
 
-    void World::restart()
+    void World::restart(std::uint32_t seed)
     {
         day_ = kStartDay;
+        seed_ = seed;
         data_.state = start_;
         data_.rebuild_cache();
         movement_.rebuild_steps(data_.state);

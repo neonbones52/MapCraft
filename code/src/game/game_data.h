@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "core/csv.h"
+#include "core/fixed.h"
 #include "core/money.h"
 
 namespace mc
@@ -79,7 +80,8 @@ namespace mc
     //   runtime                    0; from then on only the game changes it
     //   setup("csv column", parse) data/setup: read at load and written back by the editor (GameData::save_setup);
     //                              parse is country (a tag, empty = none; u16), key(&Content::list) (a key of that
-    //                              list, empty = none; u8) or number (a number >= 0, empty = 0; float)
+    //                              list, empty = none; u8), number (a number >= 0, empty = 0; float) or whole (a
+    //                              whole number >= 0, empty = 0; i32)
     //   by_hand                    data/setup, read and written by GameData's own code (a capital: a land province)
     //   derived                    not in data/setup: GameData sets it at load from other columns (a regiment's
     //                              morale: full)
@@ -174,19 +176,29 @@ namespace mc
         }
     };
 
-    // The modifiers (docs/SIMULATION.md, "Модификаторы"): what a source gives a country. A source is a bundle of
+    // The modifiers (docs/GAMEDATA.md, "Модификаторы"): what a source gives a country. A source is a bundle of
     // data/common/modifiers.csv (bundle, modifier, value); a country's sum of a modifier is the sum of the values of
-    // the base bundle and of every bundle it has (EU4's way: values add up, whatever they mean). What a sum means is
-    // its formula's (game/modifiers.h): a flat value, or a share where 0.1 = +10%. The set of modifiers is the code's:
-    // one line each, X(name), the name being the modifier's key in the data; a new modifier is one line here and
-    // the formula that reads it.
+    // the base bundle and of every bundle it has (EU4's way: values add up, whatever they mean). Values and sums are
+    // Fixed (core/fixed.h), as EU4's CFixedPoint: the additions are exact. What a sum means is its formula's
+    // (game/modifiers.h): a flat value, or a share where 0.1 = +10%. The set of modifiers is the code's: one line
+    // each, X(name), the name being the modifier's key in the data; a new modifier is one line here and the formula
+    // that reads it. The base bundle holds EU4's values at military technology 3 (docs/GAMEDATA.md).
 #define MC_COUNTRY_MODIFIERS(X)                                                                                 \
     /* flat, 1 = 100%: EU3's discipline, the damage its regiments deal and take (the base gives 1) */           \
     X(discipline)                                                                                               \
     /* flat: the base of its regiments' maximum morale, before land_morale (the base bundle; technology, M9) */ \
     X(base_morale)                                                                                              \
     /* a share: the maximum morale is base_morale × (1 + land_morale), EU4's "morale of armies" */             \
-    X(land_morale)
+    X(land_morale)                                                                                              \
+    /* flat: EU4's military tactics; the tactics its regiments are shot at with are this × discipline */        \
+    X(military_tactics)                                                                                         \
+    /* flat, whole: the width of its front line in battle (EU4's combat width; technology widens it, M9) */      \
+    X(combat_width)                                                                                             \
+    /* flat: the weapons' damage of a category in a phase (EU4's technology values: infantry_fire...) */        \
+    X(infantry_fire)                                                                                            \
+    X(infantry_shock)                                                                                           \
+    X(cavalry_fire)                                                                                             \
+    X(cavalry_shock)
 
 #define MC_MODIFIER_NAME(name) #name,
     inline constexpr std::string_view kCountryModifiers[] = { MC_COUNTRY_MODIFIERS(MC_MODIFIER_NAME) };
@@ -195,7 +207,7 @@ namespace mc
 
     // Content. The modifier bundles of data/common/modifiers.csv: a list (index 0 = none, the rest in the order of
     // their first line), and one column per modifier over the bundles, the bundle's value (0 = it does not give it).
-#define MC_DECLARE_BUNDLE_VALUES(name) std::vector<float> name;
+#define MC_DECLARE_BUNDLE_VALUES(name) std::vector<Fixed> name;
     struct ModifierBundles
     {
         DefinitionList list;
@@ -208,7 +220,7 @@ namespace mc
     // Cache. Every country's sum of each modifier, one column per modifier, indexed like CountryStates, padded(count)
     // long: rebuilt from the bundles and the countries' sets after a load, a restart and an edit of a set
     // (GameData::rebuild_cache); the formulas read them (game/modifiers.h).
-#define MC_DECLARE_SUM(name) Column<float> name;
+#define MC_DECLARE_SUM(name) Column<Fixed> name;
     struct CountryModifiers
     {
         std::size_t count = 0;
@@ -223,13 +235,15 @@ namespace mc
         CountryModifiers country_modifiers;
     };
 
-    // Entities that are born and die (armies, regiments) live in slots: a fixed number per table, so the tick never
-    // allocates; a mask of the slots in use; a new entity takes the lowest free slot (game/armies.h). A freed slot's
-    // columns are back to 0. The numbers are the limits: regiments fill the u16 slot index (more needs u32 slots),
-    // which is far above what EU4 fields on a map six times ours.
+    // Entities that are born and die (armies, regiments, battles) live in slots: a fixed number per table, so the
+    // tick never allocates; a mask of the slots in use; a new entity takes the lowest free slot (game/armies.h). A
+    // freed slot's columns are back to 0. The numbers are the limits: regiments fill the u16 slot index (more needs
+    // u32 slots), which is far above what EU4 fields on a map six times ours; a battle is one per province at most.
     inline constexpr std::uint32_t kArmySlots = 4096;
     inline constexpr std::uint32_t kRegimentSlots = 65536;
-    static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0, "whole words of the slot masks");
+    inline constexpr std::uint32_t kBattleSlots = 1024;
+    static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kBattleSlots % 64 == 0,
+                  "whole words of the slot masks");
     static_assert(kArmySlots <= 65536 && kRegimentSlots <= 65536, "u16 slots");
 
     // The used part of a slot table: the slots up to the end of the last mask word with a live slot (a multiple of 64).
@@ -253,26 +267,41 @@ namespace mc
     /* the step done so far, in the units of the step's cost (Movement::step_cost) */                           \
     X(armies, float, progress, runtime)                                                                         \
     /* grows each time the slot is freed: what a reference from outside checks (ArmyRef, game/armies.h) */     \
-    X(armies, std::uint16_t, generation, runtime)
+    X(armies, std::uint16_t, generation, runtime)                                                               \
+    /* the battle it fights in (game/combat.h): its slot + 1, 0 = none; its side is its owner's */              \
+    X(armies, std::uint16_t, battle, runtime)
 
     // Saved. The armies (land only; fleets are not here), in slots, kArmySlots long. data/setup/armies.csv at the
     // start: army (its number in the file, for regiments.csv) and province by hand; an army's name is not data.
     struct Armies
     {
         MC_ARMY_COLUMNS(MC_DECLARE_COLUMN)
-        Column<std::uint64_t> alive;   // by hand: bit s % 64 of word s / 64 = slot s holds an army
+        Column<std::uint64_t> alive;        // by hand: bit s % 64 of word s / 64 = slot s holds an army
+        Column<std::uint64_t> retreating;   // by hand, the same bits: the army retreats from a lost battle (its march
+                                            // is locked, it starts no battle; game/combat.h)
 
         void resize();
     };
+
+    // Where a regiment is in its army's battle (Regiments::place): 0 not in a battle, 1..kFrontSlots a position of the
+    // front line + 1 (EU4's 0..MAX_COMBAT_WIDTH), in the reserve, or out of the lines (broken: still in its army,
+    // still counted, never back in this battle).
+    inline constexpr std::uint8_t kPlaceNone = 0;
+    inline constexpr std::uint8_t kPlaceReserve = 254;
+    inline constexpr std::uint8_t kPlaceOut = 255;
 
 #define MC_REGIMENT_COLUMNS(X)                                                                                  \
     /* its army's slot: a reference within one life, the army frees its regiments when it dies */               \
     X(regiments, std::uint16_t, army, by_hand)                                                                  \
     X(regiments, std::uint8_t, type, setup("type", key(&Content::regiment_types)))                              \
-    /* men; a full regiment is 1000 */                                                                          \
-    X(regiments, float, strength, setup("strength", number))                                                    \
-    /* full at the start: the maximum morale of its army's owner (game/modifiers.h) */                          \
-    X(regiments, float, morale, derived)
+    /* men; a full regiment is 1000 (EU4's strength: CFixedPoint 1.0 = 1000 men) */                             \
+    X(regiments, std::int32_t, strength, setup("strength", whole))                                              \
+    /* Fixed; full at the start: the maximum morale of its army's owner (game/modifiers.h) */                   \
+    X(regiments, Fixed, morale, derived)                                                                        \
+    /* in its army's battle: kPlace* or a front position + 1 */                                                 \
+    X(regiments, std::uint8_t, place, runtime)                                                                  \
+    /* its number in the queue of its side's reserve: EU4's order of the reserve is the order of the numbers */   \
+    X(regiments, std::uint32_t, queue, runtime)
 
     // Saved. The regiments of every army, in slots, kRegimentSlots long. data/setup/regiments.csv at the start: army
     // (its number in armies.csv) by hand.
@@ -284,7 +313,47 @@ namespace mc
         void resize();
     };
 
-    // The regiment types' categories (regiment_types.csv `category`): what a type is in battle (M6).
+    // A battle's front line: EU4's MAX_COMBAT_WIDTH positions + 1 (its lines are indexed 0..40). The width a battle
+    // fights at is its countries' combat_width (game/modifiers.h), at most defines' max_combat_width.
+    inline constexpr int kMaxCombatWidth = 40;
+    inline constexpr int kFrontSlots = kMaxCombatWidth + 1;
+
+    // A battle's phase (Battles::phase).
+    inline constexpr std::uint8_t kPhaseFire = 0;
+    inline constexpr std::uint8_t kPhaseShock = 1;
+    // Battles::phase_day before the first day: the lines are not drawn up yet (EU4's _nDay = -1).
+    inline constexpr std::uint8_t kNotDeployed = 255;
+
+#define MC_BATTLE_COLUMNS(X)                                                                                    \
+    X(battles, std::uint16_t, province, runtime)                                                                \
+    /* the two sides, a country each (no alliances yet): the attacker came into the province */                 \
+    X(battles, std::uint16_t, attacker, runtime)                                                                \
+    X(battles, std::uint16_t, defender, runtime)                                                                \
+    /* days fought (EU4's _nDuration) */                                                                        \
+    X(battles, std::uint16_t, duration, runtime)                                                                \
+    /* the day of the phase (EU4's _nDay), kNotDeployed before the first */                                     \
+    X(battles, std::uint8_t, phase_day, runtime)                                                                \
+    X(battles, std::uint8_t, phase, runtime)                                                                    \
+    X(battles, std::uint8_t, dice_attacker, runtime)                                                            \
+    X(battles, std::uint8_t, dice_defender, runtime)                                                            \
+    /* the next number of the reserve queue (Regiments::queue) */                                               \
+    X(battles, std::uint32_t, queue, runtime)                                                                   \
+    /* the men who joined each side, for the winner's morale (EU4's GiveEndOfCombatMoraleBoost) */               \
+    X(battles, std::int32_t, joined_attacker, runtime)                                                          \
+    X(battles, std::int32_t, joined_defender, runtime)                                                          \
+    /* grows each time the slot is freed: with the slot, the battle's name for its dice (core/random.h) */      \
+    X(battles, std::uint16_t, generation, runtime)
+
+    // Saved. The battles going on, in slots, kBattleSlots long; runtime only (no setup file).
+    struct Battles
+    {
+        MC_BATTLE_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+
+        void resize();
+    };
+
+    // The regiment types' categories (regiment_types.csv `category`): what a type is in battle.
     enum class RegimentCategory : std::uint8_t
     {
         infantry,
@@ -292,6 +361,53 @@ namespace mc
         artillery,
     };
     inline constexpr std::string_view kRegimentCategories[] = { "infantry", "cavalry", "artillery" };
+
+    // Content. The regiment types' numbers for battle (regiment_types.csv, a column each, whole numbers 0..255): EU4's
+    // unit maneuver (how far aside from the regiment straight ahead it can strike: its flanking range; infantry 1,
+    // cavalry 2) and its pips, offensive and defensive, of fire, shock and morale. One column per number over the
+    // types, [0] (no type) 0.
+#define MC_REGIMENT_TYPE_NUMBERS(X)                                                                             \
+    X(maneuver)                                                                                                 \
+    X(off_fire)                                                                                                 \
+    X(def_fire)                                                                                                 \
+    X(off_shock)                                                                                                \
+    X(def_shock)                                                                                                \
+    X(off_morale)                                                                                               \
+    X(def_morale)
+#define MC_DECLARE_TYPE_NUMBER(name) std::vector<std::uint8_t> name;
+    struct RegimentTypeNumbers
+    {
+        MC_REGIMENT_TYPE_NUMBERS(MC_DECLARE_TYPE_NUMBER)
+    };
+#undef MC_DECLARE_TYPE_NUMBER
+
+    // Content. The battle's constants (data/common/defines.csv: key, value; EU4's NDefines::NMilitary), every one
+    // required: X(kind, name), whole a whole number >= 1 (int), fixed a decimal number (Fixed).
+#define MC_COMBAT_DEFINES(X)                                                                                    \
+    /* days a fire or shock phase lasts; the dice are rolled anew with each phase */                            \
+    X(whole, days_per_phase)                                                                                    \
+    X(whole, dice_sides)                                                                                        \
+    /* days before a side can lose on morale and retreat */                                                     \
+    X(whole, cannot_retreat_days)                                                                               \
+    /* how many times stronger a side wipes the other out: at the end, and while it cannot be left */           \
+    X(whole, overrun_factor)                                                                                    \
+    X(whole, overrun_factor_cannot_leave)                                                                       \
+    /* the widest a front line can be, at most kMaxCombatWidth */                                               \
+    X(whole, max_combat_width)                                                                                  \
+    /* the damage grows by this each day of the battle */                                                       \
+    X(fixed, war_length_damage)                                                                                 \
+    /* a day's morale loss in the line and in the reserve: these × the enemy's maximum morale */                \
+    X(fixed, daily_morale_damage)                                                                               \
+    X(fixed, reserve_daily_morale_damage)                                                                       \
+    X(fixed, front_line_modifier)
+#define MC_DEFINE_TYPE_whole int
+#define MC_DEFINE_TYPE_fixed Fixed
+#define MC_DECLARE_DEFINE(kind, name) MC_DEFINE_TYPE_##kind name = 0;
+    struct CombatDefines
+    {
+        MC_COMBAT_DEFINES(MC_DECLARE_DEFINE)
+    };
+#undef MC_DECLARE_DEFINE
 
     // The money good: worth 1 emerald whatever goods.csv says (docs/GAMEDATA.md, "Файлы").
     inline constexpr std::string_view kMoneyGood = "emerald";
@@ -308,7 +424,9 @@ namespace mc
                                           // good: 1); no rule reads it yet
         DefinitionList trade_nodes;       // data/common/trade_nodes.csv: a node is made of whole regions (M11 rules)
         DefinitionList regiment_types;    // data/common/regiment_types.csv: the units (EU4's Latin Knights...)
-        std::vector<RegimentCategory> regiment_category;   // per type; its combat numbers come with M6
+        std::vector<RegimentCategory> regiment_category;   // per type
+        RegimentTypeNumbers regiment_numbers;              // per type: maneuver and pips
+        CombatDefines combat;             // data/common/defines.csv
         ModifierBundles modifiers;        // data/common/modifiers.csv
         CountryDefinitions countries;
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
@@ -324,6 +442,7 @@ namespace mc
         CountryStates countries;
         Armies armies;
         Regiments regiments;
+        Battles battles;
     };
 
     // Loads Content and the start's WorldState from data/ (docs/GAMEDATA.md) and writes the start back (editor). In

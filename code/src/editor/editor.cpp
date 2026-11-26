@@ -307,6 +307,28 @@ namespace mc
         }
     }
 
+    void Editor::edit_whole(const char* label, Column<std::int32_t>& column, std::span<const std::uint32_t> ids,
+                            int step, int max)
+    {
+        std::int32_t value = 0;
+        const bool same = shared(column, ids, &value);
+        if (!same) {
+            value = 0;
+        }
+        int typed = value;
+        if (ImGui::InputInt(label, &typed, step, step * 10)) {
+            begin_typing();
+            for (const std::uint32_t id : ids) {
+                column[id] = std::clamp(typed, 0, max);
+            }
+            changed();
+        }
+        if (!same) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("%s", kMixed);   // the field shows 0; what is typed goes to the whole selection
+        }
+    }
+
     void Editor::edit_cores()
     {
         GameData& game = game_;
@@ -354,14 +376,15 @@ namespace mc
         // A bundle's values, for its tooltip.
         auto values_of = [&](std::size_t b) {
             std::string text;
-            const std::vector<float>* values[] = {
+            const std::vector<Fixed>* values[] = {
 #define MC_VALUES_OF(name) &bundles.name,
                 MC_COUNTRY_MODIFIERS(MC_VALUES_OF)
 #undef MC_VALUES_OF
             };
             for (std::size_t m = 0; m < kCountryModifierCount; ++m) {
-                if ((*values[m])[b] != 0.0f) {
-                    text += std::format("{}{} {:+}", text.empty() ? "" : "\n", kCountryModifiers[m], (*values[m])[b]);
+                if ((*values[m])[b] != 0) {
+                    text += std::format("{}{} {:+}", text.empty() ? "" : "\n", kCountryModifiers[m],
+                                        fx_to_double((*values[m])[b]));
                 }
             }
             return text.empty() ? std::string("(gives nothing)") : text;
@@ -386,9 +409,12 @@ namespace mc
             ImGui::PopID();
         }
         if (country < sums.count) {
-            ImGui::Text("Discipline %.2f, maximum morale %.2f", discipline(sums, country), max_morale(sums, country));
+            ImGui::Text("Discipline %.2f, maximum morale %.2f", fx_to_double(discipline(sums, country)),
+                        fx_to_double(max_morale(sums, country)));
             ImGui::SetItemTooltip("The sums of its modifiers (game/modifiers.h); a regiment put down now starts at the "
                                   "maximum morale");
+            ImGui::Text("Tactics %.2f, combat width %d", fx_to_double(tactics(sums, country)),
+                        combat_width(sums, country));
         }
     }
 

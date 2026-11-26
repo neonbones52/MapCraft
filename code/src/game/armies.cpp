@@ -64,9 +64,10 @@ namespace mc
 #undef MC_CLEAR_SLOT
         armies.generation[slot] = static_cast<std::uint16_t>(generation + 1);
         free_slot(armies.alive, slot);
+        free_slot(armies.retreating, slot);
     }
 
-    bool add_regiment(Regiments& regiments, std::uint16_t army, std::uint8_t type, float strength, float morale,
+    bool add_regiment(Regiments& regiments, std::uint16_t army, std::uint8_t type, std::int32_t strength, Fixed morale,
                       std::uint16_t* slot)
     {
         if (!take_slot(regiments.alive, slot)) {
@@ -90,15 +91,16 @@ namespace mc
     ArmyTotals army_totals(const Regiments& regiments, std::uint16_t army)
     {
         ArmyTotals out;
+        std::int64_t morale = 0;
         for_each_alive(regiments.alive, [&](std::uint32_t r) {
             if (regiments.army[r] == army) {
                 ++out.regiments;
                 out.men += regiments.strength[r];
-                out.morale += regiments.morale[r];
+                morale += regiments.morale[r];
             }
         });
         if (out.regiments > 0) {
-            out.morale /= static_cast<float>(out.regiments);
+            out.morale = static_cast<Fixed>(morale / out.regiments);
         }
         return out;
     }

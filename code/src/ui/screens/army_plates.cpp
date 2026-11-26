@@ -29,7 +29,7 @@ namespace mc
         {
             own,
             neutral,
-            enemy,   // none before wars (M7)
+            enemy,   // before diplomacy every foreign army (game/combat.h)
         };
 
         ImU32 background(Relation r)
@@ -55,12 +55,12 @@ namespace mc
         }
 
         // "800", "1.0k", "12.5k": the men as EU4 writes them.
-        std::string men_text(float men)
+        std::string men_text(std::int64_t men)
         {
-            if (men < 1000.0f) {
-                return std::format("{:.0f}", men);
+            if (men < 1000) {
+                return std::format("{}", men);
             }
-            return std::format("{:.1f}k", men / 1000.0f);
+            return std::format("{:.1f}k", static_cast<double>(men) / 1000.0);
         }
     }
 
@@ -88,9 +88,12 @@ namespace mc
             const std::uint16_t owner = ui.state.armies.owner[marker.army];
             const ArmyTotals totals = army_totals(ui.state.regiments, marker.army);
             const CountryModifiers& sums = ui.cache.country_modifiers;
-            const float full = owner < sums.count ? max_morale(sums, owner) : 0.0f;
-            const float morale = full > 0.0f ? std::clamp(totals.morale / full, 0.0f, 1.0f) : 0.0f;
-            const Relation relation = owner != 0 && owner == me ? Relation::own : Relation::neutral;
+            const Fixed full = owner < sums.count ? max_morale(sums, owner) : 0;
+            const float morale =
+                full > 0 ? std::clamp(static_cast<float>(totals.morale) / static_cast<float>(full), 0.0f, 1.0f) : 0.0f;
+            const Relation relation = owner != 0 && owner == me      ? Relation::own
+                                      : owner != 0 && me != 0       ? Relation::enemy
+                                                                    : Relation::neutral;
 
             const std::string text = men_text(totals.men);
             const ImVec2 text_extent = font->CalcTextSizeA(text_size, FLT_MAX, 0.0f, text.c_str());

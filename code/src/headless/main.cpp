@@ -78,7 +78,7 @@ namespace
         run->world = std::make_unique<mc::World>();
         mc::World& world = *run->world;
         std::string error;
-        if (!world.load(MC_DEFAULT_DATA, map, &error, scenario.patches)) {
+        if (!world.load(MC_DEFAULT_DATA, map, static_cast<std::uint32_t>(scenario.seed), &error, scenario.patches)) {
             mc::log::error("{}", error);
             return false;
         }

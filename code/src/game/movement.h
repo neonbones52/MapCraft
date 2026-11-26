@@ -49,6 +49,18 @@ namespace mc
         bool order(WorldState& state, std::uint16_t slot, std::uint16_t destination);
         // One day of every march, in slot order.
         void day(WorldState& state);
+        // The army in `slot` stops where it is, wherever it was on its step (it joins a battle: game/combat.h).
+        void halt(WorldState& state, std::uint16_t slot) { stop(state.armies, slot); }
+        // The army in `slot` ended a step today (the last day()): it came into the province it is in.
+        [[nodiscard]] bool arrived_today(std::uint16_t slot) const { return (arrived_[slot / 64] >> (slot % 64)) & 1u; }
+
+        // The cost of the way from `from` to every land province it reaches (a full search over the steps forward);
+        // way_from(p) reads it until the next search or order, < 0 where there is no way.
+        void search_from(std::uint16_t from);
+        [[nodiscard]] float way_from(std::uint16_t province) const
+        {
+            return province < settled_.size() && settled_[province] == stamp_ ? way_[province] : -1.0f;
+        }
 
         // The cost of the step from province `from` into its neighbour `to`; 0 if it is not a step.
         [[nodiscard]] float step_cost(std::uint16_t from, std::uint16_t to) const;

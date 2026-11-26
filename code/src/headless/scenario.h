@@ -13,7 +13,7 @@ namespace mc::headless
     // A scenario of mapcraft_sim (docs/SIMULATION.md, "Headless-симулятор"): a text file of `key = value` lines,
     // `#` starting a comment line:
     //     years = 50                       how long it runs (360-day years)
-    //     seed = 1                         the world's seed (nothing random in the rules yet: only recorded)
+    //     seed = 1                         the world's seed (core/random.h: the battles' dice), 0..4294967295
     //     common/goods.csv: iron.price = 3 a data change: in data/common/goods.csv, the row whose first column is
     //                                      iron, the column price, set to 3 before the file is parsed
     //     day 12 = DUM move 0:0 476        a command on day 12 of the run (0 = the start, before the first day

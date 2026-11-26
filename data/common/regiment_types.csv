@@ -1,4 +1,4 @@
-key,name,category
-infantry,Infantry,infantry
-cavalry,Cavalry,cavalry
-artillery,Artillery,artillery
+key,name,category,maneuver,off_fire,def_fire,off_shock,def_shock,off_morale,def_morale
+infantry,Infantry,infantry,1,0,0,0,0,1,1
+cavalry,Cavalry,cavalry,2,0,0,1,0,1,1
+artillery,Artillery,artillery,2,0,0,0,0,2,0

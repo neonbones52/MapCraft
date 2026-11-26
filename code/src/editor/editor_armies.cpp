@@ -17,7 +17,7 @@ namespace mc
 {
     namespace
     {
-        constexpr float kFullRegiment = 1000.0f;   // men
+        constexpr std::int32_t kFullRegiment = 1000;   // men
     }
 
     void Editor::army_section(std::uint32_t province)
@@ -38,9 +38,9 @@ namespace mc
             ImGui::PushID(army);
             const std::uint16_t army_owner = state.armies.owner[army];
             const ArmyTotals totals = army_totals(state.regiments, army);
-            ImGui::Text("%s (%s): %u regiments, %.0f men", ui::army_name(army).c_str(),
+            ImGui::Text("%s (%s): %u regiments, %lld men", ui::army_name(army).c_str(),
                         army_owner ? game.content.countries.tag_text(army_owner).c_str() : "no owner",
-                        totals.regiments, totals.men);
+                        totals.regiments, static_cast<long long>(totals.men));
             ImGui::SameLine();
             if (ImGui::SmallButton("Remove army")) {
                 begin_edit();
@@ -64,7 +64,7 @@ namespace mc
                 pick_listed("##type", types, state.regiments.type, one);
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9.0f);
-                edit_number("men", state.regiments.strength, one, 100.0f, kFullRegiment);
+                edit_whole("men", state.regiments.strength, one, 100, kFullRegiment);
                 ImGui::SameLine();
                 if (ImGui::SmallButton("x")) {
                     begin_edit();

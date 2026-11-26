@@ -204,7 +204,7 @@ namespace mc
         for_each_alive(regiments.alive, [&](std::uint32_t r) {
             const std::uint8_t type = regiments.type[r];
             const auto c = type < category.size() ? static_cast<std::size_t>(category[type]) : 0;
-            men_[std::size_t{ regiments.army[r] } * kCategories + c] += regiments.strength[r];
+            men_[std::size_t{ regiments.army[r] } * kCategories + c] += static_cast<float>(regiments.strength[r]);
         });
         order_.clear();
         for_each_alive(armies.alive, [&](std::uint32_t a) {

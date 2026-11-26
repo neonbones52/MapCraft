@@ -41,6 +41,23 @@ namespace mc
             ImGui::TextUnformatted(countries.name[owner].c_str());
         }
         ImGui::TextDisabled("%s", std::string(ui.map.province_name(province)).c_str());
+        // The battle in the province, if one goes on (game/combat.h).
+        const Battles& battles = ui.state.battles;
+        for_each_alive(battles.alive, [&](std::uint32_t b) {
+            if (battles.province[b] != province) {
+                return;
+            }
+            ImGui::Separator();
+            ImGui::Text("Battle: %s attacks %s", countries.name[battles.attacker[b]].c_str(),
+                        countries.name[battles.defender[b]].c_str());
+            if (battles.phase_day[b] == kNotDeployed) {
+                ImGui::TextDisabled("Drawing up the lines");
+            } else {
+                ImGui::Text("Day %u, %s phase, dice %u : %u", battles.duration[b],
+                            battles.phase[b] == kPhaseFire ? "fire" : "shock", battles.dice_attacker[b],
+                            battles.dice_defender[b]);
+            }
+        });
         for (const std::uint16_t army : here) {
             const std::uint16_t army_owner = armies.owner[army];
             const ArmyTotals totals = army_totals(ui.state.regiments, army);
@@ -53,8 +70,9 @@ namespace mc
                 ImGui::SameLine();
                 ImGui::TextDisabled("(%s)", countries.name[army_owner].c_str());
             }
-            ImGui::Text("%u regiments, %.0f men", totals.regiments, totals.men);
-            ImGui::Text("Morale %.2f / %.2f", totals.morale, max_morale(ui.cache.country_modifiers, army_owner));
+            ImGui::Text("%u regiments, %lld men", totals.regiments, static_cast<long long>(totals.men));
+            ImGui::Text("Morale %.2f / %.2f", fx_to_double(totals.morale),
+                        fx_to_double(max_morale(ui.cache.country_modifiers, army_owner)));
         }
         ImGui::EndTooltip();
     }
