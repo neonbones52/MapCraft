@@ -5,9 +5,10 @@ Runs after tools/labels/provinces.py: the city keeps clear of the province's nam
          (ground levels equal), among those the one with the most room round it, CITY_MARGIN px from the province's
          border, the coast, lakes, rivers and the names; city_x, city_y is its centre (map px), city_bx, city_by its
          north-west block, city_facing the way the house faces (0 north, 1 east, 2 south, 3 west), varied by province
-  unit   well inside the province, a short walk from the city, on dry land: a land block (no river, lake or sea)
-         whose eight neighbours are land too, off the rivers' water (RIVER_PAD), so the army's figure never stands
-         in or over water; where the province has no such point a short walk away, the next of unit_tiers
+  unit   well inside the province, near the city (just off its house, UNIT_DISTANCE), on dry land: a land block (no
+         river, lake or sea) whose eight neighbours are land too, off the rivers' water (RIVER_PAD), so the army's
+         figure never stands in or over water; level ground first (the eight neighbours on its own ground level);
+         where the province has no such point near the city, the next of UNIT_TIERS
   text   the deepest point (water provinces: their only locator besides the unit)
   port   every land province touching a sea province by a block side has a pier: one of its land blocks on the coast
          (pier_bx, pier_by) and the PIER_BLOCKS sea blocks in a row beside it the pier reaches over (pier_dir, as
@@ -37,16 +38,18 @@ from validate_land import LAND, SEA  # noqa: E402
 sys.path.insert(0, str(ROOT / 'tools' / 'mapbake'))
 import rivers as river_lines  # noqa: E402
 
-UNIT_DISTANCE = (22, 48)   # px from the city where the army figure stands
+UNIT_DISTANCE = (10, 48)   # px from the city where the army figure stands: just off the house (2 x 2 blocks), not far
 CITY_MARGIN = 10           # px the city keeps from its province's border, the coast, lakes and rivers
 LABEL_PAD = 2.0            # px the city keeps from the province names' glyph quads, where the province allows
 RIVER_PAD = 2.0            # px the city keeps from a river's water
 STEPS = ((0, -1), (1, 0), (0, 1), (-1, 0))   # (dx, dy) of facing / pier direction 0 north, 1 east, 2 south, 3 west
 PIER_BLOCKS = 2            # sea blocks a pier reaches over
-# Where an army point may stand, best first (the first a province has, more than 2 px inside it): a land block with
-# land all round a short walk (UNIT_DISTANCE) from the city; such a block anywhere in the province; any dry pixel a
-# short walk away; anywhere; the city's site.
-UNIT_TIERS = ('firm, near the city', 'firm, anywhere', 'dry, near the city', 'dry, anywhere', 'the city')
+# Where an army point may stand, best first (the first a province has, more than 2 px inside it): a level land block
+# with land all round (its eight neighbours on its ground level) near the city (UNIT_DISTANCE); a land block with land
+# all round near the city; a level one anywhere in the province; one with land all round anywhere; any dry pixel near
+# the city; anywhere; the city's site.
+UNIT_TIERS = ('level, near the city', 'firm, near the city', 'level, anywhere', 'firm, anywhere',
+              'dry, near the city', 'dry, anywhere', 'the city')
 
 
 def deepest(mask):
@@ -148,6 +151,11 @@ def main():
     # Land blocks with land all round (8 neighbours; past the map's edge counts as land).
     firm_blocks = ndimage.binary_erosion(np.pad(bcls == LAND, 1, constant_values=True), np.ones((3, 3), bool))
     firm = np.repeat(np.repeat(firm_blocks[1:-1, 1:-1], BLOCK, 0), BLOCK, 1)
+    # Firm blocks on level ground: the block and its eight neighbours on one ground level.
+    padded_ground = np.pad(ground.astype(np.int16), 1, mode='edge')
+    level_blocks = firm_blocks[1:-1, 1:-1] & (ndimage.maximum_filter(padded_ground, 3)[1:-1, 1:-1] ==
+                                              ndimage.minimum_filter(padded_ground, 3)[1:-1, 1:-1])
+    level = np.repeat(np.repeat(level_blocks, BLOCK, 0), BLOCK, 1)
     unit_fallbacks = {}
     pairs = [(int(r['a']), int(r['b'])) for r in read_csv(ROOT / 'adjacency.csv')]
     coastal = {a if provinces[b]['type'] == 'sea' else b for a, b in pairs
@@ -195,19 +203,21 @@ def main():
             out.update(city_bx=site[0], city_by=site[1], city_facing=facing(pid))
         out.update(city_x=cx, city_y=cy)
 
-        # Unit: well inside the province, a short walk away from the city, on dry land (unit_tiers).
+        # Unit: well inside the province, near the city, on level dry land first (UNIT_TIERS).
         yy, xx = np.indices(mask.shape)
         distance = np.hypot(xx + x0 - cx, yy + y0 - cy)
         walk = (distance >= UNIT_DISTANCE[0]) & (distance <= UNIT_DISTANCE[1])
         firm_ground = open_ground & firm[y0:y1, x0:x1]
+        level_ground = open_ground & level[y0:y1, x0:x1]
         ux, uy = cx - x0, cy - y0   # the last resort: the city's own dry site
-        for tier, allowed in enumerate((firm_ground & walk, firm_ground, open_ground & walk, open_ground)):
+        for tier, allowed in enumerate((level_ground & walk, firm_ground & walk, level_ground, firm_ground,
+                                        open_ground & walk, open_ground)):
             score = np.where(allowed, depth, -1)
             if score.max() > 2:
                 uy, ux = np.unravel_index(np.argmax(score), score.shape)
                 break
         else:
-            tier = 4
+            tier = len(UNIT_TIERS) - 1
         if tier > 0:
             unit_fallbacks.setdefault(UNIT_TIERS[tier], []).append(pid)
         out.update(unit_x=int(ux) + x0, unit_y=int(uy) + y0, _site=site)

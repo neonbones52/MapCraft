@@ -1,10 +1,11 @@
 # The march (M5): DUM's army of the start (slot 0) marches over several provinces and arrives by its days; up to
 # half of a step it can be turned or stopped, past half the step is locked; orders that cannot be carried out change
-# nothing. The arrivals go to stderr, every step to moves.csv.
+# nothing. The arrivals go to stderr, every step to moves.csv. The step lengths follow the army points of
+# positions.csv: re-baking them moves the days below.
 years = 1
 seed = 1
 
-# From Golemtor to NBR's capital Tulip Pass: over the mountains of Golemscar and the hills of Dripstonebarrow.
+# From Golemtor to NBR's capital Tulip Pass: over the mountains of Redstone Hold and the forest of Oaktop.
 day 0 = DUM move 0:0 476
 # Refused: not NBR's army.
 day 1 = NBR move 0:0 495
@@ -13,12 +14,12 @@ day 2 = DUM move 0:1 495
 # Refused: no way over land to the sea (710) or the wasteland (701). The march to Tulip Pass goes on.
 day 3 = DUM move 0:0 710
 day 4 = DUM move 0:0 701
-# Stopped: to its own province, under half the step into Golemscar (5 days of 20): it stands in Golemtor again.
+# Stopped: to its own province, under half the step into Redstone Hold (5 days of 14): it stands in Golemtor again.
 day 5 = DUM move 0:0 495
-# Off to Tulip Pass again, and turned under half the step (8 days of 20) toward Honeyford: back in Golemtor, its
-# first step there another one.
+# Off to Tulip Pass again, and turned under half the step (6 days of 14) toward Honeyford: back in Golemtor, its
+# first step there another one (into Batpass).
 day 6 = DUM move 0:0 476
-day 14 = DUM move 0:0 562
+day 12 = DUM move 0:0 562
 # From Honeyford to Tulip Pass; past half of the first step (into Sunflowerbarrow, 5 days of 8) it is locked: the
 # order back to Honeyford takes effect from Sunflowerbarrow.
 day 60 = DUM move 0:0 476
