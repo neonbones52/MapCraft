@@ -15,10 +15,11 @@ from sources import block_classes, province_map, read_csv, to_pixels  # noqa: E4
 from surface import surface  # noqa: E402
 sys.path.insert(0, str(ROOT / 'tools' / 'mapbake'))
 import borders  # noqa: E402
+import marches  # noqa: E402
 import rivers  # noqa: E402
 
 MAGIC = b'MCMP'
-VERSION = 2
+VERSION = 3
 TYPES = {'land': 1, 'sea': 2, 'lake': 3, 'wasteland': 4}
 
 
@@ -77,6 +78,24 @@ def main():
     adj_id = np.array([n for lst in neighbours for n, _ in sorted(lst)], np.uint16)
     adj_len = np.array([min(l, 65535) for lst in neighbours for _, l in sorted(lst)], np.uint16)
 
+    # The armies' march paths (tools/mapbake/marches.py), per CSR entry: the curve from the province to that neighbour
+    # (b -> a is a -> b reversed) and its length, the same both ways; none (0 points, length 0) where it is not a step.
+    paths, failed = marches.build(ids, marches.land_pairs(provinces), pos[:, 2:4], blocks)
+    if failed:
+        print(f'no march path within the pair: {failed}')
+    march_offsets = np.zeros(len(adj_id) + 1, np.uint32)
+    march_points = []
+    march_length = np.zeros(len(adj_id), np.float32)
+    for pid in range(count):
+        for k in range(offsets[pid], offsets[pid + 1]):
+            other = int(adj_id[k])
+            path = paths.get((min(pid, other), max(pid, other)))
+            if path is not None:
+                march_points.append(path if pid < other else path[::-1])
+                march_length[k] = marches.length(path)
+            march_offsets[k + 1] = march_offsets[k] + (len(path) if path is not None else 0)
+    march_points = np.vstack(march_points).astype(np.float32) if march_points else np.zeros((0, 2), np.float32)
+
     parents = sorted({r['parent'] for r in regions})
     region_parent = np.array([0] + [parents.index(r['parent']) + 1 for r in regions], np.uint8)
 
@@ -105,6 +124,9 @@ def main():
         (b'ADJO', offsets.tobytes()),                             # u32[n+1] CSR offsets
         (b'ADJI', adj_id.tobytes()),                              # u16[m] neighbour ids
         (b'ADJL', adj_len.tobytes()),                             # u16[m] shared border length, px
+        (b'MPTO', march_offsets.tobytes()),                       # u32[m+1] march path of each ADJI entry: points
+        (b'MPTV', march_points.tobytes()),                        # f32[v*2] march path points (map px)
+        (b'MPTL', march_length.tobytes()),                        # f32[m] march path length, px (0 = no step)
         (b'PNAM', strings(names)),                                # u32[n+1] offsets + UTF-8
         (b'RNAM', strings([''] + [r['name'] for r in regions])),  # regions, 1-based
         (b'RPAR', region_parent.tobytes()),                       # u8[regions+1] parent index into LNAM

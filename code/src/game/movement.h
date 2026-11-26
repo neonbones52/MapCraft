@@ -19,8 +19,9 @@ namespace mc
     // The armies' march (docs/GAMEDATA.md, "Движение армий"): the rules of the command "go there" and of each day's
     // walking. Owned by World; its data is cache, rebuilt from the map, the content and the state after a load:
     //   the graph    the land provinces' steps (wasteland, seas and lakes are not crossed): to each land neighbour,
-    //                the px between the two provinces' unit points times the movement_cost (data/common/terrain.csv)
-    //                of the province the step goes into
+    //                the length of the march path (MapData::march_length: the curve from unit point to unit point
+    //                over the land of the two provinces, tools/mapbake/marches.py) times the movement_cost
+    //                (data/common/terrain.csv) of the province the step goes into
     //   the steps    per army slot, the cost of the step it is on (0 standing) and the step after it (the
     //                province the march goes on to from the next one; 0 where it ends there): found one step ahead,
     //                when a step begins, so the map's figure walks on through a province without a stop, and

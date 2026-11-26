@@ -30,10 +30,9 @@ namespace mc
         constexpr float kWalkEase = 0.4f;       // of the way to the speed wanted, a tick
         constexpr float kWalkCycle = 1000.0f * 2.0f * kPi / 0.6662f;   // the walk's position wraps on whole strides
         constexpr float kTurnRate = 6.0f;       // radians a second a figure turns toward where it goes
-        // A figure walking back from a step given up: map px a second (faster than a march looks at speed 4), and
-        // the farthest it walks (farther, as after a restart, it is put there).
+        // A figure walking back along the path of a step given up: map px a second (faster than a march looks at
+        // speed 4).
         constexpr float kReturnSpeed = 40.0f;
-        constexpr float kReturnFarthest = 300.0f;
 
         // A part's 3 x 3 turn as the game's PartPose: Rz * Ry * Rx.
         void rotation(const minecraft::PartRotation& r, float out[3][3])
@@ -115,6 +114,40 @@ namespace mc
                 out->vertices.push_back(fv);
             }
             out->models.push_back(m);
+        }
+
+        // The point at `t` (0..1, by length) of the march path from province `from` to its neighbour `to`, and in
+        // `yaw` the way the path heads there (radians from the south toward the east; map y grows to the south).
+        // Without a path (not a step of the map): the straight line between their unit points.
+        MapView::Point along(const MapView& map, std::uint16_t from, std::uint16_t to, float t, float* yaw)
+        {
+            const int entry = map.adjacency_entry(from, to);
+            const std::span<const float> path = map.march_path(entry);
+            if (path.size() < 4) {
+                const MapView::Point a = map.unit_position(from);
+                const MapView::Point b = map.unit_position(to);
+                if (a.x != b.x || a.y != b.y) {
+                    *yaw = std::atan2(b.x - a.x, b.y - a.y);
+                }
+                return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
+            }
+            float left = t * map.march_length[static_cast<std::size_t>(entry)];
+            const std::size_t points = path.size() / 2;
+            for (std::size_t i = 0; i + 1 < points; ++i) {
+                const float ax = path[i * 2], ay = path[i * 2 + 1];
+                const float dx = path[i * 2 + 2] - ax, dy = path[i * 2 + 3] - ay;
+                const float piece = std::sqrt(dx * dx + dy * dy);
+                if (piece <= 0.0f) {
+                    continue;
+                }
+                *yaw = std::atan2(dx, dy);
+                if (left <= piece || i + 2 == points) {
+                    const float f = std::clamp(left / piece, 0.0f, 1.0f);
+                    return { ax + dx * f, ay + dy * f };
+                }
+                left -= piece;
+            }
+            return { path[path.size() - 2], path[path.size() - 1] };
         }
 
         // The top of the ground at a map point, world height (as the camera's ground, app.cpp).
@@ -202,15 +235,13 @@ namespace mc
                 if (!motion.seen || motion.generation != armies.generation[army]) {
                     motion = Motion{};
                     motion.yaw = idle_yaw;
-                    motion.x = unit.x;
-                    motion.y = unit.y;
                     motion.province = province;
                     motion.generation = armies.generation[army];
                     motion.seen = true;
                 }
 
-                // Where on its step: from its province's unit point toward the next's, by the step's progress and,
-                // between days, the day's fraction of a day's march.
+                // Where on its march: along the step's march path (the curve over the two provinces' land, MapData)
+                // as far as the step's progress and, between days, the day's fraction of a day's march take it.
                 MapView::Point at = unit;
                 float yaw = idle_yaw;
                 const std::uint16_t next = armies.next[army];
@@ -220,52 +251,56 @@ namespace mc
                         : 0.0f;
                 const bool marching = step > 0.0f;
                 bool arrived = false;   // the figure is at the end of its march before the day that ends it
+                std::uint16_t shown_from = province;   // the step the figure is shown on, and how far along
+                std::uint16_t shown_to = 0;
+                float shown_t = 0.0f;
                 if (marching) {
                     // The fraction stands still in the pause, so the figure does too, where it was. Past the end
                     // of the step it walks on into the step after it, as far as the day's carry will take the army
                     // there (so it does not stand at the province's point until the day comes); where the march
                     // ends there, it waits.
                     const float walked = armies.progress[army] + kMarchPerDay * clock.day_fraction;
-                    MapView::Point from = unit;
-                    MapView::Point to = map.unit_position(next);
-                    float t = std::clamp(walked / step, 0.0f, 1.0f);
+                    shown_to = next;
+                    shown_t = std::clamp(walked / step, 0.0f, 1.0f);
                     const std::uint16_t after = movement->army_after(static_cast<std::uint16_t>(army));
                     const float after_step = after != 0 && after < map.count ? movement->step_cost(next, after) : 0.0f;
                     if (walked > step && after_step > 0.0f) {
-                        from = to;
-                        to = map.unit_position(after);
-                        t = std::clamp((walked - step) / after_step, 0.0f, 1.0f);
+                        shown_from = next;
+                        shown_to = after;
+                        shown_t = std::clamp((walked - step) / after_step, 0.0f, 1.0f);
                     } else if (walked >= step) {
                         arrived = true;
                     }
-                    at = { from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t };
-                    // Map y grows to the south; the yaw turns from the south toward the east.
-                    if (to.x != from.x || to.y != from.y) {
-                        yaw = std::atan2(to.x - from.x, to.y - from.y);
-                    }
+                    at = along(map, shown_from, shown_to, shown_t, &yaw);
                 }
 
                 // A step given up halfway (turned elsewhere or stopped: the same province, another or no next) puts
-                // the army back in its province at once; the figure walks back there instead of jumping. An
-                // arrival (the province is the old next) and a new march from where it stands go on smoothly.
-                if (province == motion.province && motion.next != 0 && next != motion.next) {
+                // the army back in its province at once; the figure walks back there along the step's path instead
+                // of jumping, from where it was shown. An arrival (the province is the old next) and a new march
+                // from where it stands go on smoothly.
+                if (province == motion.province && motion.next != 0 && next != motion.next &&
+                    motion.shown_from == province && motion.shown_to == motion.next) {
                     motion.returning = true;
+                    motion.back_to = motion.next;
+                    motion.back_t = motion.shown_t;
                 }
                 motion.province = province;
                 motion.next = next;
-                const float gap_x = at.x - motion.x;
-                const float gap_y = at.y - motion.y;
-                const float gap = std::sqrt(gap_x * gap_x + gap_y * gap_y);
-                const float reach = kReturnSpeed * dt;
-                if (!motion.returning || gap <= reach || gap > kReturnFarthest) {
-                    motion.returning = false;
-                    motion.x = at.x;
-                    motion.y = at.y;
-                } else {
-                    motion.x += gap_x / gap * reach;
-                    motion.y += gap_y / gap * reach;
-                    yaw = std::atan2(gap_x, gap_y);
+                if (motion.returning) {
+                    const int entry = map.adjacency_entry(province, motion.back_to);
+                    const float path = entry >= 0 ? map.march_length[static_cast<std::size_t>(entry)] : 0.0f;
+                    motion.back_t = path > 0.0f ? motion.back_t - kReturnSpeed * dt / path : 0.0f;
+                    if (motion.back_t > 0.0f) {
+                        at = along(map, province, motion.back_to, motion.back_t, &yaw);
+                        yaw += kPi;   // walking it backwards
+                        shown_to = 0;   // shown on no step of its own: a give-up meanwhile is not walked back
+                    } else {
+                        motion.returning = false;
+                    }
                 }
+                motion.shown_from = shown_from;
+                motion.shown_to = shown_to;
+                motion.shown_t = shown_t;
                 const float most = kTurnRate * dt;
                 const float turn = std::clamp(std::remainder(yaw - motion.yaw, 2.0f * kPi), -most, most);
                 motion.yaw = std::remainder(motion.yaw + turn, 2.0f * kPi);
@@ -273,8 +308,8 @@ namespace mc
 
                 const float shift = (static_cast<float>(k - i) - static_cast<float>(end - i - 1) * 0.5f) * kSpacing *
                                     kBlock;
-                const float x = motion.x + shift;
-                const Vec3 ground{ x, ground_at(map, x, motion.y), -motion.y };
+                const float x = at.x + shift;
+                const Vec3 ground{ x, ground_at(map, x, at.y), -at.y };
                 const float* m = &men_[std::size_t{ army } * kCategories];
                 const bool mounted = m[static_cast<std::size_t>(RegimentCategory::cavalry)] >
                                          m[static_cast<std::size_t>(RegimentCategory::infantry)] &&

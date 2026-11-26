@@ -18,7 +18,7 @@
   (docs/GAMEDATA.md, «Деньги»). UI отладочный (Dear ImGui; каким он станет — docs/UI.md).
 - **Карта на сетке блоков**: все исходники нарисованы пользователем, провинции нарезаны (87 регионов; 700 провинций
   суши, 8 пустошей, 1 озеро, 178 морей — всего 887), утверждены 22.11.2026 и заморожены: номера провинций — ключ
-  игровых данных. `world.mcmap` версии 2 (с высотами, водой и биомами блоков) запекается.
+  игровых данных. `world.mcmap` версии 3 (с высотами, водой и биомами блоков, путями марша) запекается.
 - **Игровые данные** (`data/`, черновые, заполняет пользователь): две страны — Dummy (11 провинций, столица не
   задана) и сосед Neighbour (пока без земли), 8 логических terrain, 10 товаров, 23 торговых узла, 3 типа полков
   (по одному на категорию); товар, terrain и узлы регионов расставлены по всей карте; `base_tax` и население пока 0,
@@ -219,7 +219,7 @@ python tools/mapbake/rivers.py                                # реки как 
 python tools/fonts/mapfont.py                                 # шрифт названий: метрики Mapfont.fnt + SDF
 python tools/labels/provinces.py                              # названия провинций (до positions.py: города их обходят)
 python tools/mapbake/positions.py                             # участки домиков, пирсы, точки армий и подписей -> positions.csv
-python tools/mapbake/bake.py                                  # build/map/world.mcmap (docs/MAPFORMAT.md)
+python tools/mapbake/bake.py                                  # build/map/world.mcmap (docs/MAPFORMAT.md); пути марша — marches.py внутри
 ```
 `tools/labels/` нужен `C:\Dev\Projects\eu4\archeologyEU4\Labels\LabelPython` (путь в `tools/labels/reference.py`).
 

@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <bit>
-#include <cmath>
 
 #include <emmintrin.h>
 
@@ -28,17 +27,14 @@ namespace mc
             if (!land(p)) {
                 continue;
             }
-            const MapData::Point a = map.unit_position(p);
             for (std::uint32_t k = map.adjacency_offsets[p]; k < map.adjacency_offsets[p + 1]; ++k) {
                 const std::uint16_t q = map.adjacency_ids[k];
-                const MapData::Point b = map.unit_position(q);
-                if (!land(q) || !std::isfinite(a.x + a.y + b.x + b.y)) {
+                // The march path's length (the curve over the two provinces' land, the same both ways): back_ is
+                // exactly the other way's cost_. No path, no step.
+                const float px = map.march_length[k];
+                if (!land(q) || !(px > 0.0f)) {
                     continue;
                 }
-                // The px are the same both ways ((a - b)^2 = (b - a)^2): back_ is exactly the other way's cost_.
-                const float dx = b.x - a.x;
-                const float dy = b.y - a.y;
-                const float px = std::sqrt(dx * dx + dy * dy);
                 to_.push_back(q);
                 cost_.push_back(px * multiplier(q));
                 back_.push_back(px * multiplier(p));

@@ -57,18 +57,22 @@ namespace mc
         };
         std::array<std::vector<std::array<float, 3>>, 2> pivots_;   // per model, per part (model px)
         // How each army slot's figure moves (view state): the walk's position and speed (minecraft/entity_models.h),
-        // its heading (radians from the south toward the east), where it is drawn (map px) and what march it showed
-        // last frame (to tell an arrival from a turn back), and the army's generation they belong to.
+        // its heading (radians from the south toward the east), the march it showed last frame (to tell an arrival
+        // from a step given up) and where on a step's path it was shown, the walk back along a step given up, and
+        // the army's generation they belong to.
         struct Motion
         {
             float walk = 0.0f;
             float amount = 0.0f;
             float yaw = 0.0f;
-            float x = 0.0f;
-            float y = 0.0f;
             std::uint16_t province = 0;
             std::uint16_t next = 0;
-            bool returning = false;   // walking back to where the march now has it (turned or stopped mid-step)
+            std::uint16_t shown_from = 0;
+            std::uint16_t shown_to = 0;   // 0: shown standing (or walking back)
+            float shown_t = 0.0f;
+            bool returning = false;       // walking back along the path from `province` to back_to, now at back_t
+            std::uint16_t back_to = 0;
+            float back_t = 0.0f;
             std::uint16_t generation = 0;
             bool seen = false;
         };

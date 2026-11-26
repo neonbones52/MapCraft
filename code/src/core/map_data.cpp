@@ -1,6 +1,7 @@
 #include "core/map_data.h"
 
 #include <algorithm>
+#include <cmath>
 #include <format>
 
 namespace mc
@@ -27,6 +28,9 @@ namespace mc
         adjacency_offsets = as_span<std::uint32_t>(reader.exact("ADJO", (n + 1) * 4));
         adjacency_ids = as_span<std::uint16_t>(reader.whole("ADJI", 2, false));
         positions = as_span<float>(reader.exact("PPOS", n * 8 * 4));
+        march_offsets = as_span<std::uint32_t>(reader.exact("MPTO", (adjacency_ids.size() + 1) * 4));
+        march_points = as_span<float>(reader.whole("MPTV", 8, true));
+        march_length = as_span<float>(reader.exact("MPTL", adjacency_ids.size() * 4));
         names_ = reader.strings("PNAM", n);
 
         // Regions and lands: RPAR has a byte per region and [0]; the lands are what RPAR points to.
@@ -56,6 +60,43 @@ namespace mc
         if (!std::ranges::all_of(adjacency_ids, [n](std::uint16_t id) { return id != 0 && id < n; })) {
             reader.bad("section ADJI: a neighbour id is 0 or past the province count");
         }
+        if (march_offsets[0] != 0 || !std::ranges::is_sorted(march_offsets) ||
+            march_offsets.back() * 2 != march_points.size()) {
+            reader.bad("section MPTO: march path offsets out of order or not ending at MPTV's points");
+        }
+        for (std::size_t k = 0; k < march_length.size() && reader.ok(); ++k) {
+            const std::uint32_t points = march_offsets[k + 1] - march_offsets[k];
+            if (!std::isfinite(march_length[k]) || march_length[k] < 0.0f || (points >= 2) != (march_length[k] > 0.0f) ||
+                points == 1) {
+                reader.bad("section MPTL: a march path's length does not fit its points");
+            }
+        }
+        if (!std::ranges::all_of(march_points, [](float v) { return std::isfinite(v); })) {
+            reader.bad("section MPTV: a march path point is not a number");
+        }
+    }
+
+    int MapData::adjacency_entry(std::uint32_t from, std::uint32_t to) const
+    {
+        if (from + 1 >= adjacency_offsets.size()) {
+            return -1;
+        }
+        for (std::uint32_t k = adjacency_offsets[from]; k < adjacency_offsets[from + 1]; ++k) {
+            if (adjacency_ids[k] == to) {
+                return static_cast<int>(k);
+            }
+        }
+        return -1;
+    }
+
+    std::span<const float> MapData::march_path(int entry) const
+    {
+        if (entry < 0 || static_cast<std::size_t>(entry) + 1 >= march_offsets.size()) {
+            return {};
+        }
+        const std::uint32_t first = march_offsets[static_cast<std::size_t>(entry)];
+        const std::uint32_t end = march_offsets[static_cast<std::size_t>(entry) + 1];
+        return march_points.subspan(std::size_t{ first } * 2, std::size_t{ end - first } * 2);
     }
 
     std::string_view MapData::province_name(std::uint32_t id) const

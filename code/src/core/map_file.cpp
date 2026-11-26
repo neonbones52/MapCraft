@@ -54,8 +54,8 @@ namespace mc
         if (file_size < sizeof(Header) || !in_.read(reinterpret_cast<char*>(&header), sizeof(header))) {
             return fail("cannot read");
         }
-        if (std::memcmp(header.magic, "MCMP", 4) != 0 || header.version != 2) {
-            return fail("not an MCMP v2 file (rebuild with tools/mapbake/bake.py)");
+        if (std::memcmp(header.magic, "MCMP", 4) != 0 || header.version != 3) {
+            return fail("not an MCMP v3 file (rebuild with tools/mapbake/bake.py)");
         }
         if (file_size < sizeof(Header) + std::uint64_t{ header.sections } * sizeof(Section)) {
             return fail("truncated section table");
