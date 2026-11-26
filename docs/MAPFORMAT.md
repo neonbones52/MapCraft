@@ -5,8 +5,8 @@
 инструменты (`build/`): шрифт (`tools/fonts/`) и названия провинций (`tools/labels/`). Исходники — на сетке блоков;
 карта в файле — в пикселях карты, блок = `BLOCK` × `BLOCK` пикселей (4). Порядок сборки — README. Контейнер (заголовок, таблица, чтение отдельных
 секций) — `core/map_file.cpp` (`MapReader`). Каждая часть читает только свои секции, все массивы — `std::span` в
-прочитанные байты: симуляция — `core/map_data.cpp` (`MapData`: `PTYP`, `PREG`, `ADJO`, `ADJI`, `PNAM`, `RPAR`, `RNAM`,
-`LNAM`), вид — `view/map_view.cpp` (`MapView`, наследник `MapData`: всё остальное). `mapcraft_sim` грузит только
+прочитанные байты: симуляция — `core/map_data.cpp` (`MapData`: `PTYP`, `PREG`, `ADJO`, `ADJI`, `PPOS`, `PNAM`, `RPAR`, `RNAM`,
+`LNAM`; точки армий — для стоимости марша, docs/GAMEDATA.md, «Движение армий»), вид — `view/map_view.cpp` (`MapView`, наследник `MapData`: всё остальное). `mapcraft_sim` грузит только
 `MapData`, игра и редактор — `MapView`.
 
 Все числа little-endian. Массивы по провинциям имеют длину `n` = число провинций + 1: индекс 0 означает «нет провинции».

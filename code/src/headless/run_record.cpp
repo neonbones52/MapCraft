@@ -84,7 +84,8 @@ namespace mc::headless
     }
 
     bool write_run(const std::filesystem::path& dir, const std::filesystem::path& root, const Scenario& scenario,
-                   const World& end, std::span<const std::uint64_t> hashes, std::string* error)
+                   const World& end, std::span<const std::uint64_t> hashes, std::string_view moves,
+                   std::string* error)
     {
         std::error_code made;
         std::filesystem::create_directories(dir, made);
@@ -107,12 +108,13 @@ namespace mc::headless
             "  \"days\": {},\n"
             "  \"seed\": {},\n"
             "  \"changes\": [{}{}],\n"
+            "  \"commands\": {},\n"
             "  \"commit\": {},\n"
             "  \"run_at\": \"{:%Y-%m-%dT%H:%M:%SZ}\",\n"
             "  \"checksum\": \"{:016x}\"\n"
             "}}\n",
             json_string(scenario.name), json_string(scenario.path.generic_string()), scenario.years,
-            scenario.years * kDaysPerYear, scenario.seed, changes, changes.empty() ? "" : "\n  ",
+            scenario.years * kDaysPerYear, scenario.seed, changes, changes.empty() ? "" : "\n  ", scenario.commands.size(),
             json_string(commit(root)), now, checksum(end));
 
         std::string days = "day,checksum\n";
@@ -120,7 +122,8 @@ namespace mc::headless
             days += std::format("{},{:016x}\n", kStartDay + d, hashes[d]);
         }
 
-        return write_file(dir / "meta.json", meta, error) && write_file(dir / "hashes.csv", days, error) && write_file(dir / "state.csv", dump(end), error) &&
+        return write_file(dir / "meta.json", meta, error) && write_file(dir / "hashes.csv", days, error) &&
+               write_file(dir / "moves.csv", moves, error) && write_file(dir / "state.csv", dump(end), error) &&
                write_file(dir / "checksum.txt", std::format("{:016x}\n", checksum(end)), error);
     }
 }

@@ -3,15 +3,18 @@
 //     mapcraft_sim <scenario file> <run dir>
 //
 // Loads the scenario (headless/scenario.h), the map's simulation part, and data/ with the scenario's changes twice,
-// into two worlds of their own; runs each the scenario's years a day at a time through World::advance_days, taking
-// the state's checksum (CLAUDE.md, rule 11: here and only here) after every day; checks that both runs match day for
-// day. The first run's record goes to <run dir> (headless/run_record.h).
+// into two worlds of their own; runs each the scenario's years a day at a time through World::advance_days, posting
+// the scenario's commands of each day before it (World::post), taking the state's checksum (CLAUDE.md, rule 11: here
+// and only here) after every day; checks that both runs match day for day. The first run's record goes to <run dir>
+// (headless/run_record.h), the arrivals of its armies' marches also to stderr.
 // Exit codes: 0 the runs match, 1 bad arguments or a load or write failed, 3 the runs differ.
 
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <algorithm>
 #include <filesystem>
+#include <format>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -19,6 +22,7 @@
 
 #include "core/log.h"
 #include "core/map_data.h"
+#include "game/armies.h"
 #include "game/calendar.h"
 #include "game/world.h"
 #include "headless/run_record.h"
@@ -42,10 +46,34 @@ namespace
         std::unique_ptr<mc::World> world;
         std::vector<std::uint64_t> hashes;   // [0] the loaded state, then one per day
         double seconds = 0.0;                // in advance_days only
+        std::string moves = "day,date,army,generation,province,next\n";   // moves.csv: each step an army ends
     };
 
-    // One world from data/ with the scenario's changes, run its years. False if it does not load.
-    bool simulate(const mc::MapData& map, const mc::headless::Scenario& scenario, Run* run)
+    // The armies whose province changed over the day just passed, as rows of moves.csv (`before`: their provinces
+    // before it, per slot); with `log`, each arrival where a march ends also to stderr.
+    void record_moves(const mc::MapData& map, const mc::World& world, const std::vector<std::uint16_t>& before,
+                      bool log, std::string* rows)
+    {
+        const mc::Armies& armies = world.state().armies;
+        const std::string date = mc::format(world.date());
+        mc::for_each_alive(armies.alive, [&](std::uint32_t a) {
+            const std::uint16_t province = armies.province[a];
+            if (province == before[a]) {
+                return;
+            }
+            *rows += std::format("{},{},{},{},{},{}\n", world.day(), date, a, armies.generation[a], province,
+                                 armies.next[a]);
+            if (log && armies.next[a] == 0) {
+                mc::log::info("{} (day {} of the run): army {}:{} arrives in {} ({})", date,
+                              world.day() - mc::kStartDay, a, armies.generation[a], map.province_name(province),
+                              province);
+            }
+        });
+    }
+
+    // One world from data/ with the scenario's changes, run its years. False if it does not load or a command names a
+    // country it does not know. `log`: the arrivals to stderr (the first run).
+    bool simulate(const mc::MapData& map, const mc::headless::Scenario& scenario, bool log, Run* run)
     {
         run->world = std::make_unique<mc::World>();
         mc::World& world = *run->world;
@@ -54,14 +82,32 @@ namespace
             mc::log::error("{}", error);
             return false;
         }
+        std::vector<mc::Command> commands;
+        for (const mc::headless::ScenarioCommand& c : scenario.commands) {
+            const int country = world.content().countries.find(c.country);
+            if (country <= 0) {
+                mc::log::error("{}: unknown country \"{}\"", c.origin, c.country);
+                return false;
+            }
+            commands.push_back(c.command);
+            commands.back().country = static_cast<std::uint16_t>(country);
+        }
         const std::uint32_t days = scenario.years * mc::kDaysPerYear;
         run->hashes.reserve(std::size_t{ days } + 1);
         run->hashes.push_back(mc::headless::checksum(world));
+        std::vector<std::uint16_t> before(mc::kArmySlots);
+        std::size_t next = 0;   // the scenario's next command
         for (std::uint32_t d = 0; d < days; ++d) {
+            for (; next < commands.size() && scenario.commands[next].day == d; ++next) {
+                world.post(commands[next]);
+            }
+            const mc::Armies& armies = world.state().armies;
+            std::copy(armies.province.begin(), armies.province.end(), before.begin());
             const auto begin = std::chrono::steady_clock::now();
             world.advance_days(1);
             run->seconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
             run->hashes.push_back(mc::headless::checksum(world));
+            record_moves(map, world, before, log, &run->moves);
         }
         return true;
     }
@@ -87,18 +133,18 @@ int main(int argc, char** argv)
         mc::log::error("{}", error);
         return kFailed;
     }
-    mc::log::info("scenario {}: {} years, seed {}, {} data changes", scenario.name, scenario.years, scenario.seed,
-                  scenario.patches.size());
+    mc::log::info("scenario {}: {} years, seed {}, {} data changes, {} commands", scenario.name, scenario.years,
+                  scenario.seed, scenario.patches.size(), scenario.commands.size());
 
     Run a;
     Run b;
-    if (!simulate(map, scenario, &a) || !simulate(map, scenario, &b)) {
+    if (!simulate(map, scenario, true, &a) || !simulate(map, scenario, false, &b)) {
         return kFailed;
     }
     mc::log::info("{} years twice: {:.3f} s and {:.3f} s in the rules, {:.4f} s per year", scenario.years,
                   a.seconds, b.seconds, (a.seconds + b.seconds) / 2.0 / scenario.years);
 
-    if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, &error)) {
+    if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, a.moves, &error)) {
         mc::log::error("{}", error);
         return kFailed;
     }

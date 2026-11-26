@@ -35,6 +35,7 @@ namespace mc
     void Shell::new_game()
     {
         session_.new_game();
+        orders_.clear();
         pace_ = Pace{};   // paused, speed 3
         world_.restart();
         fly_ = false;
@@ -134,6 +135,8 @@ namespace mc
             }
             fly_ = false;
         }
+        app_.set_march(&world_.movement(),
+                       MarchClock{ pace_.day_fraction(), session_.playing() && !pace_.paused() });
         app_.frame(context, target, view_width, view_height, dt, camera_input(map_input));
 
         if (session_.phase() == Session::Phase::choose_country && (map_input.pressed & mouse_left) &&
@@ -141,9 +144,23 @@ namespace mc
             select(world_.state().provinces.owner[app_.hovered()]);
         }
 
-        const UiCommands commands =
-            ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), app_.army_markers(), input);
+        ArmyMarkers armies = app_.army_markers();
+        armies.selected = orders_.selected();
+        armies.box = orders_.box();
+        const UiCommands commands = ui_.build(app_.map(), world_, session_, pace_, app_.hovered(), armies, input);
         ui_.render(context, target);   // the frame order: the map above, then the UI over it
+
+        // The player's orders to their armies: commands, run at once (between days, in the pause as well); the map
+        // and the UI show them from the next frame.
+        if (session_.playing() && world_.loaded()) {
+            commands_.clear();
+            orders_.update(army_input(map_input), app_.map(), world_, session_.player(), armies,
+                           ui_.army_plate_under_cursor(), app_.hovered(), &commands_);
+            for (const Command& command : commands_) {
+                world_.post(command);
+            }
+            world_.run_commands();
+        }
         if (commands.play) {
             play();
         }

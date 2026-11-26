@@ -21,9 +21,11 @@ add_library(mc_sim STATIC
     src/core/map_file.cpp
     src/game/armies.cpp
     src/game/calendar.cpp
+    src/game/commands.cpp
     src/game/countries.cpp
     src/game/economy/ledger.cpp
     src/game/game_data.cpp
+    src/game/movement.cpp
     src/game/session.cpp
     src/game/world.cpp
 )
@@ -71,6 +73,7 @@ add_library(mc_game STATIC
     src/app/biome_table.cpp
     src/app/scenery.cpp
     src/app/army_figures.cpp
+    src/app/army_orders.cpp
     src/app/shell.cpp
     src/app/bindings.cpp
     src/ui/imgui_layer.cpp

@@ -41,6 +41,18 @@ namespace mc
 
         [[nodiscard]] int speed() const { return speed_; }
         [[nodiscard]] bool paused() const { return paused_; }
+        // How much of the coming day has gone by (0..1; speeds 1..4, kept while paused; 0 at speed 5, whose days
+        // pass whole each frame): the map's figures walk on between days by it, so a march looks smooth. View only:
+        // the simulation never sees it.
+        [[nodiscard]] float day_fraction() const
+        {
+            if (speed_ == kFastest) {
+                return 0.0f;
+            }
+            const float day = kSecondsPerMonth[static_cast<std::size_t>(speed_ - kSlowest)] /
+                              static_cast<float>(kDaysPerMonth);
+            return std::clamp(carry_ / day, 0.0f, 1.0f);
+        }
 
         // `dt` seconds of real time passed: calls `run(n)` with the days it brings (speed 5: a day at a time until the
         // frame's budget is spent, at least one), and returns how many passed. Nothing while paused.

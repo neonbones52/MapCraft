@@ -35,12 +35,13 @@ namespace mc
                              std::uint32_t hovered, const ArmyMarkers& armies, const Input& input)
     {
         UiCommands commands;
+        plate_ = -1;
         if (!ready_) {
             return commands;
         }
         const ScreenContext ui{ map,    world.content(), world.state(),  world.loaded(), session,      pace, flags_,
                                 width_, height_,         layer_.scale(), world.date(),   layer_.bold() };
-        army_plates(ui, armies);
+        plate_ = army_plates(ui, armies, input.cursor_x, input.cursor_y);
         switch (session.phase()) {
         case Session::Phase::choose_country:
             country_select_screen(ui, &commands);

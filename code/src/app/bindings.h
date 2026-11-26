@@ -26,6 +26,20 @@ namespace mc
     // + / - (and the numpad's) change the speed, Space pauses.
     [[nodiscard]] SpeedInput speed_input(const Input& input);
 
+    // The mouse as the player commands armies (app/army_orders.h), EU4's: the left button selects (a click, or a
+    // drag that draws a box), the right orders the selected armies to the province clicked. The right button also
+    // drags the camera (camera_input): a click is a press and a release without a drag.
+    struct ArmyInput
+    {
+        float cursor_x = 0.0f;
+        float cursor_y = 0.0f;
+        bool select_pressed = false;
+        bool select_released = false;
+        bool order_pressed = false;
+        bool order_released = false;
+    };
+    [[nodiscard]] ArmyInput army_input(const Input& input);
+
     // Esc: leave the game (close the window). The editor keeps Esc for its selection.
     [[nodiscard]] bool leave_key(const Input& input);
 }

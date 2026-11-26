@@ -1,9 +1,11 @@
 #include "headless/scenario.h"
 
+#include <algorithm>
 #include <charconv>
 #include <format>
 #include <fstream>
 #include <string_view>
+#include <vector>
 
 #include "game/calendar.h"
 
@@ -30,6 +32,50 @@ namespace mc::headless
 
         // The most years whose days still fit the day counter (u32).
         constexpr std::uint32_t kMaxYears = 10'000;
+
+        constexpr std::string_view kBlank = " \t";
+
+        // The words of a text, split at spaces and tabs.
+        std::vector<std::string_view> words(std::string_view text)
+        {
+            std::vector<std::string_view> out;
+            std::size_t i = 0;
+            while (i < text.size()) {
+                const std::size_t begin = text.find_first_not_of(kBlank, i);
+                if (begin == std::string_view::npos) {
+                    break;
+                }
+                const std::size_t end = std::min(text.find_first_of(kBlank, begin), text.size());
+                out.push_back(text.substr(begin, end - begin));
+                i = end;
+            }
+            return out;
+        }
+
+        // "TAG move slot:generation province".
+        bool parse_command(std::string_view text, ScenarioCommand* out, std::string* why)
+        {
+            const std::vector<std::string_view> w = words(text);
+            if (w.size() != 4 || w[1] != "move") {
+                *why = "a command is TAG move slot:generation province";
+                return false;
+            }
+            const std::size_t colon = w[2].find(':');
+            if (colon == std::string_view::npos ||
+                !parse_whole(w[2].substr(0, colon), &out->command.army.slot) ||
+                !parse_whole(w[2].substr(colon + 1), &out->command.army.generation) ||
+                out->command.army.slot >= kArmySlots) {
+                *why = std::format("army \"{}\": slot:generation, the slot below {}", w[2], kArmySlots);
+                return false;
+            }
+            if (!parse_whole(w[3], &out->command.province) || out->command.province == 0) {
+                *why = std::format("province \"{}\": an id of the map", w[3]);
+                return false;
+            }
+            out->country = std::string(w[0]);
+            out->command.kind = CommandKind::move_army;
+            return true;
+        }
     }
 
     bool load_scenario(const std::filesystem::path& path, Scenario* scenario, std::string* error)
@@ -81,6 +127,17 @@ namespace mc::headless
                     }
                 }
                 scenario->patches.push_back(std::move(patch));
+            } else if (key.size() > 3 && key.starts_with("day") && kBlank.find(key[3]) != std::string_view::npos) {
+                ScenarioCommand command;
+                if (!parse_whole(trim(key.substr(4)), &command.day)) {
+                    return fail(std::format("\"{}\": day and a whole number >= 0", key));
+                }
+                std::string why;
+                if (!parse_command(value, &command, &why)) {
+                    return fail(why);
+                }
+                command.origin = origin;
+                scenario->commands.push_back(std::move(command));
             } else if (key == "years") {
                 if (has_years) {
                     return fail("years repeated");
@@ -98,7 +155,7 @@ namespace mc::headless
                 }
                 has_seed = true;
             } else {
-                return fail(std::format("unknown key \"{}\" (years, seed, or file.csv: row.column)", key));
+                return fail(std::format("unknown key \"{}\" (years, seed, day N, or file.csv: row.column)", key));
             }
         }
         if (!has_years || !has_seed) {
@@ -106,6 +163,15 @@ namespace mc::headless
             return false;
         }
         static_assert(std::uint64_t{ kMaxYears } * kDaysPerYear <= 0xFFFFFFFFu);
+        for (const ScenarioCommand& command : scenario->commands) {
+            if (command.day >= scenario->years * kDaysPerYear) {
+                *error = std::format("{}: day {} is past the run's {} days", command.origin, command.day,
+                                     scenario->years * kDaysPerYear);
+                return false;
+            }
+        }
+        std::stable_sort(scenario->commands.begin(), scenario->commands.end(),
+                         [](const ScenarioCommand& a, const ScenarioCommand& b) { return a.day < b.day; });
         return true;
     }
 }

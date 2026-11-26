@@ -401,7 +401,8 @@ namespace mc::minecraft
         return true;
     }
 
-    void soldier_pose(float age, bool riding, std::array<PartRotation, villager_part_count>* out)
+    void soldier_pose(float age, bool riding, float walk, float amount,
+                      std::array<PartRotation, villager_part_count>* out)
     {
         auto& p = *out;
         p = {};
@@ -413,7 +414,14 @@ namespace mc::minecraft
             p[villager_arm_left].x = -kPi / 5.0f;
             p[villager_arm_right].x = -kPi / 5.0f * 0.5f - kPi / 10.0f;
         } else {
-            p[villager_arm_right].x = -kPi / 10.0f;
+            // HumanoidModel.setupAnim's walk: arms cos(walk * 0.6662 [+ pi]) * amount, legs 1.4 times that the
+            // other way round; then ArmPose.ITEM on the sword arm (x * 0.5 - pi / 10).
+            const float swing = std::cos(walk * 0.6662f);
+            const float back = std::cos(walk * 0.6662f + kPi);
+            p[villager_arm_right].x = back * amount * 0.5f - kPi / 10.0f;
+            p[villager_arm_left].x = swing * amount;
+            p[villager_leg_right] = { swing * 1.4f * amount, 0.005f, 0.005f };
+            p[villager_leg_left] = { back * 1.4f * amount, -0.005f, -0.005f };
         }
         // AnimationUtils.bobArms: the right arm with +1, the left with -1.
         const float sway = std::cos(age * 0.09f) * 0.05f + 0.05f;
@@ -424,10 +432,19 @@ namespace mc::minecraft
         p[villager_arm_left].x -= swing;
     }
 
-    void horse_pose(float, std::array<PartRotation, horse_part_count>* out)
+    void horse_pose(float, float walk, float amount, std::array<PartRotation, horse_part_count>* out)
     {
-        *out = {};
-        (*out)[horse_neck].x = kPi / 6.0f;   // the head parts' 30 degrees
-        (*out)[horse_tail].x = kPi / 6.0f;
+        auto& p = *out;
+        p = {};
+        // AbstractEquineModel.setupAnim: the front legs swing cos(walk * 0.6662 + pi) * 0.8 * amount against each
+        // other, the hind ones half of it (times the amount again) the other way; the head nods past 0.2 of the
+        // speed, the tail lifts with it. At rest the head parts and the tail stand at 30 degrees.
+        const float a = std::cos(walk * 0.6662f + kPi) * 0.8f * amount;
+        p[horse_leg_left_front].x = a;
+        p[horse_leg_right_front].x = -a;
+        p[horse_leg_left_hind].x = -a * 0.5f * amount;
+        p[horse_leg_right_hind].x = a * 0.5f * amount;
+        p[horse_neck].x = kPi / 6.0f + (amount > 0.2f ? std::cos(walk * 0.8f) * 0.15f * amount : 0.0f);
+        p[horse_tail].x = kPi / 6.0f + amount * 0.75f;
     }
 }

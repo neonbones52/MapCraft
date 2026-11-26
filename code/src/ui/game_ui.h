@@ -29,16 +29,19 @@ namespace mc
         void begin(const Input& input, float view_width, float view_height, float dt);
         [[nodiscard]] bool wants_mouse() const { return ready_ && layer_.wants_mouse(); }
         // `hovered`: the province under the cursor on the map (0 when the UI has the mouse); `armies`: where this
-        // frame's army plates go (App::army_markers), drawn under every window.
+        // frame's army plates go (App::army_markers) and which armies are selected, drawn under every window.
         UiCommands build(const MapView& map, const World& world, const Session& session, const Pace& pace,
                          std::uint32_t hovered, const ArmyMarkers& armies, const Input& input);
         void render(ID3D11DeviceContext* context, ID3D11RenderTargetView* target);
+        // The army whose plate was under the cursor in the last build (its slot), -1 for none.
+        [[nodiscard]] int army_plate_under_cursor() const { return plate_; }
 
 
     private:
         ImGuiLayer layer_;
         FlagCache flags_;
         bool ready_ = false;
+        int plate_ = -1;
         float width_ = 0.0f;
         float height_ = 0.0f;
     };

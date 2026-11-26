@@ -26,6 +26,7 @@ namespace mc
         region = as_span<std::uint16_t>(reader.exact("PREG", n * 2));
         adjacency_offsets = as_span<std::uint32_t>(reader.exact("ADJO", (n + 1) * 4));
         adjacency_ids = as_span<std::uint16_t>(reader.whole("ADJI", 2, false));
+        positions = as_span<float>(reader.exact("PPOS", n * 8 * 4));
         names_ = reader.strings("PNAM", n);
 
         // Regions and lands: RPAR has a byte per region and [0]; the lands are what RPAR points to.

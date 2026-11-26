@@ -82,10 +82,14 @@ namespace mc::minecraft
     inline constexpr float kHorseSeat[3] = { 0.0f, 14.0f, 1.0f };
     bool iron_horse(const Assets& assets, EntityTextures* textures, EntityModel* out, std::string* error);
 
-    // Poses, the game's setupAnim at rest: `age` in ticks (20 a second).
+    // Poses, the game's setupAnim: `age` in ticks (20 a second); the walk as the game's WalkAnimationState, `walk`
+    // its position (it grows by `amount` a tick) and `amount` its speed (0 standing, 1 at full speed).
     // The soldier holds the sword up (ArmPose.ITEM) and its arms bob as a humanoid's do (AnimationUtils.bobArms);
-    // `riding`: the rider's legs and arms (HumanoidModel while riding).
-    void soldier_pose(float age, bool riding, std::array<PartRotation, villager_part_count>* out);
-    // The horse standing: its neck and tail at their rest angles.
-    void horse_pose(float age, std::array<PartRotation, horse_part_count>* out);
+    // walking, its legs and arms swing as HumanoidModel's (the sword arm's swing halved by the item pose); `riding`:
+    // the rider's legs and arms (HumanoidModel while riding), which do not walk.
+    void soldier_pose(float age, bool riding, float walk, float amount,
+                      std::array<PartRotation, villager_part_count>* out);
+    // The horse: its neck and tail at their rest angles; walking, its legs swing as AbstractEquineModel's, the head
+    // nods and the tail lifts.
+    void horse_pose(float age, float walk, float amount, std::array<PartRotation, horse_part_count>* out);
 }

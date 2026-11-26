@@ -44,6 +44,18 @@ namespace mc
         return s;
     }
 
+    ArmyInput army_input(const Input& input)
+    {
+        ArmyInput a;
+        a.cursor_x = input.cursor_x;
+        a.cursor_y = input.cursor_y;
+        a.select_pressed = (input.pressed & mouse_left) != 0;
+        a.select_released = (input.released & mouse_left) != 0;
+        a.order_pressed = (input.pressed & mouse_right) != 0;
+        a.order_released = (input.released & mouse_right) != 0;
+        return a;
+    }
+
     bool leave_key(const Input& input)
     {
         return input.hit(key::escape);

@@ -3,10 +3,12 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include <d3d11.h>
 
 #include "app/app.h"
+#include "app/army_orders.h"
 #include "game/session.h"
 #include "game/world.h"
 #include "ui/game_ui.h"
@@ -20,10 +22,12 @@ namespace mc
     //   game/Session   the player's side: country selection, then the player's country
     //   view/Pace      how fast days go by (speed, pause): decides how many days World::advance_days runs
     //   ui/GameUi      the screens: read the state, return UiCommands
+    //   ArmyOrders     the player's selected armies and the orders the mouse gives them (app/army_orders.h)
     // Each frame: input goes to the UI first; keys become intents here (app/bindings.h: camera, map modes, speed, Esc),
     // the map gets only the camera's; while playing, the Pace's days go to World::advance_days; map clicks and UI
-    // commands become Session and Pace calls; Session changes become map changes (selection highlight, camera
-    // flight). The editor uses App alone.
+    // commands become Session and Pace calls; the armies' orders become commands posted to the World and run at once
+    // (between days, in the pause too); Session changes become map changes (selection highlight, camera flight). The
+    // editor uses App alone.
     class Shell
     {
     public:
@@ -58,6 +62,8 @@ namespace mc
         Session session_;
         Pace pace_;
         GameUi ui_;
+        ArmyOrders orders_;
+        std::vector<Command> commands_;   // working: this frame's orders
         bool fly_ = false;   // play() happened: fly to the player's seat once the camera is set up
         bool exit_requested_ = false;
     };

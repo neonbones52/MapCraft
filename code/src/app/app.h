@@ -17,6 +17,7 @@
 namespace mc
 {
     class GameData;
+    class Movement;
 
     // The map as the hosts see it: give it a device once, then a render target, time step and input
     // every frame. Knows nothing about windows.
@@ -30,6 +31,13 @@ namespace mc
         // The game data the map modes show (owned elsewhere: World in the game, the editor's own copy), or null:
         // without it (or while it is not loaded) the regions stand in for countries. Must outlive the App's use of it.
         void set_game(const GameData* game);
+        // The armies' march (the World's cache, game/movement.h; null: every figure stands, as in the editor) and how
+        // the game's time flows this frame: the marching figures walk by them. Must outlive the App's use of it.
+        void set_march(const Movement* movement, MarchClock clock)
+        {
+            movement_ = movement;
+            march_clock_ = clock;
+        }
         // Camera (intents only: app/bindings.h turns keys into them), picking under the cursor, then the map is drawn.
         // Knows no keys: map modes, leaving etc. are the caller's.
         void frame(ID3D11DeviceContext* context, ID3D11RenderTargetView* target, float view_width, float view_height,
@@ -54,11 +62,11 @@ namespace mc
         // Provinces drawn as selected (editor): one flag per province id, empty = none.
         void set_selection(std::vector<std::uint8_t> selected);
         [[nodiscard]] std::uint32_t hovered() const { return hovered_; }
-        // This frame's army plates: the screen point under each army's figure (app/army_figures.h), and how much
-        // they show (the houses' fade: 0 hidden, 1 whole).
+        // This frame's armies on the screen: each figure's box and the point under it where its plate goes
+        // (app/army_figures.h), and how much they show (the houses' fade: 0 hidden, 1 whole); no selection.
         [[nodiscard]] ArmyMarkers army_markers() const
         {
-            return { armies_.markers(), model_fades_[static_cast<std::size_t>(ModelSet::Group::settlements)] };
+            return { armies_.markers(), model_fades_[static_cast<std::size_t>(ModelSet::Group::settlements)], {}, {} };
         }
 
     private:
@@ -66,6 +74,8 @@ namespace mc
 
         MapView map_;
         const GameData* game_ = nullptr;   // not owned
+        const Movement* movement_ = nullptr;   // not owned
+        MarchClock march_clock_;
         std::vector<std::uint8_t> selection_;
         bool selection_dirty_ = false;
         LabelRaster label_raster_;

@@ -184,8 +184,14 @@ namespace mc
 
 #define MC_ARMY_COLUMNS(X)                                                                                      \
     X(armies, std::uint16_t, owner, setup("owner", country))                                                    \
-    /* a land province id */                                                                                    \
+    /* a land province id: where it is (a marching army stays in it until it arrives in the next) */            \
     X(armies, std::uint16_t, province, by_hand)                                                                 \
+    /* the march (game/movement.h): the neighbour it is marching into, 0 = standing */                          \
+    X(armies, std::uint16_t, next, runtime)                                                                     \
+    /* where the march ends, 0 = standing */                                                                    \
+    X(armies, std::uint16_t, destination, runtime)                                                              \
+    /* the step done so far, in the units of the step's cost (Movement::step_cost) */                           \
+    X(armies, float, progress, runtime)                                                                         \
     /* grows each time the slot is freed: what a reference from outside checks (ArmyRef, game/armies.h) */     \
     X(armies, std::uint16_t, generation, runtime)
 
@@ -235,6 +241,8 @@ namespace mc
     struct Content
     {
         DefinitionList terrain;
+        std::vector<float> terrain_movement_cost;   // terrain.csv `movement_cost`: a march's multiplier over it (the
+                                                    // plains 1; game/movement.h); [0] (no terrain) 1
         DefinitionList goods;
         std::vector<float> goods_price;   // goods.csv `price`: the base price, emeralds per unit produced (the money
                                           // good: 1); no rule reads it yet

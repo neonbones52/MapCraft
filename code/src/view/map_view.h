@@ -42,7 +42,6 @@ namespace mc
         std::span<const std::uint16_t> pixel_province;  // width * height
         std::span<const std::uint8_t> pixel_class;      // width * height, PixelClass
         std::span<const std::uint32_t> color;           // RGBA8, debug colour
-        std::span<const float> positions;               // count * 8: city, unit, text, port (x, y)
         // count * 6 (PSIT): the house site's north-west block x, y and facing; the pier's coast block x, y and the
         // direction it reaches into the sea. Facings and directions: 0 north, 1 east, 2 south, 3 west; kNoSite = none.
         std::span<const std::uint16_t> sites;
@@ -110,23 +109,8 @@ namespace mc
         std::span<const float> province_glyphs;
         std::span<const std::uint16_t> province_glyph_owner;   // per glyph: the province it names
 
-        // Map px points of a province (positions): its city, where its armies stand, and its name's anchor.
-        struct Point
-        {
-            float x = 0.0f;
-            float y = 0.0f;
-        };
-        [[nodiscard]] Point city_position(std::uint32_t id) const { return position(id, 0); }
-        [[nodiscard]] Point unit_position(std::uint32_t id) const { return position(id, 1); }
-        [[nodiscard]] Point text_position(std::uint32_t id) const { return position(id, 2); }
-
     private:
         void read_view(MapReader& reader);
-        [[nodiscard]] Point position(std::uint32_t id, std::size_t slot) const
-        {
-            const std::size_t i = std::size_t{ id } * 8 + slot * 2;
-            return i + 1 < positions.size() ? Point{ positions[i], positions[i + 1] } : Point{};
-        }
 
         MapStrings biome_keys_;
         std::uint32_t biome_count_ = 0;

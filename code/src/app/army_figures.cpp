@@ -5,6 +5,7 @@
 
 #include "game/armies.h"
 #include "game/game_data.h"
+#include "game/movement.h"
 #include "minecraft/entity_models.h"
 #include "view/map_view.h"
 
@@ -18,6 +19,21 @@ namespace mc
         constexpr float kStandingHeight = 2.1f; // blocks: the soldier in his helmet
         constexpr float kMountedHeight = 2.9f;  // and on the horse
         constexpr float kPlateDrop = 0.12f;     // of the figure's screen height: the plate's top below the ground point
+        // Half the figure's box (picking, app/army_orders.h), of its screen height.
+        constexpr float kStandingHalfWidth = 0.3f;
+        constexpr float kMountedHalfWidth = 0.45f;
+        constexpr float kPi = 3.14159265f;
+        constexpr float kTicks = 20.0f;         // the game's ticks a second: the clock of its animations
+        // The walk's speed while marching (WalkAnimationState's, 1 at full speed): a soldier's march, a horse's walk.
+        constexpr float kSoldierWalk = 0.7f;
+        constexpr float kHorseWalk = 0.6f;
+        constexpr float kWalkEase = 0.4f;       // of the way to the speed wanted, a tick
+        constexpr float kWalkCycle = 1000.0f * 2.0f * kPi / 0.6662f;   // the walk's position wraps on whole strides
+        constexpr float kTurnRate = 6.0f;       // radians a second a figure turns toward where it goes
+        // A figure walking back from a step given up: map px a second (faster than a march looks at speed 4), and
+        // the farthest it walks (farther, as after a restart, it is put there).
+        constexpr float kReturnSpeed = 40.0f;
+        constexpr float kReturnFarthest = 300.0f;
 
         // A part's 3 x 3 turn as the game's PartPose: Rz * Ry * Rx.
         void rotation(const minecraft::PartRotation& r, float out[3][3])
@@ -135,7 +151,8 @@ namespace mc
         return true;
     }
 
-    void ArmyFigures::update(const MapView& map, const GameData* game, float time, const CameraView& camera)
+    void ArmyFigures::update(const MapView& map, const GameData* game, const Movement* movement, MarchClock clock,
+                             float time, float dt, const CameraView& camera)
     {
         draws_.clear();
         matrices_.clear();
@@ -146,6 +163,7 @@ namespace mc
         const Armies& armies = game->state.armies;
         const Regiments& regiments = game->state.regiments;
         const auto& category = game->content.regiment_category;
+        motion_.resize(kArmySlots);
 
         // Men per army and category, then the live armies by province.
         constexpr std::size_t kCategories = 3;
@@ -165,9 +183,10 @@ namespace mc
             return armies.province[a] < armies.province[b];
         });
 
-        const float facing = kFacingDegrees * 3.14159265f / 180.0f;
-        const Vec3 forward{ std::sin(facing), 0.0f, -std::cos(facing) };
+        const float idle_yaw = kFacingDegrees * kPi / 180.0f;
         const float px = kBlock / 16.0f;   // world units per model px
+        // The walk's speed eases as the game's does (WalkAnimationState: 0.4 of the way a tick).
+        const float ease = 1.0f - std::pow(1.0f - kWalkEase, dt * kTicks);
         std::array<minecraft::PartRotation, minecraft::villager_part_count> soldier_parts{};
         std::array<minecraft::PartRotation, minecraft::horse_part_count> horse_parts{};
         for (std::size_t i = 0; i < order_.size();) {
@@ -179,21 +198,85 @@ namespace mc
             const MapView::Point unit = map.unit_position(province);
             for (std::size_t k = i; k < end; ++k) {
                 const std::uint32_t army = order_[k];
+                Motion& motion = motion_[army];
+                if (!motion.seen || motion.generation != armies.generation[army]) {
+                    motion = Motion{};
+                    motion.yaw = idle_yaw;
+                    motion.x = unit.x;
+                    motion.y = unit.y;
+                    motion.province = province;
+                    motion.generation = armies.generation[army];
+                    motion.seen = true;
+                }
+
+                // Where on its step: from its province's unit point toward the next's, by the step's progress and,
+                // between days, the day's fraction of a day's march.
+                MapView::Point at = unit;
+                float yaw = idle_yaw;
+                const std::uint16_t next = armies.next[army];
+                const float step =
+                    movement != nullptr && next != 0 && next < map.count
+                        ? movement->army_step(static_cast<std::uint16_t>(army))
+                        : 0.0f;
+                const bool marching = step > 0.0f;
+                if (marching) {
+                    const MapView::Point to = map.unit_position(next);
+                    // The fraction stands still in the pause, so the figure does too, where it was.
+                    const float between = kMarchPerDay * clock.day_fraction;
+                    const float t = std::clamp((armies.progress[army] + between) / step, 0.0f, 1.0f);
+                    at = { unit.x + (to.x - unit.x) * t, unit.y + (to.y - unit.y) * t };
+                    // Map y grows to the south; the yaw turns from the south toward the east.
+                    if (to.x != unit.x || to.y != unit.y) {
+                        yaw = std::atan2(to.x - unit.x, to.y - unit.y);
+                    }
+                }
+
+                // A step given up halfway (turned elsewhere or stopped: the same province, another or no next) puts
+                // the army back in its province at once; the figure walks back there instead of jumping. An
+                // arrival (the province is the old next) and a new march from where it stands go on smoothly.
+                if (province == motion.province && motion.next != 0 && next != motion.next) {
+                    motion.returning = true;
+                }
+                motion.province = province;
+                motion.next = next;
+                const float gap_x = at.x - motion.x;
+                const float gap_y = at.y - motion.y;
+                const float gap = std::sqrt(gap_x * gap_x + gap_y * gap_y);
+                const float reach = kReturnSpeed * dt;
+                if (!motion.returning || gap <= reach || gap > kReturnFarthest) {
+                    motion.returning = false;
+                    motion.x = at.x;
+                    motion.y = at.y;
+                } else {
+                    motion.x += gap_x / gap * reach;
+                    motion.y += gap_y / gap * reach;
+                    yaw = std::atan2(gap_x, gap_y);
+                }
+                const float most = kTurnRate * dt;
+                const float turn = std::clamp(std::remainder(yaw - motion.yaw, 2.0f * kPi), -most, most);
+                motion.yaw = std::remainder(motion.yaw + turn, 2.0f * kPi);
+                const Vec3 forward{ std::sin(motion.yaw), 0.0f, -std::cos(motion.yaw) };
+
                 const float shift = (static_cast<float>(k - i) - static_cast<float>(end - i - 1) * 0.5f) * kSpacing *
                                     kBlock;
-                const float x = unit.x + shift;
-                const Vec3 ground{ x, ground_at(map, x, unit.y), -unit.y };
+                const float x = motion.x + shift;
+                const Vec3 ground{ x, ground_at(map, x, motion.y), -motion.y };
                 const float* m = &men_[std::size_t{ army } * kCategories];
                 const bool mounted = m[static_cast<std::size_t>(RegimentCategory::cavalry)] >
                                          m[static_cast<std::size_t>(RegimentCategory::infantry)] &&
                                      m[static_cast<std::size_t>(RegimentCategory::cavalry)] >=
                                          m[static_cast<std::size_t>(RegimentCategory::artillery)];
-                const float age = time * 20.0f + static_cast<float>(army) * 13.7f;   // each its own phase
+                // Legs go while it marches and days pass, and while it walks back (in the pause too).
+                const bool legs = (marching && clock.running) || motion.returning;
+                const float walking = legs ? (mounted ? kHorseWalk : kSoldierWalk) : 0.0f;
+                motion.amount += (walking - motion.amount) * ease;
+                motion.walk = std::fmod(motion.walk + motion.amount * dt * kTicks, kWalkCycle);
+                const float age = time * kTicks + static_cast<float>(army) * 13.7f;   // each its own phase
 
                 Placement rider(ground, forward, px);
                 if (mounted) {
                     const Placement steed(ground, forward, px * minecraft::kHorseScale);
-                    minecraft::horse_pose(age, &horse_parts);
+                    minecraft::horse_pose(age, motion.walk, motion.amount, &horse_parts);
                     draws_.push_back({ horse, static_cast<std::uint32_t>(matrices_.size()) });
                     for (std::size_t p = 0; p < horse_parts.size(); ++p) {
                         matrices_.push_back(steed.part(pivots_[horse][p], horse_parts[p]));
@@ -202,7 +285,9 @@ namespace mc
                     const Vec3 seat = steed.point(minecraft::kHorseSeat);
                     rider = Placement(seat, forward, px);
                 }
-                minecraft::soldier_pose(age, mounted, &soldier_parts);
+                // A rider does not walk: the horse does.
+                minecraft::soldier_pose(age, mounted, mounted ? 0.0f : motion.walk, mounted ? 0.0f : motion.amount,
+                                        &soldier_parts);
                 draws_.push_back({ soldier, static_cast<std::uint32_t>(matrices_.size()) });
                 for (std::size_t p = 0; p < soldier_parts.size(); ++p) {
                     matrices_.push_back(rider.part(pivots_[soldier][p], soldier_parts[p]));
@@ -210,7 +295,8 @@ namespace mc
 
                 // The plate under the feet: the ground point on the screen (in front of the camera), lowered by a
                 // share of the figure's height there, so the plate leaves the figure's lowest part in view (the
-                // feet stand in front of the ground point in the camera's tilt) at every zoom.
+                // feet stand in front of the ground point in the camera's tilt) at every zoom. The figure's box for
+                // picking: from the ground point up its height, a share of it to each side.
                 const Mat4& vp = camera.view_proj;
                 auto screen = [&](Vec3 p, float* sx, float* sy) {
                     const float cx = p.x * vp.m[0][0] + p.y * vp.m[1][0] + p.z * vp.m[2][0] + vp.m[3][0];
@@ -229,10 +315,12 @@ namespace mc
                 float top_x = 0.0f;
                 float top_y = 0.0f;
                 if (screen(ground, &sx, &sy) && screen(ground + Vec3{ 0.0f, height, 0.0f }, &top_x, &top_y)) {
-                    sy += std::max(sy - top_y, 0.0f) * kPlateDrop;
-                    if (sx > -100.0f && sy > -100.0f && sx < camera.view_width + 100.0f &&
-                        sy < camera.view_height + 100.0f) {
-                        markers_.push_back({ static_cast<std::uint16_t>(army), sx, sy });
+                    const float tall = std::max(sy - top_y, 0.0f);
+                    const float plate_y = sy + tall * kPlateDrop;
+                    if (sx > -100.0f && plate_y > -100.0f && sx < camera.view_width + 100.0f &&
+                        plate_y < camera.view_height + 100.0f) {
+                        markers_.push_back({ static_cast<std::uint16_t>(army), sx, plate_y, top_y, sy,
+                                             tall * (mounted ? kMountedHalfWidth : kStandingHalfWidth) });
                     }
                 }
             }

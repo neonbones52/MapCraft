@@ -219,7 +219,7 @@ namespace mc
         }
         view.time = static_cast<float>(std::fmod(time_, 3600.0));
         figure_time_ = std::fmod(figure_time_ + dt, 3600.0);
-        armies_.update(map_, game_, static_cast<float>(figure_time_), view.camera);
+        armies_.update(map_, game_, movement_, march_clock_, static_cast<float>(figure_time_), dt, view.camera);
         view.figures = armies_.draws();
         view.figure_matrices = armies_.matrices();
         // The armies come and go with the houses (the user's decision), plates and all.

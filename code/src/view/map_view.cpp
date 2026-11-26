@@ -24,11 +24,10 @@ namespace mc
         const std::size_t n = count;
         const std::size_t pixels = std::size_t{ width } * height;
 
-        // Provinces: pixels, points, sites.
+        // Provinces: pixels, sites.
         pixel_province = as_span<std::uint16_t>(reader.exact("PIDM", pixels * 2));
         pixel_class = as_span<std::uint8_t>(reader.exact("CLAS", pixels));
         color = as_span<std::uint32_t>(reader.exact("PCOL", n * 4));
-        positions = as_span<float>(reader.exact("PPOS", n * 8 * 4));
         sites = as_span<std::uint16_t>(reader.exact("PSIT", n * 6 * 2));
 
         // Blocks.
