@@ -15,6 +15,9 @@ namespace mc
         constexpr float kBlock = 6.0f;          // world units per Minecraft block of a figure (a house's: 1)
         constexpr float kSpacing = 1.6f;        // blocks between the figures of armies in one province
         constexpr float kFacingDegrees = 35.0f; // turned from the south (to the viewer) toward the east: a 3/4 view
+        constexpr float kStandingHeight = 2.1f; // blocks: the soldier in his helmet
+        constexpr float kMountedHeight = 2.9f;  // and on the horse
+        constexpr float kPlateDrop = 0.12f;     // of the figure's screen height: the plate's top below the ground point
 
         // A part's 3 x 3 turn as the game's PartPose: Rz * Ry * Rx.
         void rotation(const minecraft::PartRotation& r, float out[3][3])
@@ -205,14 +208,28 @@ namespace mc
                     matrices_.push_back(rider.part(pivots_[soldier][p], soldier_parts[p]));
                 }
 
-                // The plate under the feet, where the ground point is on the screen (in front of the camera).
+                // The plate under the feet: the ground point on the screen (in front of the camera), lowered by a
+                // share of the figure's height there, so the plate leaves the figure's lowest part in view (the
+                // feet stand in front of the ground point in the camera's tilt) at every zoom.
                 const Mat4& vp = camera.view_proj;
-                const float cx = ground.x * vp.m[0][0] + ground.y * vp.m[1][0] + ground.z * vp.m[2][0] + vp.m[3][0];
-                const float cy = ground.x * vp.m[0][1] + ground.y * vp.m[1][1] + ground.z * vp.m[2][1] + vp.m[3][1];
-                const float cw = ground.x * vp.m[0][3] + ground.y * vp.m[1][3] + ground.z * vp.m[2][3] + vp.m[3][3];
-                if (cw > 0.0f) {
-                    const float sx = (cx / cw * 0.5f + 0.5f) * camera.view_width;
-                    const float sy = (0.5f - cy / cw * 0.5f) * camera.view_height;
+                auto screen = [&](Vec3 p, float* sx, float* sy) {
+                    const float cx = p.x * vp.m[0][0] + p.y * vp.m[1][0] + p.z * vp.m[2][0] + vp.m[3][0];
+                    const float cy = p.x * vp.m[0][1] + p.y * vp.m[1][1] + p.z * vp.m[2][1] + vp.m[3][1];
+                    const float cw = p.x * vp.m[0][3] + p.y * vp.m[1][3] + p.z * vp.m[2][3] + vp.m[3][3];
+                    if (cw <= 0.0f) {
+                        return false;
+                    }
+                    *sx = (cx / cw * 0.5f + 0.5f) * camera.view_width;
+                    *sy = (0.5f - cy / cw * 0.5f) * camera.view_height;
+                    return true;
+                };
+                const float height = (mounted ? kMountedHeight : kStandingHeight) * kBlock;
+                float sx = 0.0f;
+                float sy = 0.0f;
+                float top_x = 0.0f;
+                float top_y = 0.0f;
+                if (screen(ground, &sx, &sy) && screen(ground + Vec3{ 0.0f, height, 0.0f }, &top_x, &top_y)) {
+                    sy += std::max(sy - top_y, 0.0f) * kPlateDrop;
                     if (sx > -100.0f && sy > -100.0f && sx < camera.view_width + 100.0f &&
                         sy < camera.view_height + 100.0f) {
                         markers_.push_back({ static_cast<std::uint16_t>(army), sx, sy });
