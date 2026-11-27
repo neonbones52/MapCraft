@@ -15,7 +15,7 @@ namespace mc
     // reproduces eu4.exe: CCombat::DailyUpdate, CLandCombatant::FireAt, ArrangeBattleField, ReorganizeTroops,
     // CheckOverrun, WillLose), in Fixed (core/fixed.h). Enemies before diplomacy: every foreign army.
     //
-    // The state is WorldState's: a battle with its lines and reserves (Battle, game/game_data.h), its armies
+    // The state is WorldState's: a battle with its two lines and reserves (Battle, game/game_data.h), its armies
     // (Armies::battle, side and joined, the retreating mask) and their generals (Armies::leader, Leaders), its
     // regiments (Regiments::place and the reserve's links). This
     // class holds the day's working data only, rebuilt each day from that state (so a load, a restart or a save change
@@ -44,7 +44,7 @@ namespace mc
             Fixed discipline = 0;
             Fixed tactics = 0;
             Fixed max_morale = 0;
-            std::array<Fixed, 4> weapon{};   // infantry fire, infantry shock, cavalry fire, cavalry shock
+            std::array<Fixed, 6> weapon{};   // infantry, cavalry and artillery: fire, shock each
             std::int64_t men = 0;
             std::int64_t morale = 0;
             std::uint32_t regiments = 0;
@@ -76,8 +76,9 @@ namespace mc
         void command(const WorldState& state, std::uint32_t battle);
         void arrange(WorldState& state, const Content& content, std::uint32_t battle, int side);
         void shoot(WorldState& state, const Content& content, std::uint32_t battle, int side);
+        // A regiment of a line at `position` shoots, `range` the line's (front_line_modifier, back_line_modifier).
         void fire_at(const WorldState& state, const Content& content, std::uint32_t battle, int side, int position,
-                     std::uint16_t regiment);
+                     std::uint16_t regiment, Fixed range);
 
         [[nodiscard]] bool morale_collapsed(std::uint32_t battle, int side) const;
         [[nodiscard]] bool can_morale_collapse(const WorldState& state, const Content& content, std::uint32_t battle,
@@ -105,8 +106,9 @@ namespace mc
         Column<std::int32_t> damage_men_;
         Column<Fixed> damage_morale_;
         Column<BattleDay> today_;   // per battle slot
-        // Scratch of arrange: the infantry and the cavalry it draws up, in the reserve's order.
+        // Scratch of arrange: the infantry, the cavalry and the artillery it draws up, in the reserve's order.
         Column<std::uint16_t> centre_;
         Column<std::uint16_t> flank_;
+        Column<std::uint16_t> second_;
     };
 }

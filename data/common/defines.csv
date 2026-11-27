@@ -10,3 +10,7 @@ daily_morale_damage,0.01
 reserve_daily_morale_damage,0.02
 front_line_modifier,1
 leader_max_pips,6
+back_line_modifier,0.5
+back_line_morale_damage_taken,0.4
+back_line_strength_damage_taken,0
+back_line_reinforce_speed,2

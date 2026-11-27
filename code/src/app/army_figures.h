@@ -35,10 +35,10 @@ namespace mc
     // pass; standing, it turns back to the viewer and its pose is the idle one. In a battle the two sides face each
     // other across the unit position, the attacker on the left (west), the defender on the right, a figure a side
     // (its first army by slot; the side's others are not shown), and swing their swords at the sword's pace while
-    // days pass; into a battle and out of it a figure is at its place and turned at once, as EU4's units are. The
-    // figure is its men's plurality:
-    // cavalry rides the armoured horse; infantry and, until it has a model of its own, artillery stand on foot (the
-    // user's decision). Reads the state only; owned by App; keeps only how each figure moves (view state).
+    // days pass (a gun fires at its own pace instead); into a battle and out of it a figure is at its place and
+    // turned at once, as EU4's units are. The figure is its men's plurality (the user's decision): cavalry rides the
+    // armoured horse, infantry stands on foot, artillery is the field gun with a soldier beside it. Reads the state
+    // only; owned by App; keeps only how each figure moves (view state).
     class ArmyFigures
     {
     public:
@@ -58,20 +58,21 @@ namespace mc
         {
             soldier = 0,
             horse = 1,
+            gun = 2,
         };
-        std::array<std::vector<std::array<float, 3>>, 2> pivots_;   // per model, per part (model px)
+        std::array<std::vector<std::array<float, 3>>, 3> pivots_;   // per model, per part (model px)
         // How each army slot's figure moves (view state): the walk's position and speed (minecraft/entity_models.h),
         // its heading (radians from the south toward the east), the march it showed last frame (to tell an arrival
         // from a step given up) and where on a step's path it was shown, the walk back along a step given up, whether
-        // it fought last frame and its sword's swing, and the army's generation they belong to.
+        // it fought last frame and its sword's swing (a gun's shot), and the army's generation they belong to.
         struct Motion
         {
             float walk = 0.0f;
             float amount = 0.0f;
             float yaw = 0.0f;
-            float swing = -1.0f;          // ticks into its swing, < 0: none
-            float wait = 0.0f;            // ticks to its next swing while it fights
-            std::uint32_t swings = 0;     // swings begun: the seed of the next one's spread
+            float swing = -1.0f;          // ticks into its swing or shot, < 0: none
+            float wait = 0.0f;            // ticks to its next swing or shot while it fights
+            std::uint32_t swings = 0;     // swings and shots begun: the seed of the next one's spread
             bool fighting = false;
             std::uint16_t province = 0;
             std::uint16_t next = 0;

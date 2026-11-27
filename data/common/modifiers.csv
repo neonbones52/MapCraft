@@ -1,8 +1,10 @@
 key,name,modifier,value
 base,Base Values,discipline,1
-base,Base Values,base_morale,2.5
-base,Base Values,military_tactics,0.5
+base,Base Values,base_morale,3
+base,Base Values,military_tactics,1.25
 base,Base Values,combat_width,15
-base,Base Values,infantry_fire,0.35
-base,Base Values,infantry_shock,0.5
-base,Base Values,cavalry_shock,1
+base,Base Values,infantry_fire,0.55
+base,Base Values,infantry_shock,0.95
+base,Base Values,cavalry_shock,1.2
+base,Base Values,artillery_fire,1
+base,Base Values,artillery_shock,0.05

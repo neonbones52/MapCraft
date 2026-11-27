@@ -82,6 +82,20 @@ namespace mc::minecraft
     inline constexpr float kHorseSeat[3] = { 0.0f, 14.0f, 1.0f };
     bool iron_horse(const Assets& assets, EntityTextures* textures, EntityModel* out, std::string* error);
 
+    // The field gun of the artillery (not a game entity: the user's design, built as the game's block models are,
+    // each face its own block texture): a cast-iron barrel (polished blackstone) on a spruce carriage, two spruce
+    // wheels a block across, their faces drawn from spruce textures here (rim, 8 spokes, hub). The muzzle to the
+    // front (-z), the axle at y 16; 14 boxes.
+    enum GunPart : std::uint16_t
+    {
+        gun_carriage,
+        gun_barrel,
+        gun_wheel_left,
+        gun_wheel_right,
+        gun_part_count,
+    };
+    bool field_gun(const Assets& assets, EntityTextures* textures, EntityModel* out, std::string* error);
+
     // Poses, the game's setupAnim: `age` in ticks (20 a second); the walk as the game's WalkAnimationState, `walk`
     // its position (it grows by `amount` a tick) and `amount` its speed (0 standing, 1 at full speed).
     // The soldier holds the sword up (ArmPose.ITEM) and its arms bob as a humanoid's do (AnimationUtils.bobArms);
@@ -99,4 +113,14 @@ namespace mc::minecraft
     // The horse: its neck and tail at their rest angles; walking, its legs swing as AbstractEquineModel's, the head
     // nods and the tail lifts.
     void horse_pose(float age, float walk, float amount, std::array<PartRotation, horse_part_count>* out);
+    // The gun: rolling, its wheels turn with the walk's position (`walk`, as the soldier beside it walks); `shot`:
+    // ticks into a shot (< 0 none, up to kShotTicks): the gun jumps back and its barrel kicks up, then it rolls
+    // forward to where it stood, the wheels turning with it.
+    inline constexpr float kShotTicks = 30.0f;
+    struct GunPose
+    {
+        std::array<PartRotation, gun_part_count> turn{};
+        std::array<std::array<float, 3>, gun_part_count> shift{};   // of each part's pivot from the model's, px
+    };
+    void gun_pose(float walk, float shot, GunPose* out);
 }

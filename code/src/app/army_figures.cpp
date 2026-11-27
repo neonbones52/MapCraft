@@ -40,6 +40,12 @@ namespace mc
         // A sword's swing every 20 / 1.6 ticks (a full blow at the sword's attack speed), give or take this share.
         constexpr float kSwingEvery = kTicks / 1.6f;
         constexpr float kSwingSpread = 0.15f;
+        // A gun fires every 3 s while it fights, give or take the swing's share (a gun's slow beat).
+        constexpr float kShotEvery = 3.0f * kTicks;
+        // The soldier beside the gun (model px of the gun, the ground at y 24): on its left (the viewer's right at
+        // rest), a little behind the axle, clear of the wheel (the user's sketch).
+        constexpr float kGunnerAt[3] = { 18.0f, 24.0f, 14.0f };
+        constexpr float kGunHalfWidth = 0.6f;   // of the figure's screen height: the gun is longer than it is tall
         // Where an army of a province stands (ArmyFigures::place_): its place in the row, or one of these.
         constexpr std::int32_t kAttacker = -1;
         constexpr std::int32_t kDefender = -2;
@@ -193,17 +199,21 @@ namespace mc
         minecraft::EntityTextures textures;
         minecraft::EntityModel soldier_model;
         minecraft::EntityModel horse_model;
+        minecraft::EntityModel gun_model;
         if (!minecraft::iron_soldier(assets, &textures, &soldier_model, error) ||
-            !minecraft::iron_horse(assets, &textures, &horse_model, error)) {
+            !minecraft::iron_horse(assets, &textures, &horse_model, error) ||
+            !minecraft::field_gun(assets, &textures, &gun_model, error)) {
             return false;
         }
         static_assert(FigureSet::kTextureSize == minecraft::EntityTextures::kSize);
         add_model(soldier_model, out);   // Model::soldier
         add_model(horse_model, out);     // Model::horse
+        add_model(gun_model, out);       // Model::gun
         out->layers = std::move(textures.layers);
         out->layer_count = textures.count;
         pivots_[soldier] = soldier_model.pivots;
         pivots_[horse] = horse_model.pivots;
+        pivots_[gun] = gun_model.pivots;
         return true;
     }
 
@@ -245,6 +255,7 @@ namespace mc
         const float ease = 1.0f - std::pow(1.0f - kWalkEase, dt * kTicks);
         minecraft::SoldierPose pose{};
         std::array<minecraft::PartRotation, minecraft::horse_part_count> horse_parts{};
+        minecraft::GunPose gun_parts{};
         for (std::size_t i = 0; i < order_.size();) {
             const std::uint16_t province = armies.province[order_[i]];
             std::size_t end = i;
@@ -370,11 +381,14 @@ namespace mc
                 // when the province's armies change, as EU4's units are (the user's decision).
                 const float x = at.x + target;
                 const Vec3 ground{ x, ground_at(map, x, at.y), -at.y };
+                // Its men's plurality: cavalry over infantry and at least artillery rides, artillery over both
+                // brings the gun, else (and at a tie with infantry) it stands on foot.
                 const float* m = &men_[std::size_t{ army } * kCategories];
-                const bool mounted = m[static_cast<std::size_t>(RegimentCategory::cavalry)] >
-                                         m[static_cast<std::size_t>(RegimentCategory::infantry)] &&
-                                     m[static_cast<std::size_t>(RegimentCategory::cavalry)] >=
-                                         m[static_cast<std::size_t>(RegimentCategory::artillery)];
+                const float infantry = m[static_cast<std::size_t>(RegimentCategory::infantry)];
+                const float cavalry = m[static_cast<std::size_t>(RegimentCategory::cavalry)];
+                const float artillery = m[static_cast<std::size_t>(RegimentCategory::artillery)];
+                const bool mounted = cavalry > infantry && cavalry >= artillery;
+                const bool gunned = artillery > infantry && artillery > cavalry;
                 // Legs go while it marches and days pass, and while it walks back (in the pause too).
                 const bool legs = (marching && !arrived && clock.running) || motion.returning;
                 const float walking = legs ? (mounted ? kHorseWalk : kSoldierWalk) : 0.0f;
@@ -382,17 +396,19 @@ namespace mc
                 motion.walk = std::fmod(motion.walk + motion.amount * dt * kTicks, kWalkCycle);
                 const float age = time * kTicks + static_cast<float>(army) * 13.7f;   // each its own phase
 
-                // The sword: a swing begun runs to its end (in the pause too); while it fights and days pass, a new
-                // one every kSwingEvery ticks, give or take; the first a share of that after it joins, so each
-                // figure has its own beat.
+                // The sword (the gun's shot): a swing begun runs to its end (in the pause too); while it fights and
+                // days pass, a new one every kSwingEvery ticks (kShotEvery), give or take; the first a share of that
+                // after it joins, so each figure has its own beat.
+                const float length = gunned ? minecraft::kShotTicks : minecraft::kSwingTicks;
+                const float beat = gunned ? kShotEvery : kSwingEvery;
                 if (motion.swing >= 0.0f) {
                     motion.swing += dt * kTicks;
-                    if (motion.swing >= minecraft::kSwingTicks) {
+                    if (motion.swing >= length) {
                         motion.swing = -1.0f;
                     }
                 }
                 if (fighting && !motion.fighting) {
-                    motion.wait = kSwingEvery * spread(army, motion.swings++);
+                    motion.wait = beat * spread(army, motion.swings++);
                 }
                 motion.fighting = fighting;
                 if (fighting && clock.running) {
@@ -400,11 +416,12 @@ namespace mc
                     if (motion.wait <= 0.0f && motion.swing < 0.0f) {
                         motion.swing = 0.0f;
                         const float every =
-                            kSwingEvery * (1.0f - kSwingSpread + 2.0f * kSwingSpread * spread(army, motion.swings++));
+                            beat * (1.0f - kSwingSpread + 2.0f * kSwingSpread * spread(army, motion.swings++));
                         motion.wait = std::max(motion.wait + every, 0.0f);
                     }
                 }
-                const float attack = motion.swing >= 0.0f ? motion.swing / minecraft::kSwingTicks : 0.0f;
+                // The soldier beside a gun does not swing: the gun fires.
+                const float attack = motion.swing >= 0.0f && !gunned ? motion.swing / minecraft::kSwingTicks : 0.0f;
                 if (where == kUnseen) {
                     continue;
                 }
@@ -420,6 +437,19 @@ namespace mc
                     // The rider's ground point on the saddle.
                     const Vec3 seat = steed.point(minecraft::kHorseSeat);
                     rider = Placement(seat, forward, px);
+                }
+                if (gunned) {
+                    // The gun on the army's point, the soldier beside it on the ground (the gun's ground height).
+                    minecraft::gun_pose(motion.walk, motion.swing, &gun_parts);
+                    draws_.push_back({ gun, static_cast<std::uint32_t>(matrices_.size()) });
+                    for (std::size_t p = 0; p < gun_parts.turn.size(); ++p) {
+                        std::array<float, 3> pivot = pivots_[gun][p];
+                        for (std::size_t c = 0; c < 3; ++c) {
+                            pivot[c] += gun_parts.shift[p][c];
+                        }
+                        matrices_.push_back(rider.part(pivot, gun_parts.turn[p]));
+                    }
+                    rider = Placement(rider.point(kGunnerAt), forward, px);
                 }
                 // A rider does not walk: the horse does.
                 minecraft::soldier_pose(age, mounted, mounted ? 0.0f : motion.walk, mounted ? 0.0f : motion.amount,
@@ -460,7 +490,9 @@ namespace mc
                     if (sx > -100.0f && plate_y > -100.0f && sx < camera.view_width + 100.0f &&
                         plate_y < camera.view_height + 100.0f) {
                         markers_.push_back({ static_cast<std::uint16_t>(army), sx, plate_y, top_y, sy,
-                                             tall * (mounted ? kMountedHalfWidth : kStandingHalfWidth) });
+                                             tall * (mounted  ? kMountedHalfWidth
+                                                     : gunned ? kGunHalfWidth
+                                                              : kStandingHalfWidth) });
                     }
                 }
             }

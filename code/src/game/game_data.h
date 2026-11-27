@@ -200,7 +200,9 @@ namespace mc
     X(infantry_fire)                                                                                            \
     X(infantry_shock)                                                                                           \
     X(cavalry_fire)                                                                                             \
-    X(cavalry_shock)
+    X(cavalry_shock)                                                                                            \
+    X(artillery_fire)                                                                                           \
+    X(artillery_shock)
 
 #define MC_MODIFIER_NAME(name) #name,
     inline constexpr std::string_view kCountryModifiers[] = { MC_COUNTRY_MODIFIERS(MC_MODIFIER_NAME) };
@@ -299,8 +301,8 @@ namespace mc
     };
 
     // Where a regiment is in its army's battle (Regiments::place): 0 not in a battle, 1..kFrontSlots a position of the
-    // front line + 1 (EU4's 0..MAX_COMBAT_WIDTH), in the reserve, or out of the lines (broken: still in its army,
-    // still counted, never back in this battle).
+    // front line + 1 (EU4's 0..MAX_COMBAT_WIDTH), kPlaceBack + a position of the back line (below), in the reserve, or
+    // out of the lines (broken: still in its army, still counted, never back in this battle).
     inline constexpr std::uint8_t kPlaceNone = 0;
     inline constexpr std::uint8_t kPlaceReserve = 254;
     inline constexpr std::uint8_t kPlaceOut = 255;
@@ -354,6 +356,9 @@ namespace mc
     // fights at is its countries' combat_width (game/modifiers.h), at most defines' max_combat_width.
     inline constexpr int kMaxCombatWidth = 40;
     inline constexpr int kFrontSlots = kMaxCombatWidth + 1;
+    // Regiments::place of the back line's position p: kPlaceBack + p.
+    inline constexpr std::uint8_t kPlaceBack = kFrontSlots + 1;
+    static_assert(kPlaceBack + kFrontSlots <= kPlaceReserve, "the places of the two lines and the reserve differ");
 
     // A battle's phase (Battle::phase).
     inline constexpr std::uint8_t kPhaseFire = 0;
@@ -371,6 +376,7 @@ namespace mc
         std::uint16_t reserve_last = 0;
         std::uint16_t dice = 0;                           // the phase's roll, 0..dice_sides - 1
         std::array<std::uint16_t, kFrontSlots> front{};   // the front line, positions 0..kMaxCombatWidth
+        std::array<std::uint16_t, kFrontSlots> back{};    // the back line behind it: artillery (EU4's _Back)
     };
 
     // A battle (game/combat.h). A structure, not columns: the battles are few and a battle's day touches all of it
@@ -447,7 +453,14 @@ namespace mc
     X(fixed, reserve_daily_morale_damage)                                                                       \
     X(fixed, front_line_modifier)                                                                               \
     /* the most pips a general has in each of fire, shock and maneuver (EU4's LEADER_MAX_PIPS) */               \
-    X(whole, leader_max_pips)
+    X(whole, leader_max_pips)                                                                                   \
+    /* the back line (artillery): its shots' range (the front line's is front_line_modifier), the share of a hit */ \
+    /* on the regiment in front of it that it takes, in morale and in men; how many regiments a day go into it */ \
+    /* (+ the commander's maneuver / 2) */                                                                       \
+    X(fixed, back_line_modifier)                                                                                \
+    X(fixed, back_line_morale_damage_taken)                                                                     \
+    X(fixed, back_line_strength_damage_taken)                                                                   \
+    X(whole, back_line_reinforce_speed)
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_fixed Fixed
 #define MC_DECLARE_DEFINE(kind, name) MC_DEFINE_TYPE_##kind name = 0;

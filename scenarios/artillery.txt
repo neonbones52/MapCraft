@@ -1,0 +1,9 @@
+# The artillery (M6, step 4): the battle of battle.txt, but DUM's artillery army of the start (slot 2, two guns)
+# marches with its first army and joins the battle the same day. The guns stand in the back line behind DUM's front
+# and shoot at half range (back_line_modifier), lend the regiment in front of them half their defensive pips and take
+# back_line_morale_damage_taken of the hits on it; the battle goes otherwise than battle.txt's.
+years = 1
+seed = 1
+
+day 0 = DUM move 0:0 475
+day 0 = DUM move 2:0 475

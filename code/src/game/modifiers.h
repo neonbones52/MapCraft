@@ -42,8 +42,7 @@ namespace mc
     {
         return fx_to_int(sums.combat_width[country]);
     }
-    // The weapons' damage of a category (infantry 0, cavalry 1) in a phase (fire 0, shock 1); 0 for artillery,
-    // which has no line to shoot from yet.
+    // The weapons' damage of a category in a phase (fire 0, shock 1).
     [[nodiscard]] inline Fixed weapon(const CountryModifiers& sums, std::size_t country, RegimentCategory category,
                                       int phase)
     {
@@ -53,7 +52,7 @@ namespace mc
         case RegimentCategory::cavalry:
             return phase == 0 ? sums.cavalry_fire[country] : sums.cavalry_shock[country];
         case RegimentCategory::artillery:
-            break;
+            return phase == 0 ? sums.artillery_fire[country] : sums.artillery_shock[country];
         }
         return 0;
     }

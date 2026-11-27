@@ -13,10 +13,11 @@
 #include "game/movement.h"
 
 // The order of operations and the integer arithmetic follow eu4.exe 1.37.5 as BattleSim reproduces it
-// (C:\Dev\Projects\eu4\BattleSim, src/core/Battle.cpp; addresses there). Not yet here: terrain and crossings (the
-// dice's global modifier is the generals' alone), artillery's back line (artillery stays in the reserve, as EU4's
-// reserve never sends it to the front), the cavalry's insufficient support, combat ability and the damage modifiers
-// (all 0).
+// (C:\Dev\Projects\eu4\BattleSim, src/core/Battle.cpp; addresses there); the artillery's back line, which BattleSim
+// leaves out, from eu4.exe itself (C:\Dev\Projects\eu4\archeologyEU4, UtilityAI/evidence: ArrangeBattleField
+// 0x140229210, ReinforceFrontLineAtIndex 0x140228280, ReinforceBackLine 0x140228A60, DailyUpdate 0x140226F70, FireAt
+// 0x140225820). Not yet here: terrain and crossings (the dice's global modifier is the generals' alone), the
+// cavalry's insufficient support, combat ability and the damage modifiers (all 0).
 
 namespace mc
 {
@@ -168,13 +169,13 @@ namespace mc
             return position;   // a broken regiment straight ahead
         }
 
-        // EU4's GetBestReserveUnit(FRONT): the first in the reserve's order with men and morale, not artillery; -1
-        // if none.
-        int first_reserve(const Regiments& regiments, const Content& content, const BattleSide& side)
+        // EU4's GetBestReserveUnit: the first in the reserve's order with men and morale (> 0.009), not artillery
+        // for the front (FRONT), artillery for the back line (BACK); -1 if none.
+        int best_reserve(const Regiments& regiments, const Content& content, const BattleSide& side, bool back)
         {
             for (std::uint16_t ref = side.reserve_first; ref != 0;) {
                 const auto r = static_cast<std::uint16_t>(regiment_of(ref));
-                if (alive(regiments, r) && category_of(content, regiments, r) != RegimentCategory::artillery) {
+                if (alive(regiments, r) && (category_of(content, regiments, r) == RegimentCategory::artillery) == back) {
                     return r;
                 }
                 ref = regiments.reserve_next[r];
@@ -182,52 +183,105 @@ namespace mc
             return -1;
         }
 
-        // EU4's HasAnyTroopsAbleToFight: anyone in the line (even broken, until the next reorganisation), or a fit
-        // regiment in the reserve.
+        // EU4's HasAnyTroopsAbleToFight: anyone in a line (even broken, until the next reorganisation), or a fit
+        // regiment for the front in the reserve.
         bool able_to_fight(const Regiments& regiments, const Content& content, const BattleSide& side)
         {
-            for (const std::uint16_t ref : side.front) {
-                if (ref != 0) {
+            for (std::size_t p = 0; p < side.front.size(); ++p) {
+                if (side.front[p] != 0 || side.back[p] != 0) {
                     return true;
                 }
             }
-            return first_reserve(regiments, content, side) >= 0;
+            return best_reserve(regiments, content, side, false) >= 0;
         }
 
         // ---------------------------------------------------------------------------------------------- the lines
+
+        bool in_back(std::uint8_t place) { return place >= kPlaceBack && place < kPlaceBack + kFrontSlots; }
 
         void put(Regiments& regiments, BattleSide& side, std::uint16_t r, int position)
         {
             side.front[static_cast<std::size_t>(position)] = ref_of(r);
             regiments.place[r] = static_cast<std::uint8_t>(position + 1);
         }
-
-        // From the front to the end of the reserve.
-        void to_reserve(Regiments& regiments, BattleSide& side, int position)
+        void put_back(Regiments& regiments, BattleSide& side, std::uint16_t r, int position)
         {
-            const auto r = static_cast<std::uint16_t>(regiment_of(side.front[static_cast<std::size_t>(position)]));
-            side.front[static_cast<std::size_t>(position)] = 0;
+            side.back[static_cast<std::size_t>(position)] = ref_of(r);
+            regiments.place[r] = static_cast<std::uint8_t>(kPlaceBack + position);
+        }
+
+        // From a line to the end of the reserve.
+        void to_reserve(Regiments& regiments, BattleSide& side, std::array<std::uint16_t, kFrontSlots>& line,
+                        int position)
+        {
+            const auto r = static_cast<std::uint16_t>(regiment_of(line[static_cast<std::size_t>(position)]));
+            line[static_cast<std::size_t>(position)] = 0;
             reserve_push(regiments, side, r);
         }
 
-        // EU4's ReinforceFrontLine: every empty position, centre outwards, takes the first fit regiment of the reserve.
-        void reinforce(Regiments& regiments, const Content& content, BattleSide& side)
+        // EU4's ReinforceFrontLine and ReinforceFrontLineAtIndex: every empty position of the front, centre outwards,
+        // takes the first fit regiment of the reserve; with none (and not on the first day, `initial`): the artillery
+        // behind it steps up; with none there, artillery from the reserve, if a fit enemy stands opposite. (EU4's
+        // breakthrough, a chance to pull that artillery forward, is 0 in its defines and left out.)
+        void reinforce(Regiments& regiments, const Content& content, BattleSide& side, const BattleSide& enemy,
+                       bool initial)
         {
             for (int i = 0; i < kMaxCombatWidth; ++i) {
-                const int position = order_at(i);
-                if (side.front[static_cast<std::size_t>(position)] != 0) {
+                const auto position = static_cast<std::size_t>(order_at(i));
+                if (side.front[position] != 0) {
                     continue;
                 }
-                const int r = first_reserve(regiments, content, side);
-                if (r < 0) {
-                    return;
+                const int r = best_reserve(regiments, content, side, false);
+                if (r >= 0) {
+                    reserve_remove(regiments, side, static_cast<std::uint16_t>(r));
+                    put(regiments, side, static_cast<std::uint16_t>(r), static_cast<int>(position));
+                    continue;
                 }
-                reserve_remove(regiments, side, static_cast<std::uint16_t>(r));
-                put(regiments, side, static_cast<std::uint16_t>(r), position);
+                if (initial) {
+                    continue;
+                }
+                if (side.back[position] != 0) {
+                    const auto a = static_cast<std::uint16_t>(regiment_of(side.back[position]));
+                    side.back[position] = 0;
+                    put(regiments, side, a, static_cast<int>(position));
+                    continue;
+                }
+                const int opposite = regiment_of(enemy.front[position]);
+                if (opposite < 0 || !alive(regiments, static_cast<std::uint16_t>(opposite))) {
+                    continue;
+                }
+                const int a = best_reserve(regiments, content, side, true);
+                if (a >= 0) {
+                    reserve_remove(regiments, side, static_cast<std::uint16_t>(a));
+                    put(regiments, side, static_cast<std::uint16_t>(a), static_cast<int>(position));
+                }
             }
         }
 
-        // EU4's ShuffleUnitsTowardsMiddle: the left half slides right, the right half left, one pass each.
+        // EU4's ReinforceBackLine: at most `speed` artillery of the reserve a day into the back line within the width,
+        // centre outwards: first behind positions where both fronts stand, then where one does, then anywhere.
+        void reinforce_back(Regiments& regiments, const Content& content, BattleSide& side, const BattleSide& enemy,
+                            int width, int speed)
+        {
+            for (int near = 2; near >= 0; --near) {
+                for (int i = 0; i < width && speed > 0; ++i) {
+                    const auto position = static_cast<std::size_t>(order_at(i));
+                    if (side.back[position] != 0 || (side.front[position] != 0) + (enemy.front[position] != 0) < near) {
+                        continue;
+                    }
+                    const int a = best_reserve(regiments, content, side, true);
+                    if (a < 0) {
+                        break;
+                    }
+                    reserve_remove(regiments, side, static_cast<std::uint16_t>(a));
+                    put_back(regiments, side, static_cast<std::uint16_t>(a), static_cast<int>(position));
+                    --speed;
+                }
+            }
+        }
+
+        // EU4's ShuffleUnitsTowardsMiddle: the left half of the front slides right, the right half left, one pass
+        // each (the back line stays).
         void shuffle_to_middle(Regiments& regiments, BattleSide& side)
         {
             auto move = [&](int to, int from) {
@@ -247,16 +301,19 @@ namespace mc
             }
         }
 
-        // EU4's ReorganizeTroops.
-        void reorganize(WorldState& state, const Content& content, BattleSide& side, const BattleSide& enemy)
+        // EU4's ReorganizeTroops; `width` the battle's, `speed` the back line's for the day.
+        void reorganize(WorldState& state, const Content& content, BattleSide& side, const BattleSide& enemy, int width,
+                        int speed)
         {
             Regiments& regiments = state.regiments;
-            // 1. Regiments with no men or broken morale leave the lines.
-            for (std::uint16_t& ref : side.front) {
-                const int r = regiment_of(ref);
-                if (r >= 0 && (regiments.strength[r] < 1 || regiments.morale[r] < kBroken)) {
-                    regiments.place[r] = kPlaceOut;
-                    ref = 0;
+            // 1. Regiments with no men or broken morale leave both lines.
+            for (auto* line : { &side.front, &side.back }) {
+                for (std::uint16_t& ref : *line) {
+                    const int r = regiment_of(ref);
+                    if (r >= 0 && (regiments.strength[r] < 1 || regiments.morale[r] < kBroken)) {
+                        regiments.place[r] = kPlaceOut;
+                        ref = 0;
+                    }
                 }
             }
             // 2. The first regiment of the front (outermost first) with no enemy within its maneuver goes to the end
@@ -269,12 +326,13 @@ namespace mc
                 }
                 if (best_target(regiments, enemy, position, maneuver(state, content, static_cast<std::uint16_t>(r))) <
                     0) {
-                    to_reserve(regiments, side, position);
+                    to_reserve(regiments, side, side.front, position);
                     break;
                 }
             }
-            // 3. The front filled from the reserve; 4. the gaps closed.
-            reinforce(regiments, content, side);
+            // 3. The front filled; 4. the back line; 5. the gaps closed.
+            reinforce(regiments, content, side, enemy, false);
+            reinforce_back(regiments, content, side, enemy, width, speed);
             shuffle_to_middle(regiments, side);
         }
     }
@@ -291,6 +349,7 @@ namespace mc
         damage_morale_.assign(kRegimentSlots, 0);
         today_.assign(kBattleSlots, BattleDay{});
         centre_.assign(kRegimentSlots, 0);
+        second_.assign(kRegimentSlots, 0);
         flank_.assign(kRegimentSlots, 0);
     }
 
@@ -344,6 +403,8 @@ namespace mc
             BattleSide& side = state.battles.list[armies.battle[army] - 1u].sides[armies.side[army]];
             if (in_front(place)) {
                 side.front[place - 1u] = 0;
+            } else if (in_back(place)) {
+                side.back[static_cast<std::size_t>(place - kPlaceBack)] = 0;
             } else if (place == kPlaceReserve) {
                 reserve_remove(regiments, side, static_cast<std::uint16_t>(r));
             }
@@ -503,6 +564,8 @@ namespace mc
                 side.weapon[1] = weapon(sums, c, RegimentCategory::infantry, kPhaseShock);
                 side.weapon[2] = weapon(sums, c, RegimentCategory::cavalry, kPhaseFire);
                 side.weapon[3] = weapon(sums, c, RegimentCategory::cavalry, kPhaseShock);
+                side.weapon[4] = weapon(sums, c, RegimentCategory::artillery, kPhaseFire);
+                side.weapon[5] = weapon(sums, c, RegimentCategory::artillery, kPhaseShock);
             }
             // The width: the wider country's, within the defines' limit.
             const int width = std::max(combat_width(sums, battle.sides[0].country),
@@ -566,8 +629,8 @@ namespace mc
             roll_dice();
             arrange(state, content, battle, 0);
             arrange(state, content, battle, 1);
-            reinforce(state.regiments, content, b.sides[0]);
-            reinforce(state.regiments, content, b.sides[1]);
+            reinforce(state.regiments, content, b.sides[0], b.sides[1], true);
+            reinforce(state.regiments, content, b.sides[1], b.sides[0], true);
             const int wiped = overrun(state, content, battle, defines.overrun_factor, false);
             if (wiped >= 0) {
                 b.duration = 0;   // not a shot fired
@@ -582,8 +645,16 @@ namespace mc
             b.phase = b.phase == kPhaseFire ? kPhaseShock : kPhaseFire;
         }
         command(state, battle);
-        reorganize(state, content, b.sides[0], b.sides[1]);
-        reorganize(state, content, b.sides[1], b.sides[0]);
+        // The back line takes back_line_reinforce_speed + the commander's maneuver / 2 a day, at least 1.
+        int speed[2] = { 0, 0 };
+        for (int s = 0; s < 2; ++s) {
+            const int l = today_[battle].sides[s].commander;
+            const int maneuver = l >= 0 ? state.leaders.maneuver[static_cast<std::size_t>(l)] : 0;
+            speed[s] = std::max(1, defines.back_line_reinforce_speed + maneuver / 2);
+        }
+        const int width = today_[battle].width;
+        reorganize(state, content, b.sides[0], b.sides[1], width, speed[0]);
+        reorganize(state, content, b.sides[1], b.sides[0], width, speed[1]);
         shoot(state, content, battle, 0);
         shoot(state, content, battle, 1);
         return true;
@@ -666,10 +737,13 @@ namespace mc
         today.sides[1].global = std::max(0, pips[1] - pips[0]);
     }
 
-    // EU4's ArrangeBattleField (no artillery line): in the centre infantry, as many as the enemy has regiments able to
-    // fight; then all the cavalry on the flanks up to the width; then more infantry up to the enemy's + twice the
-    // infantry's maneuver; the rest back to the end of the reserve. If the width is short of cavalry + centre, the
-    // centre keeps at most width - 2 × min(cavalry / 2, (width - c') / 2).
+    // EU4's ArrangeBattleField: the artillery to the back line, centre outwards, up to the width; in the centre
+    // infantry, as many as the enemy has regiments able to fight (not artillery); then all the cavalry on the flanks up
+    // to the width; then more infantry up to the enemy's + twice the infantry's maneuver; then more infantry, up to the
+    // width, only in front of artillery; the rest back to the end of the reserve (infantry, cavalry, artillery). If the
+    // width is short of cavalry + centre, the centre keeps at most width - 2 × min(cavalry / 2, (width - c') / 2).
+    // (EU4 also sorts each group by CUnitCombatComparator, which is not reversed yet: here they keep the reserve's
+    // order, as in BattleSim.)
     void Combat::arrange(WorldState& state, const Content& content, std::uint32_t battle, int side)
     {
         Regiments& regiments = state.regiments;
@@ -689,25 +763,25 @@ namespace mc
                 ++enemy_able;
             }
         });
-        // The reserve's infantry and cavalry taken out in its order, the broken out of the lines; artillery stays.
+        // The reserve taken out in its order by category, the broken out of the lines.
         int centre = 0;
         int flank = 0;
+        int second = 0;
         for_each_reserve(regiments, mine, [&](std::uint16_t r) {
+            reserve_remove(regiments, mine, r);
             if (!alive(regiments, r)) {
-                reserve_remove(regiments, mine, r);
                 regiments.place[r] = kPlaceOut;   // never drawn up
                 return;
             }
             switch (category_of(content, regiments, r)) {
             case RegimentCategory::infantry:
-                reserve_remove(regiments, mine, r);
                 centre_[static_cast<std::size_t>(centre++)] = r;
                 break;
             case RegimentCategory::cavalry:
-                reserve_remove(regiments, mine, r);
                 flank_[static_cast<std::size_t>(flank++)] = r;
                 break;
             case RegimentCategory::artillery:
+                second_[static_cast<std::size_t>(second++)] = r;
                 break;
             }
         });
@@ -721,6 +795,10 @@ namespace mc
             const int c2 = std::min(c, width / 2);
             half = std::min(half, (width - c2) / 2);
             c = std::min(c, width - 2 * half);
+        }
+        const int used_second = std::min(second, width);
+        for (int i = 0; i < used_second; ++i) {
+            put_back(regiments, mine, second_[static_cast<std::size_t>(i)], order_at(i));
         }
         int at = 0;
         int used_centre = 0;
@@ -737,17 +815,27 @@ namespace mc
         while (at < limit && used_centre < centre) {
             put(regiments, mine, centre_[static_cast<std::size_t>(used_centre++)], order_at(at++));
         }
+        for (; at < width && used_centre < centre; ++at) {
+            const int position = order_at(at);
+            if (mine.back[static_cast<std::size_t>(position)] != 0) {
+                put(regiments, mine, centre_[static_cast<std::size_t>(used_centre++)], position);
+            }
+        }
         for (int i = used_centre; i < centre; ++i) {
             reserve_push(regiments, mine, centre_[static_cast<std::size_t>(i)]);
         }
         for (int i = used_flank; i < flank; ++i) {
             reserve_push(regiments, mine, flank_[static_cast<std::size_t>(i)]);
         }
+        for (int i = used_second; i < second; ++i) {
+            reserve_push(regiments, mine, second_[static_cast<std::size_t>(i)]);
+        }
     }
 
-    // EU4's CLandCombatant::DailyUpdate: the front within the width shoots, centre outwards; the regiments past the
-    // width go back to the reserve; the day's morale loss (1% of the enemy's maximum morale in the line, 2% in the
-    // reserve); reserve regiments that can no longer fight leave it.
+    // EU4's CLandCombatant::DailyUpdate: within the width, centre outwards, the front shoots at front_line_modifier
+    // and the artillery behind it at back_line_modifier; the regiments of both lines past the width go back to the
+    // reserve; the day's morale loss (1% of the enemy's maximum morale in the lines, 2% in the reserve); reserve
+    // regiments that can no longer fight leave it.
     void Combat::shoot(WorldState& state, const Content& content, std::uint32_t battle, int side)
     {
         Regiments& regiments = state.regiments;
@@ -758,21 +846,32 @@ namespace mc
             const int position = order_at(i);
             const int r = regiment_of(mine.front[static_cast<std::size_t>(position)]);
             if (r >= 0) {
-                fire_at(state, content, battle, side, position, static_cast<std::uint16_t>(r));
+                fire_at(state, content, battle, side, position, static_cast<std::uint16_t>(r),
+                        defines.front_line_modifier);
+            }
+            const int a = regiment_of(mine.back[static_cast<std::size_t>(position)]);
+            if (a >= 0 && category_of(content, regiments, static_cast<std::uint16_t>(a)) == RegimentCategory::artillery) {
+                fire_at(state, content, battle, side, position, static_cast<std::uint16_t>(a),
+                        defines.back_line_modifier);
             }
         }
         for (int i = width; i < kMaxCombatWidth; ++i) {
             const int position = order_at(i);
             if (mine.front[static_cast<std::size_t>(position)] != 0) {
-                to_reserve(regiments, mine, position);
+                to_reserve(regiments, mine, mine.front, position);
+            }
+            if (mine.back[static_cast<std::size_t>(position)] != 0) {
+                to_reserve(regiments, mine, mine.back, position);
             }
         }
         const Fixed enemy_max = today_[battle].sides[1 - side].max_morale;
         const Fixed line_loss = fx_mul(enemy_max, defines.daily_morale_damage);
         const Fixed reserve_loss = fx_mul(kFixedOne, fx_mul(enemy_max, defines.reserve_daily_morale_damage));
-        for (const std::uint16_t ref : mine.front) {
-            if (ref != 0) {
-                damage_morale_[static_cast<std::size_t>(regiment_of(ref))] += line_loss;
+        for (const auto* line : { &mine.front, &mine.back }) {
+            for (const std::uint16_t ref : *line) {
+                if (ref != 0) {
+                    damage_morale_[static_cast<std::size_t>(regiment_of(ref))] += line_loss;
+                }
             }
         }
         for_each_reserve(regiments, mine, [&](std::uint16_t r) {
@@ -784,11 +883,13 @@ namespace mc
         });
     }
 
-    // EU4's CLandCombatant::FireAt, the operations in the game's order (BattleSim's fireAt); the factors that are 1
-    // here (combat ability, the damage dealt and received, the morale damage) are left out, as multiplying by 1.000
-    // changes nothing.
+    // EU4's CLandCombatant::FireAt, the operations in the game's order (BattleSim's fireAt; the artillery's parts from
+    // eu4.exe, archeologyEU4 0x140225820); the factors that are 1 here (combat ability, the damage dealt and received,
+    // the morale damage) are left out, as multiplying by 1.000 changes nothing. Artillery behind the target lends it
+    // half its defensive pips; artillery hit in the front takes twice the men's damage; the enemy's back line at the
+    // shooter's position takes back_line_*_damage_taken of the hit.
     void Combat::fire_at(const WorldState& state, const Content& content, std::uint32_t battle, int side, int position,
-                         std::uint16_t regiment)
+                         std::uint16_t regiment, Fixed range)
     {
         const Battle& b = state.battles.list[battle];
         const Regiments& regiments = state.regiments;
@@ -799,32 +900,40 @@ namespace mc
         if (target_position < 0) {
             return;
         }
-        const auto target = static_cast<std::uint16_t>(regiment_of(enemy.front[static_cast<std::size_t>(target_position)]));
-        const bool flank = enemy.front[static_cast<std::size_t>(position)] == 0;   // nobody straight ahead: a flank attack
+        const auto target =
+            static_cast<std::uint16_t>(regiment_of(enemy.front[static_cast<std::size_t>(target_position)]));
+        const bool flank = enemy.front[static_cast<std::size_t>(position)] == 0;   // nobody straight ahead
 
         const std::uint8_t phase = b.phase;
         const std::uint8_t mine = regiments.type[regiment];
         const std::uint8_t theirs = regiments.type[target];
         const int offence = phase == kPhaseFire ? n.off_fire[mine] : n.off_shock[mine];
         const int defence = phase == kPhaseFire ? n.def_fire[theirs] : n.def_shock[theirs];
-        const int phase_pips = offence - defence;
-        const int morale_pips = (n.off_morale[mine] - n.def_morale[theirs]) + phase_pips;
+        int phase_pips = offence - defence;
+        int morale_pips = (n.off_morale[mine] - n.def_morale[theirs]) + phase_pips;
+        const int covering = regiment_of(enemy.back[static_cast<std::size_t>(target_position)]);
+        if (covering >= 0 &&
+            category_of(content, regiments, static_cast<std::uint16_t>(covering)) == RegimentCategory::artillery) {
+            const std::uint8_t art = regiments.type[covering];
+            const int art_phase = phase == kPhaseFire ? n.def_fire[art] : n.def_shock[art];
+            phase_pips -= art_phase / 2;
+            morale_pips -= (n.def_morale[art] + art_phase) / 2;
+        }
         const int dice = b.sides[side].dice;
         const int global = today_[battle].sides[side].global;   // the generals (terrain, crossings: not yet)
         const int x = std::clamp(phase_pips + global + dice + 2, 0, 21);
         const int xm = std::clamp(morale_pips + global + dice + 2, 0, 21);
-        const Fixed base = 25 * x + 25;   // × 0.2 below: 15 + 5 × (dice + pips + 2)
+        const bool artillery_hit = category_of(content, regiments, target) == RegimentCategory::artillery;
+        const Fixed base = (25 * x + 25) * (artillery_hit ? 2 : 1);   // × 0.2 below: 15 + 5 × (dice + pips + 2)
         const Fixed base_morale = 25 * xm + 25;
 
         const SideDay& shooter = today_[battle].sides[side];
         const Fixed tactics = today_[battle].sides[1 - side].tactics;
         const RegimentCategory category = category_of(content, regiments, regiment);
-        const int weapon_index = (category == RegimentCategory::cavalry ? 2 : 0) + (phase == kPhaseFire ? 0 : 1);
-        const Fixed weapon =
-            category == RegimentCategory::artillery ? 0 : shooter.weapon[static_cast<std::size_t>(weapon_index)];
+        const auto weapon_index = static_cast<std::size_t>(category) * 2 + (phase == kPhaseFire ? 0 : 1);
+        const Fixed weapon = shooter.weapon[weapon_index];
         const Fixed discipline = shooter.discipline;
         const std::int32_t strength = regiments.strength[regiment];
-        const Fixed range = defines.front_line_modifier;
         const Fixed length = kFixedOne + b.duration * defines.war_length_damage;
 
         // Casualties.
@@ -855,6 +964,13 @@ namespace mc
 
         damage_men_[target] += std::max(men, 0);
         damage_morale_[target] += std::max(morale, 0);
+        const int behind = regiment_of(enemy.back[static_cast<std::size_t>(position)]);
+        if (behind >= 0) {
+            damage_men_[static_cast<std::size_t>(behind)] +=
+                std::max(fx_mul(defines.back_line_strength_damage_taken, men), 0);
+            damage_morale_[static_cast<std::size_t>(behind)] +=
+                std::max(fx_mul(morale, defines.back_line_morale_damage_taken), 0);
+        }
     }
 
     // ------------------------------------------------------------------------------------------------ the outcome

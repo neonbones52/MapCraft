@@ -1,5 +1,6 @@
 #include "minecraft/entity_models.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <format>
@@ -210,6 +211,145 @@ namespace mc::minecraft
             return true;
         }
 
+        // A 16 x 16 block texture (the field gun's).
+        bool load_block(const Assets& assets, std::string_view name, Image* out, std::string* error)
+        {
+            if (!assets.image(name, out, error)) {
+                return false;
+            }
+            if (out->width != 16 || out->height != 16) {
+                *error = std::format("{}: {} x {}, not 16 x 16", name, out->width, out->height);
+                return false;
+            }
+            return true;
+        }
+
+        // A tile repeated over a whole layer, so a face up to kSize px long reads it on without wrapping.
+        Image tiled(const Image& tile)
+        {
+            Image out;
+            out.width = EntityTextures::kSize;
+            out.height = EntityTextures::kSize;
+            out.rgba.resize(std::size_t{ out.width } * out.height * 4);
+            for (std::uint32_t y = 0; y < out.height; ++y) {
+                for (std::uint32_t x = 0; x < out.width; ++x) {
+                    std::memcpy(&out.rgba[(std::size_t{ y } * out.width + x) * 4],
+                                &tile.rgba[(std::size_t{ y % tile.height } * tile.width + x % tile.width) * 4], 4);
+                }
+            }
+            return out;
+        }
+
+        // A box as the game's block models have one (an element): each face its own layer, the texture's px laid
+        // on it 1:1 from `uv_origin` (part space; the box's `from` if not set) plus the face's offset. Faces: west
+        // east (-x +x), up down (-y +y), north south (-z front, +z back). Across a face: z on west and east, else x;
+        // down it: z on up and down, else y. `turn` (radians about x, round `pivot`) tips the whole box.
+        enum Side : int
+        {
+            west,
+            east,
+            up,
+            down,
+            north,
+            south,
+        };
+        struct Element
+        {
+            V3 from;
+            V3 to;
+            std::array<std::uint16_t, 6> layer{};
+            std::array<std::array<float, 2>, 6> offset{};
+            std::array<bool, 6> hidden{};
+            V3 uv_origin;
+            bool own_origin = false;
+            float turn = 0.0f;
+            V3 pivot;
+        };
+        Element element(V3 from, V3 to, std::uint16_t layer)
+        {
+            Element e;
+            e.from = from;
+            e.to = to;
+            e.layer.fill(layer);
+            return e;
+        }
+        void add(EntityModel* model, std::uint16_t part, const Element& e)
+        {
+            const V3 a = e.from;
+            const V3 b = e.to;
+            const V3 o = e.own_origin ? e.uv_origin : a;
+            const V3 c[8] = { { a.x, a.y, a.z }, { b.x, a.y, a.z }, { b.x, b.y, a.z }, { a.x, b.y, a.z },
+                              { a.x, a.y, b.z }, { b.x, a.y, b.z }, { b.x, b.y, b.z }, { a.x, b.y, b.z } };
+            constexpr int corners[6][4] = { { 0, 4, 7, 3 }, { 1, 5, 6, 2 }, { 0, 1, 5, 4 },
+                                            { 3, 2, 6, 7 }, { 0, 1, 2, 3 }, { 4, 5, 6, 7 } };
+            auto place = [&](V3 p) { return e.pivot + turn_x(p - e.pivot, e.turn); };
+            const V3 centre = place((a + b) * 0.5f);
+            for (int s = 0; s < 6; ++s) {
+                if (e.hidden[s]) {
+                    continue;
+                }
+                V3 p[4];
+                float uv[4][2];
+                for (int k = 0; k < 4; ++k) {
+                    const V3 q = c[corners[s][k]];
+                    p[k] = place(q);
+                    uv[k][0] = (s == west || s == east ? q.z - o.z : q.x - o.x) + e.offset[s][0];
+                    uv[k][1] = (s == up || s == down ? q.z - o.z : q.y - o.y) + e.offset[s][1];
+                }
+                Builder(model, part, e.layer[s]).quad(p, uv, centre);
+            }
+        }
+
+        // `c` (0xAABBGGRR) with its colour times `k`, opaque.
+        std::uint32_t shade(std::uint32_t c, float k)
+        {
+            std::uint32_t out = 0xFF000000u;
+            for (int i = 0; i < 3; ++i) {
+                const float v = static_cast<float>((c >> (8 * i)) & 0xFFu) * k;
+                out |= static_cast<std::uint32_t>(std::lround(std::clamp(v, 0.0f, 255.0f))) << (8 * i);
+            }
+            return out;
+        }
+        void put(Image* image, std::uint32_t x, std::uint32_t y, std::uint32_t c)
+        {
+            std::uint8_t* p = &image->rgba[(std::size_t{ y } * image->width + x) * 4];
+            for (int i = 0; i < 4; ++i) {
+                p[i] = static_cast<std::uint8_t>((c >> (8 * i)) & 0xFFu);
+            }
+        }
+
+        // The gun wheel's face, 16 x 16, all wood (the user's design): a rim of the stripped log a little darker
+        // past radius 6, 8 spokes of it (0.6 px either side of their lines), the log's end inside radius 2.2 as the
+        // hub, the planks dark (0.22) between the spokes.
+        Image wheel_face(const Image& planks, const Image& stripped, const Image& end)
+        {
+            Image out = planks;
+            const float eighth = kPi / 4.0f;
+            for (std::uint32_t y = 0; y < 16; ++y) {
+                for (std::uint32_t x = 0; x < 16; ++x) {
+                    const float dx = static_cast<float>(x) + 0.5f - 8.0f;
+                    const float dy = static_cast<float>(y) + 0.5f - 8.0f;
+                    const float r = std::sqrt(dx * dx + dy * dy);
+                    float a = std::fmod(std::atan2(dy, dx), eighth);
+                    if (a < 0.0f) {
+                        a += eighth;
+                    }
+                    std::uint32_t c = 0;
+                    if (r > 6.0f) {
+                        c = shade(stripped.pixel(x, y), 0.78f);
+                    } else if (r < 2.2f) {
+                        c = end.pixel(x, y);
+                    } else if (std::min(a, eighth - a) * r < 0.6f) {
+                        c = stripped.pixel(x, y);
+                    } else {
+                        c = shade(planks.pixel(x, y), 0.22f);
+                    }
+                    put(&out, x, y, c);
+                }
+            }
+            return out;
+        }
+
         // The item sprite extruded one sprite px thick (the game's generated item models), on a part: sprite px
         // (gx, gy) at `grip` (part space), the sprite's right along `right`, its up along `up`, `scale` model px a
         // sprite px.
@@ -401,6 +541,70 @@ namespace mc::minecraft
         return true;
     }
 
+    bool field_gun(const Assets& assets, EntityTextures* textures, EntityModel* out, std::string* error)
+    {
+        Image planks;
+        Image stripped;
+        Image end;
+        Image iron;
+        if (!load_block(assets, "block/spruce_planks", &planks, error) ||
+            !load_block(assets, "block/stripped_spruce_log", &stripped, error) ||
+            !load_block(assets, "block/spruce_log_top", &end, error) ||
+            !load_block(assets, "block/polished_blackstone", &iron, error)) {
+            return false;
+        }
+        // The muzzle's face: the bore, 2 x 2 at the middle of the 6 x 6 face (offset 5 below).
+        Image muzzle = iron;
+        for (std::uint32_t y = 7; y < 9; ++y) {
+            for (std::uint32_t x = 7; x < 9; ++x) {
+                put(&muzzle, x, y, 0xFF0E0A0Cu);
+            }
+        }
+        const std::uint16_t wood = textures->add(tiled(planks));
+        const std::uint16_t tread = textures->add(tiled(stripped));
+        const std::uint16_t wheel = textures->add(tiled(wheel_face(planks, stripped, end)));
+        const std::uint16_t metal = textures->add(tiled(iron));
+        const std::uint16_t bore = textures->add(tiled(muzzle));
+
+        *out = {};
+        out->pivots = { { 0.0f, 16.0f, 0.0f }, { 0.0f, 10.0f, 2.0f }, { 9.0f, 16.0f, 0.0f }, { -9.0f, 16.0f, 0.0f } };
+        // The carriage round the axle: the axle (out past the wheels' hubs), two cheeks under the barrel (a hair off
+        // its sides), the trail down to the ground behind at 15 degrees.
+        add(out, gun_carriage, element({ -11, -1, -1 }, { 11, 1, 1 }, wood));
+        add(out, gun_carriage, element({ 3.01f, -4, -4 }, { 5, 2, 10 }, wood));
+        add(out, gun_carriage, element({ -5, -4, -4 }, { -3.01f, 2, 10 }, wood));
+        Element trail = element({ -2, -1, 6 }, { 2, 3, 30 }, wood);
+        trail.turn = -kPi / 12.0f;
+        trail.pivot = { 0, -1, 8 };
+        add(out, gun_carriage, trail);
+        // The barrel round its trunnions: breech, chase, the muzzle's swell with the bore, the cascabel behind.
+        add(out, gun_barrel, element({ -3, -3, -4 }, { 3, 3, 7 }, metal));
+        Element chase = element({ -2, -2, -16 }, { 2, 2, -4 }, metal);
+        chase.hidden[south] = true;
+        add(out, gun_barrel, chase);
+        Element swell = element({ -3, -3, -19 }, { 3, 3, -16 }, metal);
+        swell.layer[north] = bore;
+        swell.offset[north] = { 5, 5 };
+        add(out, gun_barrel, swell);
+        Element cascabel = element({ -1, -1, 7 }, { 1, 1, 9 }, metal);
+        cascabel.hidden[north] = true;
+        add(out, gun_barrel, cascabel);
+        // A wheel: three crossed boxes round its hub, radius 8 (a stepped round), each a hair wider than the one
+        // before so their sides never share a plane; the face drawn on the sides, the tread the stripped log.
+        for (const std::uint16_t part : { gun_wheel_left, gun_wheel_right }) {
+            constexpr float kBoxes[3][3] = { { 1.0f, 7.0f, 7.0f }, { 1.02f, 4.0f, 8.0f }, { 1.04f, 8.0f, 4.0f } };
+            for (const auto& half : kBoxes) {
+                Element e = element({ -half[0], -half[1], -half[2] }, { half[0], half[1], half[2] }, tread);
+                e.layer[west] = wheel;
+                e.layer[east] = wheel;
+                e.uv_origin = { 0, -8, -8 };
+                e.own_origin = true;
+                add(out, part, e);
+            }
+        }
+        return true;
+    }
+
     void soldier_pose(float age, bool riding, float walk, float amount, float attack, SoldierPose* out)
     {
         *out = {};
@@ -465,5 +669,34 @@ namespace mc::minecraft
         p[horse_leg_right_hind].x = a * 0.5f * amount;
         p[horse_neck].x = kPi / 6.0f + (amount > 0.2f ? std::cos(walk * 0.8f) * 0.15f * amount : 0.0f);
         p[horse_tail].x = kPi / 6.0f + amount * 0.75f;
+    }
+
+    void gun_pose(float walk, float shot, GunPose* out)
+    {
+        *out = {};
+        // A shot: the whole gun 4 px back in 2 ticks, then smoothly forward to where it stood by kShotTicks; the
+        // barrel's muzzle up by 0.12 rad at tick 1, down again by tick 8.
+        constexpr float kRecoil = 4.0f;
+        constexpr float kJump = 2.0f;
+        float back = 0.0f;
+        float kick = 0.0f;
+        if (shot >= 0.0f) {
+            if (shot < kJump) {
+                back = kRecoil * shot / kJump;
+            } else {
+                const float t = std::min((shot - kJump) / (kShotTicks - kJump), 1.0f);
+                back = kRecoil * (1.0f - t * t * (3.0f - 2.0f * t));
+            }
+            kick = shot < 1.0f ? shot : std::max(0.0f, 1.0f - (shot - 1.0f) / 7.0f);
+        }
+        for (auto& s : out->shift) {
+            s = { 0.0f, 0.0f, back };
+        }
+        out->turn[gun_barrel].x = -0.12f * kick;
+        // The wheels roll with the walk (half the stride's 0.6662 a unit, so a whole number of turns as the walk's
+        // position wraps) and back with the jump (radius 8: back / 8).
+        const float roll = walk * 0.6662f * 0.5f - back / 8.0f;
+        out->turn[gun_wheel_left].x = roll;
+        out->turn[gun_wheel_right].x = roll;
     }
 }

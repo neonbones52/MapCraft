@@ -65,10 +65,11 @@ namespace mc::headless
     namespace
     {
         // The battles, a structure (game/game_data.h, Battle): rows battles.<field>,slot,value; a side's field is
-        // battles.<attacker|defender>.<field>, its front battles.<side>.front,slot × kFrontSlots + position,value.
+        // battles.<attacker|defender>.<field>, its lines battles.<side>.front and battles.<side>.back,
+        // slot × kFrontSlots + position,value.
         void dump_battles(std::span<const Battle> battles, std::string* out)
         {
-            static_assert(sizeof(Battle) == 196, "a new field of Battle: dump it here");
+            static_assert(sizeof(Battle) == 360, "a new field of Battle: dump it here");
             constexpr std::string_view kSides[] = { "attacker", "defender" };
             for (std::size_t b = 0; b < battles.size(); ++b) {
                 const Battle& battle = battles[b];
@@ -87,6 +88,9 @@ namespace mc::headless
                     *out += std::format("battles.{}.reserve_last,{},{}\n", n, b, side.reserve_last);
                     for (std::size_t p = 0; p < side.front.size(); ++p) {
                         *out += std::format("battles.{}.front,{},{}\n", n, b * side.front.size() + p, side.front[p]);
+                    }
+                    for (std::size_t p = 0; p < side.back.size(); ++p) {
+                        *out += std::format("battles.{}.back,{},{}\n", n, b * side.back.size() + p, side.back[p]);
                     }
                 }
             }
