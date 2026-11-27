@@ -88,6 +88,32 @@ namespace mc
         free_slot(regiments.alive, slot);
     }
 
+    bool create_leader(Leaders& leaders, std::uint16_t owner, std::uint16_t* slot)
+    {
+        if (!take_slot(leaders.alive, slot)) {
+            return false;
+        }
+        leaders.owner[*slot] = owner;
+        return true;
+    }
+
+    void destroy_leader(WorldState& state, std::uint16_t slot)
+    {
+        Armies& armies = state.armies;
+        for_each_alive(armies.alive, [&](std::uint32_t a) {
+            if (armies.leader[a] == slot + 1u) {
+                armies.leader[a] = 0;
+            }
+        });
+        Leaders& leaders = state.leaders;
+        const std::uint16_t generation = leaders.generation[slot];
+#define MC_CLEAR_SLOT(table, type, name, start) leaders.name[slot] = type{};
+        MC_LEADER_COLUMNS(MC_CLEAR_SLOT)
+#undef MC_CLEAR_SLOT
+        leaders.generation[slot] = static_cast<std::uint16_t>(generation + 1);
+        free_slot(leaders.alive, slot);
+    }
+
     ArmyTotals army_totals(const Regiments& regiments, std::uint16_t army)
     {
         ArmyTotals out;

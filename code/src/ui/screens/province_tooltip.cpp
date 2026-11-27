@@ -73,6 +73,11 @@ namespace mc
             ImGui::Text("%u regiments, %lld men", totals.regiments, static_cast<long long>(totals.men));
             ImGui::Text("Morale %.2f / %.2f", fx_to_double(totals.morale),
                         fx_to_double(max_morale(ui.cache.country_modifiers, army_owner)));
+            if (const std::uint16_t leader = armies.leader[army]; leader != 0) {
+                const Leaders& leaders = ui.state.leaders;
+                ImGui::Text("General: fire %u, shock %u, maneuver %u", unsigned{ leaders.fire[leader - 1u] },
+                            unsigned{ leaders.shock[leader - 1u] }, unsigned{ leaders.maneuver[leader - 1u] });
+            }
         }
         ImGui::EndTooltip();
     }

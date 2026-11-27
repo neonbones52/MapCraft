@@ -7,9 +7,9 @@
 
 namespace mc
 {
-    // Armies and regiments as entities that are born and die (docs/SIMULATION.md, "Раскладка данных"): slots handed
-    // out deterministically (the lowest free one), freed slots cleared, no allocation. The tables are game_data.h's
-    // Armies and Regiments; these are the only functions that take or free a slot.
+    // Armies, regiments and generals as entities that are born and die (docs/SIMULATION.md, "Раскладка данных"):
+    // slots handed out deterministically (the lowest free one), freed slots cleared, no allocation. The tables are
+    // game_data.h's Armies, Regiments and Leaders; these are the only functions that take or free a slot.
 
     // An army as the outside (a command, the bot, the UI) names it: its slot and the slot's generation then. Once the
     // army dies its slot's generation grows, so the reference no longer resolves, even after another army takes the
@@ -50,6 +50,13 @@ namespace mc
     bool add_regiment(Regiments& regiments, std::uint16_t army, std::uint8_t type, std::int32_t strength, Fixed morale,
                       std::uint16_t* slot);
     void remove_regiment(Regiments& regiments, std::uint16_t slot);
+
+    // A new general of `owner` in the lowest free slot, leading no army yet (Armies::leader names it); false when
+    // every slot is taken.
+    bool create_leader(Leaders& leaders, std::uint16_t owner, std::uint16_t* slot);
+    // The general dies: its army has none any more, its slot is cleared, its generation grows. A general outlives its
+    // army: destroy_army leaves it, with no army.
+    void destroy_leader(WorldState& state, std::uint16_t slot);
 
     // The army's regiments and their men (a query for the UI and the checks).
     struct ArmyTotals

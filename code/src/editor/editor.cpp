@@ -307,10 +307,11 @@ namespace mc
         }
     }
 
-    void Editor::edit_whole(const char* label, Column<std::int32_t>& column, std::span<const std::uint32_t> ids,
-                            int step, int max)
+    template <class T>
+    void Editor::edit_whole(const char* label, Column<T>& column, std::span<const std::uint32_t> ids, int step,
+                            int max)
     {
-        std::int32_t value = 0;
+        T value = 0;
         const bool same = shared(column, ids, &value);
         if (!same) {
             value = 0;
@@ -319,7 +320,7 @@ namespace mc
         if (ImGui::InputInt(label, &typed, step, step * 10)) {
             begin_typing();
             for (const std::uint32_t id : ids) {
-                column[id] = std::clamp(typed, 0, max);
+                column[id] = static_cast<T>(std::clamp(typed, 0, max));
             }
             changed();
         }
@@ -328,6 +329,9 @@ namespace mc
             ImGui::TextDisabled("%s", kMixed);   // the field shows 0; what is typed goes to the whole selection
         }
     }
+
+    template void Editor::edit_whole(const char*, Column<std::int32_t>&, std::span<const std::uint32_t>, int, int);
+    template void Editor::edit_whole(const char*, Column<std::uint8_t>&, std::span<const std::uint32_t>, int, int);
 
     void Editor::edit_cores()
     {

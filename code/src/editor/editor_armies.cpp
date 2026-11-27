@@ -5,6 +5,7 @@
 
 #include <format>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <imgui.h>
@@ -44,10 +45,49 @@ namespace mc
             ImGui::SameLine();
             if (ImGui::SmallButton("Remove army")) {
                 begin_edit();
+                if (state.armies.leader[army] != 0) {
+                    destroy_leader(state, static_cast<std::uint16_t>(state.armies.leader[army] - 1u));
+                }
                 destroy_army(state, army);
                 changed();
                 ImGui::PopID();
                 break;   // `here` is stale now; the next frame lists them again
+            }
+
+            // Its general: added (of the army's country), its pips edited, removed with x; an army removed here takes
+            // its general with it (a general that outlives its army is the game's, not the start's).
+            const std::uint16_t leader = state.armies.leader[army];
+            const int most = game.content.combat.leader_max_pips;
+            if (leader == 0) {
+                ImGui::BeginDisabled(army_owner == 0);
+                if (ImGui::SmallButton("Add general")) {
+                    std::uint16_t slot = 0;
+                    begin_edit();
+                    if (create_leader(state.leaders, army_owner, &slot)) {
+                        state.armies.leader[army] = static_cast<std::uint16_t>(slot + 1);
+                        changed();
+                    } else {
+                        message_ = std::format("Every one of the {} leader slots is taken", kLeaderSlots);
+                    }
+                }
+                ImGui::EndDisabled();
+            } else {
+                const std::uint32_t one[] = { leader - 1u };
+                ImGui::TextUnformatted("General");
+                for (auto [label, column] : { std::pair{ "fire", &state.leaders.fire },
+                                              std::pair{ "shock", &state.leaders.shock },
+                                              std::pair{ "maneuver", &state.leaders.maneuver } }) {
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
+                    edit_whole(label, *column, one, 1, most);
+                }
+                ImGui::SameLine();
+                if (ImGui::SmallButton("x##general")) {
+                    begin_edit();
+                    destroy_leader(state, static_cast<std::uint16_t>(leader - 1u));
+                    changed();
+                }
+                ImGui::SetItemTooltip("Remove the general");
             }
 
             std::vector<std::uint16_t> regiments;

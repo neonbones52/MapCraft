@@ -282,6 +282,12 @@ namespace mc
             {
                 MC_REGIMENT_COLUMNS(MC_EACH_START)
             }
+            template <class T, class F>
+                requires std::is_same_v<std::remove_const_t<T>, Leaders>
+            void each(T& columns, F&& f)
+            {
+                MC_LEADER_COLUMNS(MC_EACH_START)
+            }
 #undef MC_EACH_START
 
 #define MC_RUNTIME_ONLY(table, type, name, start)                                                                     \
@@ -336,6 +342,20 @@ namespace mc
             *out = static_cast<std::int32_t>(n);
             return true;
         }
+        bool parse_field(const Context& ctx, std::size_t r, const Content&, std::string_view csv, start::Whole,
+                         std::string_view text, std::uint8_t* out)
+        {
+            std::uint32_t n = 0;
+            if (text.empty()) {
+                *out = 0;
+                return true;
+            }
+            if (!parse_uint(text, &n) || n > 255u) {
+                return ctx.fail(r, std::format("{} \"{}\": a whole number 0..255", csv, text));
+            }
+            *out = static_cast<std::uint8_t>(n);
+            return true;
+        }
 
         // The text of one field of a setup column, as the file holds it.
         std::string format_field(const Content& content, start::Country, std::uint16_t value)
@@ -353,6 +373,10 @@ namespace mc
         std::string format_field(const Content&, start::Whole, std::int32_t value)
         {
             return std::format("{}", value);
+        }
+        std::string format_field(const Content&, start::Whole, std::uint8_t value)
+        {
+            return std::format("{}", unsigned{ value });
         }
 
         // One data/setup file through a table's column list. Its columns are the table's by-hand ones (named by the
@@ -485,6 +509,7 @@ namespace mc
         constexpr std::string_view kCountryHand[] = { "tag", "capital", "modifiers" };
         constexpr std::string_view kArmyHand[] = { "army", "province" };
         constexpr std::string_view kRegimentHand[] = { "army" };
+        constexpr std::string_view kLeaderHand[] = { "leader", "army" };
 
         // terrain.csv (required): key, name, color, movement_cost (how much longer a march over it takes than over
         // the plains, 1; > 0; game/movement.h).
@@ -839,6 +864,13 @@ namespace mc
         MC_REGIMENT_COLUMNS(MC_FILL_COLUMN)
         alive.assign(kRegimentSlots / 64, 0);
     }
+
+    void Leaders::resize()
+    {
+        const std::size_t n = kLeaderSlots;
+        MC_LEADER_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kLeaderSlots / 64, 0);
+    }
 #undef MC_FILL_COLUMN
 
     bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
@@ -908,6 +940,7 @@ namespace mc
         state.money = {};   // runtime: no accounts yet (their resize comes with the treasury, M8)
         state.armies.resize();
         state.regiments.resize();
+        state.leaders.resize();
         state.battles.resize();
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
@@ -1140,6 +1173,70 @@ namespace mc
                 }
             }
         }
+        // The generals (optional): leader (its number in the file) and army (its number in armies.csv, empty = none)
+        // by hand, the list's setup columns; each takes the next slot in file order. An army has one general at most,
+        // of its own country; the pips are at most leader_max_pips.
+        {
+            const auto path = setup / "leaders.csv";
+            SetupFile file(state.leaders, kLeaderHand);
+            setup_layout.leaders = file.layout({});
+            if (std::filesystem::exists(path)) {
+                csv::Table table;
+                if (!src.read(path, &table, error)) {
+                    return false;
+                }
+                const Context ctx{ path, &table, error };
+                int number = 0;
+                int army_column = 0;
+                if (!need_column(path, table, "leader", &number, error) ||
+                    !need_column(path, table, "army", &army_column, error) || !file.find(path, table, error)) {
+                    return false;
+                }
+                setup_layout.leaders = file.layout(table.header);
+                std::vector<std::uint32_t> numbers;
+                const Leaders& leaders = state.leaders;
+                for (std::size_t r = 0; r < table.rows.size(); ++r) {
+                    const auto& row = table.rows[r];
+                    std::uint32_t n = 0;
+                    if (!parse_uint(row[number], &n) || n == 0) {
+                        return ctx.fail(r, std::format("leader \"{}\": a number from 1", row[number]));
+                    }
+                    if (std::find(numbers.begin(), numbers.end(), n) != numbers.end()) {
+                        return ctx.fail(r, std::format("leader {} repeated", n));
+                    }
+                    numbers.push_back(n);
+                    std::uint16_t slot = 0;
+                    if (!create_leader(state.leaders, 0, &slot)) {
+                        return ctx.fail(r, std::format("more than {} leaders", kLeaderSlots));
+                    }
+                    if (!file.read(ctx, r, slot, content, state.leaders)) {
+                        return false;
+                    }
+                    const int most = content.combat.leader_max_pips;
+                    if (leaders.fire[slot] > most || leaders.shock[slot] > most || leaders.maneuver[slot] > most) {
+                        return ctx.fail(r, std::format("pips {} / {} / {}: at most {} each (leader_max_pips)",
+                                                       leaders.fire[slot], leaders.shock[slot],
+                                                       leaders.maneuver[slot], most));
+                    }
+                    if (row[army_column].empty()) {
+                        continue;
+                    }
+                    std::uint32_t a = 0;
+                    const auto army = parse_uint(row[army_column], &a) ? army_slot.find(a) : army_slot.end();
+                    if (army == army_slot.end()) {
+                        return ctx.fail(r, std::format("army \"{}\" is not in armies.csv", row[army_column]));
+                    }
+                    if (state.armies.owner[army->second] != leaders.owner[slot]) {
+                        return ctx.fail(r, std::format("army {} is not {}'s", a,
+                                                       content.countries.tag_text(leaders.owner[slot])));
+                    }
+                    if (state.armies.leader[army->second] != 0) {
+                        return ctx.fail(r, std::format("army {} has a general already", a));
+                    }
+                    state.armies.leader[army->second] = static_cast<std::uint16_t>(slot + 1);
+                }
+            }
+        }
         if (!src.all_used(error)) {
             return false;
         }
@@ -1154,11 +1251,13 @@ namespace mc
         std::size_t regiments = 0;
         for_each_alive(state.armies.alive, [&](std::uint32_t) { ++armies; });
         for_each_alive(state.regiments.alive, [&](std::uint32_t) { ++regiments; });
+        std::size_t leaders = 0;
+        for_each_alive(state.leaders.alive, [&](std::uint32_t) { ++leaders; });
         return std::format("{} countries, {} terrain, {} goods, {} trade nodes, {} regiment types, {} modifier "
-                           "bundles; {} armies, {} regiments",
+                           "bundles; {} armies, {} regiments, {} leaders",
                            content.countries.size() - 1, content.terrain.size() - 1, content.goods.size() - 1,
                            content.trade_nodes.size() - 1, content.regiment_types.size() - 1,
-                           content.modifiers.list.size() - 1, armies, regiments);
+                           content.modifiers.list.size() - 1, armies, regiments, leaders);
     }
 
     void GameData::rebuild_cache()
@@ -1220,6 +1319,16 @@ namespace mc
             }
             if (regiments_of[a] == 0) {
                 out.push_back(std::format("army {} in {}: no regiments", a + 1, map.province_name(armies.province[a])));
+            }
+            if (armies.leader[a] != 0 && state.leaders.owner[armies.leader[a] - 1u] != armies.owner[a]) {
+                out.push_back(std::format("army {} in {}: its general is another country's", a + 1,
+                                          map.province_name(armies.province[a])));
+            }
+        });
+        // Generals: an owner.
+        for_each_alive(state.leaders.alive, [&](std::uint32_t l) {
+            if (state.leaders.owner[l] == 0) {
+                out.push_back(std::format("leader {}: no owner", l + 1));
             }
         });
 
@@ -1335,6 +1444,29 @@ namespace mc
             setup_layout.regiments, state.regiments, content, entries, [&](std::string_view, std::uint32_t r) {
                 return std::format("{}", number_of[state.regiments.army[r]]);   // "army"
             });
-        return csv::write_file(dir / "setup" / "regiments.csv", regiments_text, error);
+        if (!csv::write_file(dir / "setup" / "regiments.csv", regiments_text, error)) {
+            return false;
+        }
+        // The live generals in slot order, numbered 1, 2, ... in it; each with the number of the army it leads.
+        std::vector<std::uint32_t> army_of(kLeaderSlots, 0);
+        for_each_alive(state.armies.alive, [&](std::uint32_t a) {
+            if (state.armies.leader[a] != 0) {
+                army_of[state.armies.leader[a] - 1u] = number_of[a];
+            }
+        });
+        entries.clear();
+        std::vector<std::uint32_t> leader_number(kLeaderSlots, 0);
+        for_each_alive(state.leaders.alive, [&](std::uint32_t l) {
+            entries.push_back(l);
+            leader_number[l] = static_cast<std::uint32_t>(entries.size());
+        });
+        const std::string leaders_text = SetupFile(state.leaders, kLeaderHand).write(
+            setup_layout.leaders, state.leaders, content, entries, [&](std::string_view column, std::uint32_t l) {
+                if (column == "leader") {
+                    return std::format("{}", leader_number[l]);
+                }
+                return army_of[l] != 0 ? std::format("{}", army_of[l]) : std::string{};   // "army"
+            });
+        return csv::write_file(dir / "setup" / "leaders.csv", leaders_text, error);
     }
 }

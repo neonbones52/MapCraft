@@ -13,9 +13,10 @@
 #include "game/movement.h"
 
 // The order of operations and the integer arithmetic follow eu4.exe 1.37.5 as BattleSim reproduces it
-// (C:\Dev\Projects\eu4\BattleSim, src/core/Battle.cpp; addresses there). Not yet here: generals, terrain and crossings
-// (the dice's global modifier is 0), artillery's back line (artillery stays in the reserve, as EU4's reserve never
-// sends it to the front), the cavalry's insufficient support, combat ability and the damage modifiers (all 0).
+// (C:\Dev\Projects\eu4\BattleSim, src/core/Battle.cpp; addresses there). Not yet here: terrain and crossings (the
+// dice's global modifier is the generals' alone), artillery's back line (artillery stays in the reserve, as EU4's
+// reserve never sends it to the front), the cavalry's insufficient support, combat ability and the damage modifiers
+// (all 0).
 
 namespace mc
 {
@@ -476,6 +477,7 @@ namespace mc
         const int side = state.armies.owner[army] == b.sides[0].country ? 0 : 1;
         state.armies.battle[army] = static_cast<std::uint16_t>(battle + 1);
         state.armies.side[army] = static_cast<std::uint8_t>(side);
+        state.armies.joined[army] = b.duration;
         movement.halt(state, army);
         // Its regiments go to the end of its side's reserve, in slot order (EU4's AddUnit), with the morale they have.
         for_each_alive(regiments.alive, [&](std::uint32_t r) {
@@ -579,6 +581,7 @@ namespace mc
             b.phase_day = 0;
             b.phase = b.phase == kPhaseFire ? kPhaseShock : kPhaseFire;
         }
+        command(state, battle);
         reorganize(state, content, b.sides[0], b.sides[1]);
         reorganize(state, content, b.sides[1], b.sides[0]);
         shoot(state, content, battle, 0);
@@ -621,6 +624,46 @@ namespace mc
             }
         }
         ++b.phase_day;
+    }
+
+    // EU4's CalcHighestCommander and DetermineGlobalModifiers, every day after the dice: a side's commander is the
+    // general with the most fire + shock + 1 among its armies in the battle (equal ones: the army that joined first,
+    // then the lower slot, as EU4 keeps a side's armies in the order they joined); a side's global modifier is its
+    // commander's pips of the phase above the enemy commander's, never below 0 (no commander: 0 pips). Terrain and
+    // crossings: not yet.
+    void Combat::command(const WorldState& state, std::uint32_t battle)
+    {
+        const Armies& armies = state.armies;
+        const Leaders& leaders = state.leaders;
+        const Battle& b = state.battles.list[battle];
+        BattleDay& today = today_[battle];
+        int best[2] = { -1, -1 };
+        std::uint16_t first[2] = { 0, 0 };
+        today.sides[0].commander = -1;
+        today.sides[1].commander = -1;
+        for (std::uint32_t k = army_offsets_[b.province]; k < army_offsets_[b.province + 1u]; ++k) {
+            const std::uint16_t a = army_list_[k];
+            if (!slot_alive(armies.alive, a) || armies.battle[a] != battle + 1 || armies.leader[a] == 0) {
+                continue;
+            }
+            const int s = armies.side[a];
+            const std::uint16_t l = static_cast<std::uint16_t>(armies.leader[a] - 1u);
+            const int score = leaders.fire[l] + leaders.shock[l] + 1;
+            if (score > best[s] || (score == best[s] && armies.joined[a] < first[s])) {
+                best[s] = score;
+                first[s] = armies.joined[a];
+                today.sides[s].commander = l;
+            }
+        }
+        int pips[2] = { 0, 0 };
+        for (int s = 0; s < 2; ++s) {
+            const int l = today.sides[s].commander;
+            if (l >= 0) {
+                pips[s] = b.phase == kPhaseFire ? leaders.fire[l] : leaders.shock[l];
+            }
+        }
+        today.sides[0].global = std::max(0, pips[0] - pips[1]);
+        today.sides[1].global = std::max(0, pips[1] - pips[0]);
     }
 
     // EU4's ArrangeBattleField (no artillery line): in the centre infantry, as many as the enemy has regiments able to
@@ -767,9 +810,9 @@ namespace mc
         const int phase_pips = offence - defence;
         const int morale_pips = (n.off_morale[mine] - n.def_morale[theirs]) + phase_pips;
         const int dice = b.sides[side].dice;
-        constexpr int kGlobalModifier = 0;   // generals, terrain, crossings: not yet
-        const int x = std::clamp(phase_pips + kGlobalModifier + dice + 2, 0, 21);
-        const int xm = std::clamp(morale_pips + kGlobalModifier + dice + 2, 0, 21);
+        const int global = today_[battle].sides[side].global;   // the generals (terrain, crossings: not yet)
+        const int x = std::clamp(phase_pips + global + dice + 2, 0, 21);
+        const int xm = std::clamp(morale_pips + global + dice + 2, 0, 21);
         const Fixed base = 25 * x + 25;   // × 0.2 below: 15 + 5 × (dice + pips + 2)
         const Fixed base_morale = 25 * xm + 25;
 
@@ -930,6 +973,7 @@ namespace mc
             const int side = armies.side[a];
             armies.battle[a] = 0;
             armies.side[a] = 0;
+            armies.joined[a] = 0;
             if (side != loser) {
                 continue;
             }

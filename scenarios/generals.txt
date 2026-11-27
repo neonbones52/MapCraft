@@ -1,0 +1,9 @@
+# The generals (M6, step 3): the battle of battle.txt, but NBR's general (leader 2, of army 2) has 6 fire and 6
+# shock pips against DUM's 2 and 3: the side's commander adds its pips of the phase above the enemy commander's to its
+# dice, so NBR now wins where battle.txt has DUM win. With every pip 0 the battle is battle.txt's without generals.
+years = 1
+seed = 1
+setup/leaders.csv: 2.fire = 6
+setup/leaders.csv: 2.shock = 6
+
+day 0 = DUM move 0:0 475

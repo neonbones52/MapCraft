@@ -65,9 +65,9 @@ namespace mc
         // A number in [0, max], typed or stepped.
         void edit_number(const char* label, Column<float>& column, std::span<const std::uint32_t> ids, float step,
                          float max = std::numeric_limits<float>::max());
-        // A whole number in [0, max], typed or stepped.
-        void edit_whole(const char* label, Column<std::int32_t>& column, std::span<const std::uint32_t> ids, int step,
-                        int max);
+        // A whole number in [0, max], typed or stepped (an i32 or a u8 column).
+        template <class T>
+        void edit_whole(const char* label, Column<T>& column, std::span<const std::uint32_t> ids, int step, int max);
         void edit_cores();
         // The modifier bundles of one country (checkboxes; the base bundle is every country's) and what they sum to.
         void edit_bundles(std::size_t country);

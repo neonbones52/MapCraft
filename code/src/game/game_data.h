@@ -237,17 +237,20 @@ namespace mc
         CountryModifiers country_modifiers;
     };
 
-    // Entities that are born and die (armies, regiments, battles) live in slots: a fixed number per table, so the
-    // tick never allocates; a mask of the slots in use; a new entity takes the lowest free slot (game/armies.h). A
+    // Entities that are born and die (armies, regiments, leaders, battles) live in slots: a fixed number per table, so
+    // the tick never allocates; a mask of the slots in use; a new entity takes the lowest free slot (game/armies.h). A
     // freed slot's columns are back to 0. The numbers are the limits: regiments fill the u16 slot index but for the
     // last word (a battle names a regiment by its slot + 1 in a u16, 0 = none: Battle, Regiments::reserve_prev and
     // reserve_next; more needs u32 slots), which is far above what EU4 fields on a map six times ours; a battle is one
-    // per province at most.
+    // per province at most; EU4's countries keep a few leaders each.
     inline constexpr std::uint32_t kArmySlots = 4096;
     inline constexpr std::uint32_t kRegimentSlots = 65472;
+    inline constexpr std::uint32_t kLeaderSlots = 1024;
     inline constexpr std::uint32_t kBattleSlots = 1024;
-    static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kBattleSlots % 64 == 0,
+    static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kLeaderSlots % 64 == 0 &&
+                      kBattleSlots % 64 == 0,
                   "whole words of the slot masks");
+    static_assert(kLeaderSlots < 65536, "an army names its leader by slot + 1 in a u16");
     static_assert(kArmySlots <= 65536 && kRegimentSlots < 65536, "u16 slots, a regiment's slot + 1 too");
 
     // The used part of a slot table: the slots up to the end of the last mask word with a live slot (a multiple of 64).
@@ -275,10 +278,16 @@ namespace mc
     /* the battle it fights in (game/combat.h): its slot + 1, 0 = none */                                      \
     X(armies, std::uint16_t, battle, runtime)                                                                   \
     /* its side there (Battle::sides): 0 the attacker, 1 the defender; 0 out of a battle */                     \
-    X(armies, std::uint8_t, side, runtime)
+    X(armies, std::uint8_t, side, runtime)                                                                      \
+    /* the day of the battle it joined on (Battle::duration then): with the slot, EU4's order of a side's */      \
+    /* armies, which picks the commander of equal ones */                                                        \
+    X(armies, std::uint16_t, joined, runtime)                                                                   \
+    /* its general (Leaders): slot + 1, 0 = none; at the start from data/setup/leaders.csv's army column */       \
+    X(armies, std::uint16_t, leader, derived)
 
     // Saved. The armies (land only; fleets are not here), in slots, kArmySlots long. data/setup/armies.csv at the
-    // start: army (its number in the file, for regiments.csv) and province by hand; an army's name is not data.
+    // start: army (its number in the file, for regiments.csv and leaders.csv) and province by hand; an army's name is
+    // not data.
     struct Armies
     {
         MC_ARMY_COLUMNS(MC_DECLARE_COLUMN)
@@ -316,6 +325,26 @@ namespace mc
     struct Regiments
     {
         MC_REGIMENT_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+
+        void resize();
+    };
+
+#define MC_LEADER_COLUMNS(X)                                                                                    \
+    X(leaders, std::uint16_t, owner, setup("owner", country))                                                   \
+    /* pips: EU4's leader fire, shock and maneuver, 0..leader_max_pips (defines.csv; siege comes with the siege) */ \
+    X(leaders, std::uint8_t, fire, setup("fire", whole))                                                        \
+    X(leaders, std::uint8_t, shock, setup("shock", whole))                                                      \
+    X(leaders, std::uint8_t, maneuver, setup("maneuver", whole))                                                \
+    /* grows each time the slot is freed (like Armies::generation) */                                           \
+    X(leaders, std::uint16_t, generation, runtime)
+
+    // Saved. The generals (land only, no admirals yet), in slots, kLeaderSlots long: a leader outlives its army, so it
+    // is an entity of its own; the army names it (Armies::leader). data/setup/leaders.csv at the start: leader (its
+    // number in the file) and army (its number in armies.csv, empty = none) by hand. No names yet, as with armies.
+    struct Leaders
+    {
+        MC_LEADER_COLUMNS(MC_DECLARE_COLUMN)
         Column<std::uint64_t> alive;   // by hand, like Armies::alive
 
         void resize();
@@ -416,7 +445,9 @@ namespace mc
     /* a day's morale loss in the line and in the reserve: these × the enemy's maximum morale */                \
     X(fixed, daily_morale_damage)                                                                               \
     X(fixed, reserve_daily_morale_damage)                                                                       \
-    X(fixed, front_line_modifier)
+    X(fixed, front_line_modifier)                                                                               \
+    /* the most pips a general has in each of fire, shock and maneuver (EU4's LEADER_MAX_PIPS) */               \
+    X(whole, leader_max_pips)
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_fixed Fixed
 #define MC_DECLARE_DEFINE(kind, name) MC_DEFINE_TYPE_##kind name = 0;
@@ -459,6 +490,7 @@ namespace mc
         CountryStates countries;
         Armies armies;
         Regiments regiments;
+        Leaders leaders;
         Battles battles;
     };
 
@@ -475,7 +507,8 @@ namespace mc
         bool load(const std::filesystem::path& dir, const MapData& map, std::string* error,
                   std::span<const csv::Patch> patches = {});
         // Rewrites data/setup/provinces.csv (every land province, by id), regions.csv (every region, by number),
-        // countries.csv, armies.csv and regiments.csv (the live ones in slot order, armies numbered 1, 2, ... in it)
+        // countries.csv, armies.csv, regiments.csv and leaders.csv (the live ones in slot order, armies and leaders
+        // numbered 1, 2, ... in it)
         // from `state`, each in its `setup_layout` order.
         bool save_setup(const std::filesystem::path& dir, const MapData& map, std::string* error) const;
         // The checks that are warnings at load, for the current state (and its cache): a capital its country does not
@@ -501,6 +534,7 @@ namespace mc
             std::vector<std::string> countries;
             std::vector<std::string> armies;
             std::vector<std::string> regiments;
+            std::vector<std::string> leaders;
         } setup_layout;
     };
 }

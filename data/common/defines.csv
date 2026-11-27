@@ -9,3 +9,4 @@ war_length_damage,0.01
 daily_morale_damage,0.01
 reserve_daily_morale_damage,0.02
 front_line_modifier,1
+leader_max_pips,6

@@ -16,7 +16,8 @@ namespace mc
     // CheckOverrun, WillLose), in Fixed (core/fixed.h). Enemies before diplomacy: every foreign army.
     //
     // The state is WorldState's: a battle with its lines and reserves (Battle, game/game_data.h), its armies
-    // (Armies::battle and side, the retreating mask) and regiments (Regiments::place and the reserve's links). This
+    // (Armies::battle, side and joined, the retreating mask) and their generals (Armies::leader, Leaders), its
+    // regiments (Regiments::place and the reserve's links). This
     // class holds the day's working data only, rebuilt each day from that state (so a load, a restart or a save change
     // nothing), sized once in build: no allocation in the tick.
     class Combat
@@ -33,11 +34,13 @@ namespace mc
                  std::uint32_t seed, std::uint32_t day);
 
     private:
-        // A side's numbers for the day: its country's (game/modifiers.h), and its regiments' after the day's damage
-        // (tally): men; morale summed over every regiment with men (count), and over the fit ones in the lines and the
-        // reserve (EU4's HasMoraleCollapsed).
+        // A side's numbers for the day: its country's (game/modifiers.h); its commander and the dice's global modifier
+        // (command); its regiments' after the day's damage (tally): men; morale summed over every regiment with men
+        // (count), and over the fit ones in the lines and the reserve (EU4's HasMoraleCollapsed).
         struct SideDay
         {
+            int commander = -1;   // the general's slot, -1: none
+            int global = 0;       // added to the dice of every shot (EU4's DetermineGlobalModifiers)
             Fixed discipline = 0;
             Fixed tactics = 0;
             Fixed max_morale = 0;
@@ -69,6 +72,8 @@ namespace mc
         bool fight(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle,
                    std::uint32_t seed, std::uint32_t day);
         void settle(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle);
+        // The sides' commanders and the dice's global modifiers, for the day's phase.
+        void command(const WorldState& state, std::uint32_t battle);
         void arrange(WorldState& state, const Content& content, std::uint32_t battle, int side);
         void shoot(WorldState& state, const Content& content, std::uint32_t battle, int side);
         void fire_at(const WorldState& state, const Content& content, std::uint32_t battle, int side, int position,
