@@ -42,20 +42,20 @@ namespace mc
         }
         ImGui::TextDisabled("%s", std::string(ui.map.province_name(province)).c_str());
         // The battle in the province, if one goes on (game/combat.h).
-        const Battles& battles = ui.state.battles;
-        for_each_alive(battles.alive, [&](std::uint32_t b) {
-            if (battles.province[b] != province) {
+        for_each_alive(ui.state.battles.alive, [&](std::uint32_t b) {
+            const Battle& battle = ui.state.battles.list[b];
+            if (battle.province != province) {
                 return;
             }
             ImGui::Separator();
-            ImGui::Text("Battle: %s attacks %s", countries.name[battles.attacker[b]].c_str(),
-                        countries.name[battles.defender[b]].c_str());
-            if (battles.phase_day[b] == kNotDeployed) {
+            ImGui::Text("Battle: %s attacks %s", countries.name[battle.sides[0].country].c_str(),
+                        countries.name[battle.sides[1].country].c_str());
+            if (battle.phase_day == kNotDeployed) {
                 ImGui::TextDisabled("Drawing up the lines");
             } else {
-                ImGui::Text("Day %u, %s phase, dice %u : %u", battles.duration[b],
-                            battles.phase[b] == kPhaseFire ? "fire" : "shock", battles.dice_attacker[b],
-                            battles.dice_defender[b]);
+                ImGui::Text("Day %u, %s phase, dice %u : %u", unsigned{ battle.duration },
+                            battle.phase == kPhaseFire ? "fire" : "shock", unsigned{ battle.sides[0].dice },
+                            unsigned{ battle.sides[1].dice });
             }
         });
         for (const std::uint16_t army : here) {

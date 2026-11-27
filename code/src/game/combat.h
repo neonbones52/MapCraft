@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <array>
 #include <cstdint>
 
 #include "core/fixed.h"
@@ -13,16 +13,16 @@ namespace mc
 
     // The land battle (docs/GAMEDATA.md, "Бой"), EU4 1.37.5's day after day in its order of operations (as BattleSim
     // reproduces eu4.exe: CCombat::DailyUpdate, CLandCombatant::FireAt, ArrangeBattleField, ReorganizeTroops,
-    // CheckOverrun, WillLose), in Fixed (core/fixed.h). Enemies before diplomacy: every foreign army. A battle has two
-    // sides, a country each: the defender stood in the province, the attacker came in.
+    // CheckOverrun, WillLose), in Fixed (core/fixed.h). Enemies before diplomacy: every foreign army.
     //
-    // The state is WorldState's (Battles; Armies::battle and retreating; Regiments::place and queue); this class holds
-    // the rules' working data, rebuilt from that state at the start of every day's battles (so a load, a restart or a
-    // save change nothing), sized once in build: no allocation in the tick.
+    // The state is WorldState's: a battle with its lines and reserves (Battle, game/game_data.h), its armies
+    // (Armies::battle and side, the retreating mask) and regiments (Regiments::place and the reserve's links). This
+    // class holds the day's working data only, rebuilt each day from that state (so a load, a restart or a save change
+    // nothing), sized once in build: no allocation in the tick.
     class Combat
     {
     public:
-        // The working columns' room, for the map's provinces. After every load.
+        // The working data's room, for the map's provinces. After every load.
         void build(const MapData& map);
 
         // One day of the battles, after the march (World::tick_day): retreats that arrived end; new battles where
@@ -33,25 +33,35 @@ namespace mc
                  std::uint32_t seed, std::uint32_t day);
 
     private:
-        static constexpr std::uint16_t kEmpty = 0xFFFF;
-
-        [[nodiscard]] static std::size_t side_index(std::uint32_t battle, int side) { return battle * 2u + side; }
-        [[nodiscard]] std::uint16_t& front(std::uint32_t battle, int side, int position)
+        // A side's numbers for the day: its country's (game/modifiers.h), and its regiments' after the day's damage
+        // (tally): men; morale summed over every regiment with men (count), and over the fit ones in the lines and the
+        // reserve (EU4's HasMoraleCollapsed).
+        struct SideDay
         {
-            return front_[side_index(battle, side) * kFrontSlots + static_cast<std::size_t>(position)];
-        }
-        [[nodiscard]] std::uint16_t front(std::uint32_t battle, int side, int position) const
+            Fixed discipline = 0;
+            Fixed tactics = 0;
+            Fixed max_morale = 0;
+            std::array<Fixed, 4> weapon{};   // infantry fire, infantry shock, cavalry fire, cavalry shock
+            std::int64_t men = 0;
+            std::int64_t morale = 0;
+            std::uint32_t regiments = 0;
+            std::int64_t fit_morale = 0;
+            std::uint32_t fit = 0;
+        };
+        // A battle's day: the width it fights at, its sides.
+        struct BattleDay
         {
-            return front_[side_index(battle, side) * kFrontSlots + static_cast<std::size_t>(position)];
-        }
+            int width = 0;
+            std::array<SideDay, 2> sides{};
+        };
 
-        // The day's indices: live armies by province, regiments by army (both CSR, slot order).
+        // The day's indices: live armies by province (CSR, slot order), regiments per army.
         void index(const WorldState& state);
         // Battles begin and armies join them.
         void meet(WorldState& state, const Content& content, Movement& movement, std::uint32_t day);
         void join(WorldState& state, Movement& movement, std::uint32_t battle, std::uint16_t army);
-        // The lines and the reserve queues from the regiments' places, the sides' constants for the day.
-        void rebuild(const WorldState& state, const Content& content, const CountryModifiers& sums);
+        // The sides' numbers of their countries and the width, for the day.
+        void prepare(const WorldState& state, const Content& content, const CountryModifiers& sums);
         // The sides' men and morale over their regiments, after the day's damage.
         void tally(const WorldState& state);
 
@@ -59,24 +69,11 @@ namespace mc
         bool fight(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle,
                    std::uint32_t seed, std::uint32_t day);
         void settle(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle);
-        void roll_dice(WorldState& state, const Content& content, std::uint32_t battle, std::uint32_t seed,
-                       std::uint32_t day);
         void arrange(WorldState& state, const Content& content, std::uint32_t battle, int side);
-        void reinforce(WorldState& state, const Content& content, std::uint32_t battle, int side);
-        void shuffle_to_middle(WorldState& state, std::uint32_t battle, int side);
-        void reorganize(WorldState& state, const Content& content, std::uint32_t battle, int side);
         void shoot(WorldState& state, const Content& content, std::uint32_t battle, int side);
         void fire_at(const WorldState& state, const Content& content, std::uint32_t battle, int side, int position,
                      std::uint16_t regiment);
 
-        // Queries.
-        [[nodiscard]] int maneuver(const WorldState& state, const Content& content, std::uint16_t regiment) const;
-        [[nodiscard]] int best_target(const WorldState& state, std::uint32_t battle, int side, int position,
-                                      int range) const;
-        [[nodiscard]] int first_reserve(const WorldState& state, const Content& content, std::uint32_t battle,
-                                        int side) const;
-        [[nodiscard]] bool able_to_fight(const WorldState& state, const Content& content, std::uint32_t battle,
-                                         int side) const;
         [[nodiscard]] bool morale_collapsed(std::uint32_t battle, int side) const;
         [[nodiscard]] bool can_morale_collapse(const WorldState& state, const Content& content, std::uint32_t battle,
                                                int side) const;
@@ -86,13 +83,6 @@ namespace mc
         [[nodiscard]] int overrun(const WorldState& state, const Content& content, std::uint32_t battle, int factor,
                                   bool daily) const;
 
-        // The reserve queue of a side: entries [begin, end) of the pool, each a regiment and the queue number it had
-        // when it went in; an entry stands while its regiment is still in the reserve with that number (moving out,
-        // or in again later with a new number, leaves the old entry dead).
-        void push_reserve(WorldState& state, std::uint32_t battle, int side, std::uint16_t regiment);
-        [[nodiscard]] bool entry_live(const WorldState& state, std::uint32_t k) const;
-        void compact_reserve(const WorldState& state, std::size_t side);
-
         // The end: the winner's morale, the loser retreats or is wiped out, the battle's slot is freed.
         void finish(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle, int winner,
                     bool wiped);
@@ -100,42 +90,17 @@ namespace mc
                                                std::uint16_t from) const;
 
         std::uint32_t province_count_ = 0;
-        // Live armies by province (CSR over province ids), regiments by army slot (CSR over army slots).
-        Column<std::uint32_t> army_offsets_;
+        Column<std::uint32_t> army_offsets_;     // live armies by province: CSR over province ids
         Column<std::uint16_t> army_list_;
-        Column<std::uint32_t> regiment_offsets_;
-        Column<std::uint16_t> regiment_list_;
+        Column<std::uint32_t> fill_;             // scratch of the counting sort
         Column<std::uint32_t> army_regiments_;   // live regiments per army slot (after the day's losses)
         Column<std::uint16_t> province_battle_;  // the battle in a province: slot + 1, 0 = none
-        Column<std::uint32_t> fill_;             // scratch of the counting sorts
-
-        // Per battle × side (side_index), kFrontSlots positions each: the regiment in a position, kEmpty if none.
-        Column<std::uint16_t> front_;
-        // The reserve queues: a pool, per side its range and its room.
-        Column<std::uint16_t> reserve_regiment_;
-        Column<std::uint32_t> reserve_queue_;
-        Column<std::uint32_t> reserve_begin_;
-        Column<std::uint32_t> reserve_end_;
-        Column<std::uint32_t> reserve_room_;
         // Per regiment slot: the day's damage, taken while both sides shoot and applied at once after (EU4's
         // TakeDamage and ApplyDamage), zero between days.
         Column<std::int32_t> damage_men_;
         Column<Fixed> damage_morale_;
-        // Per battle × side, for the day: the country's numbers (game/modifiers.h).
-        Column<Fixed> side_discipline_;
-        Column<Fixed> side_tactics_;
-        Column<Fixed> side_max_morale_;
-        Column<Fixed> side_weapon_;   // 4 per side: infantry fire, infantry shock, cavalry fire, cavalry shock
-        // Per battle × side, after the day's damage (tally): men; morale summed over every regiment with men (count),
-        // and over the fit ones in the lines and the reserve (EU4's HasMoraleCollapsed).
-        Column<std::int64_t> side_men_;
-        Column<std::int64_t> side_morale_;
-        Column<std::uint32_t> side_regiments_;
-        Column<std::int64_t> side_fit_morale_;
-        Column<std::uint32_t> side_fit_;
-        // Per battle: the width it fights at today.
-        Column<std::uint8_t> width_;
-        // Scratch of arrange: the infantry and the cavalry it draws up, in queue order.
+        Column<BattleDay> today_;   // per battle slot
+        // Scratch of arrange: the infantry and the cavalry it draws up, in the reserve's order.
         Column<std::uint16_t> centre_;
         Column<std::uint16_t> flank_;
     };

@@ -286,9 +286,8 @@ namespace mc
 
 #define MC_RUNTIME_ONLY(table, type, name, start)                                                                     \
     static_assert(std::is_same_v<std::remove_cvref_t<decltype(start)>, Runtime>,                                      \
-                  #table "." #name ": balances and battles have no setup file, they start at 0");
+                  #table "." #name ": balances have no setup file, they start at 0");
             MC_BALANCE_COLUMNS(MC_RUNTIME_ONLY)
-            MC_BATTLE_COLUMNS(MC_RUNTIME_ONLY)
 #undef MC_RUNTIME_ONLY
         }
 
@@ -830,8 +829,7 @@ namespace mc
 
     void Battles::resize()
     {
-        const std::size_t n = kBattleSlots;
-        MC_BATTLE_COLUMNS(MC_FILL_COLUMN)
+        list.assign(kBattleSlots, Battle{});
         alive.assign(kBattleSlots / 64, 0);
     }
 

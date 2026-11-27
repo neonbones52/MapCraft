@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -8,6 +9,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #include "core/csv.h"
@@ -237,14 +239,16 @@ namespace mc
 
     // Entities that are born and die (armies, regiments, battles) live in slots: a fixed number per table, so the
     // tick never allocates; a mask of the slots in use; a new entity takes the lowest free slot (game/armies.h). A
-    // freed slot's columns are back to 0. The numbers are the limits: regiments fill the u16 slot index (more needs
-    // u32 slots), which is far above what EU4 fields on a map six times ours; a battle is one per province at most.
+    // freed slot's columns are back to 0. The numbers are the limits: regiments fill the u16 slot index but for the
+    // last word (a battle names a regiment by its slot + 1 in a u16, 0 = none: Battle, Regiments::reserve_prev and
+    // reserve_next; more needs u32 slots), which is far above what EU4 fields on a map six times ours; a battle is one
+    // per province at most.
     inline constexpr std::uint32_t kArmySlots = 4096;
-    inline constexpr std::uint32_t kRegimentSlots = 65536;
+    inline constexpr std::uint32_t kRegimentSlots = 65472;
     inline constexpr std::uint32_t kBattleSlots = 1024;
     static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kBattleSlots % 64 == 0,
                   "whole words of the slot masks");
-    static_assert(kArmySlots <= 65536 && kRegimentSlots <= 65536, "u16 slots");
+    static_assert(kArmySlots <= 65536 && kRegimentSlots < 65536, "u16 slots, a regiment's slot + 1 too");
 
     // The used part of a slot table: the slots up to the end of the last mask word with a live slot (a multiple of 64).
     [[nodiscard]] inline std::size_t used_slots(const Column<std::uint64_t>& alive)
@@ -268,8 +272,10 @@ namespace mc
     X(armies, float, progress, runtime)                                                                         \
     /* grows each time the slot is freed: what a reference from outside checks (ArmyRef, game/armies.h) */     \
     X(armies, std::uint16_t, generation, runtime)                                                               \
-    /* the battle it fights in (game/combat.h): its slot + 1, 0 = none; its side is its owner's */              \
-    X(armies, std::uint16_t, battle, runtime)
+    /* the battle it fights in (game/combat.h): its slot + 1, 0 = none */                                      \
+    X(armies, std::uint16_t, battle, runtime)                                                                   \
+    /* its side there (Battle::sides): 0 the attacker, 1 the defender; 0 out of a battle */                     \
+    X(armies, std::uint8_t, side, runtime)
 
     // Saved. The armies (land only; fleets are not here), in slots, kArmySlots long. data/setup/armies.csv at the
     // start: army (its number in the file, for regiments.csv) and province by hand; an army's name is not data.
@@ -300,8 +306,10 @@ namespace mc
     X(regiments, Fixed, morale, derived)                                                                        \
     /* in its army's battle: kPlace* or a front position + 1 */                                                 \
     X(regiments, std::uint8_t, place, runtime)                                                                  \
-    /* its number in the queue of its side's reserve: EU4's order of the reserve is the order of the numbers */   \
-    X(regiments, std::uint32_t, queue, runtime)
+    /* in its side's reserve, a list in EU4's order (BattleSide): the regiments before and after it, slot + 1, */ \
+    /* 0 = none; both 0 out of the reserve */                                                                    \
+    X(regiments, std::uint16_t, reserve_prev, runtime)                                                          \
+    X(regiments, std::uint16_t, reserve_next, runtime)
 
     // Saved. The regiments of every army, in slots, kRegimentSlots long. data/setup/regiments.csv at the start: army
     // (its number in armies.csv) by hand.
@@ -318,37 +326,46 @@ namespace mc
     inline constexpr int kMaxCombatWidth = 40;
     inline constexpr int kFrontSlots = kMaxCombatWidth + 1;
 
-    // A battle's phase (Battles::phase).
+    // A battle's phase (Battle::phase).
     inline constexpr std::uint8_t kPhaseFire = 0;
     inline constexpr std::uint8_t kPhaseShock = 1;
-    // Battles::phase_day before the first day: the lines are not drawn up yet (EU4's _nDay = -1).
+    // Battle::phase_day before the first day: the lines are not drawn up yet (EU4's _nDay = -1).
     inline constexpr std::uint8_t kNotDeployed = 255;
 
-#define MC_BATTLE_COLUMNS(X)                                                                                    \
-    X(battles, std::uint16_t, province, runtime)                                                                \
-    /* the two sides, a country each (no alliances yet): the attacker came into the province */                 \
-    X(battles, std::uint16_t, attacker, runtime)                                                                \
-    X(battles, std::uint16_t, defender, runtime)                                                                \
-    /* days fought (EU4's _nDuration) */                                                                        \
-    X(battles, std::uint16_t, duration, runtime)                                                                \
-    /* the day of the phase (EU4's _nDay), kNotDeployed before the first */                                     \
-    X(battles, std::uint8_t, phase_day, runtime)                                                                \
-    X(battles, std::uint8_t, phase, runtime)                                                                    \
-    X(battles, std::uint8_t, dice_attacker, runtime)                                                            \
-    X(battles, std::uint8_t, dice_defender, runtime)                                                            \
-    /* the next number of the reserve queue (Regiments::queue) */                                               \
-    X(battles, std::uint32_t, queue, runtime)                                                                   \
-    /* the men who joined each side, for the winner's morale (EU4's GiveEndOfCombatMoraleBoost) */               \
-    X(battles, std::int32_t, joined_attacker, runtime)                                                          \
-    X(battles, std::int32_t, joined_defender, runtime)                                                          \
-    /* grows each time the slot is freed: with the slot, the battle's name for its dice (core/random.h) */      \
-    X(battles, std::uint16_t, generation, runtime)
+    // One side of a battle (Battle::sides). Regiments are named by slot + 1, 0 = none.
+    struct BattleSide
+    {
+        std::uint16_t country = 0;   // no alliances yet: a country a side
+        // The reserve (EU4's _Reserves): a list through Regiments::reserve_prev and reserve_next, in EU4's order (who
+        // goes in goes to the end; the front takes the first fit one).
+        std::uint16_t reserve_first = 0;
+        std::uint16_t reserve_last = 0;
+        std::uint16_t dice = 0;                           // the phase's roll, 0..dice_sides - 1
+        std::array<std::uint16_t, kFrontSlots> front{};   // the front line, positions 0..kMaxCombatWidth
+    };
 
-    // Saved. The battles going on, in slots, kBattleSlots long; runtime only (no setup file).
+    // A battle (game/combat.h). A structure, not columns: the battles are few and a battle's day touches all of it
+    // (docs/SIMULATION.md, "Раскладка данных"). Integers only and no padding: the checksum hashes its bytes.
+    struct Battle
+    {
+        std::array<std::int32_t, 2> joined{};   // the men who joined each side, for the winner's morale (EU4's
+                                                // GiveEndOfCombatMoraleBoost)
+        std::array<BattleSide, 2> sides{};      // 0 the attacker (it came into the province), 1 the defender
+        std::uint16_t province = 0;
+        std::uint16_t duration = 0;     // days fought (EU4's _nDuration)
+        std::uint16_t generation = 0;   // grows each time the slot is freed: with the slot, the battle's name for
+                                        // its dice (core/random.h)
+        std::uint8_t phase_day = 0;     // the day of the phase (EU4's _nDay), kNotDeployed before the first
+        std::uint8_t phase = kPhaseFire;
+    };
+    static_assert(std::has_unique_object_representations_v<Battle>, "a battle's bytes are its value: no padding");
+
+    // Saved. The battles going on, in slots, kBattleSlots long; runtime only (no setup file). A freed slot is
+    // Battle{} but for its generation.
     struct Battles
     {
-        MC_BATTLE_COLUMNS(MC_DECLARE_COLUMN)
-        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+        Column<Battle> list;
+        Column<std::uint64_t> alive;   // like Armies::alive
 
         void resize();
     };

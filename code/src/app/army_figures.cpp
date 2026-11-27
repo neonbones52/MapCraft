@@ -218,7 +218,6 @@ namespace mc
         }
         const Armies& armies = game->state.armies;
         const Regiments& regiments = game->state.regiments;
-        const Battles& battles = game->state.battles;
         const auto& category = game->content.regiment_category;
         motion_.resize(kArmySlots);
 
@@ -262,9 +261,8 @@ namespace mc
             std::int32_t row = 0;
             for (std::size_t k = i; k < end; ++k) {
                 const std::uint32_t army = order_[k];
-                const std::uint16_t b = armies.battle[army];
-                if (b != 0 && b <= kBattleSlots) {
-                    const int side = armies.owner[army] == battles.attacker[b - 1u] ? 0 : 1;
+                if (armies.battle[army] != 0) {
+                    const int side = armies.side[army];
                     place_[k - i] = side_shown[side] ? kUnseen : side == 0 ? kAttacker : kDefender;
                     side_shown[side] = true;
                     battle = true;
