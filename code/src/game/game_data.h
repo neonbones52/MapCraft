@@ -99,7 +99,15 @@ namespace mc
     /* the trade good the province produces: every land province has one (GameData::check) */                  \
     X(provinces, std::uint8_t, good, setup("good", key(&Content::goods)))                                       \
     X(provinces, float, base_tax, setup("base_tax", number))                                                    \
-    X(provinces, float, population, setup("population", number))
+    X(provinces, float, population, setup("population", number))                                                \
+    /* the fort's level (EU4's: castle 2, bastion 4, star fort 6, fortress 8; 0 none); a capital has */         \
+    /* capital_fort_level more (game/occupation.h) */                                                           \
+    X(provinces, std::uint8_t, fort, setup("fort", whole))                                                      \
+    /* the garrison's men: full at the start (game/occupation.h), 0 without a fort */                           \
+    X(provinces, std::int32_t, garrison, derived)                                                               \
+    /* the siege's progress (EU4's siege status): kept while the province is besieged, then down 1 a day; */    \
+    /* 0 when its controller changes */                                                                         \
+    X(provinces, std::uint8_t, siege_progress, runtime)
 
     // Saved. Province state, one column per field, indexed by province id (MapData ids, 0 = none), padded(count)
     // long; strings never live here. data/setup/provinces.csv at the start: id and name (for people) by hand, then
@@ -202,7 +210,16 @@ namespace mc
     X(cavalry_fire)                                                                                             \
     X(cavalry_shock)                                                                                            \
     X(artillery_fire)                                                                                           \
-    X(artillery_shock)
+    X(artillery_shock)                                                                                          \
+    /* shares: EU4's siege ability (its sieges' phases shorter) and fort defence (the sieges of its forts' */   \
+    /* phases longer) */                                                                                        \
+    X(siege_ability)                                                                                            \
+    X(fort_defence)                                                                                             \
+    /* flat, whole: the most its artillery adds to a siege (EU4's artillery_levels_available_vs_fort, 5) */     \
+    X(artillery_levels_available_vs_fort)                                                                       \
+    /* flat, whole: the highest fort level it can build (EU4's _nHighestPossibleFort: castle 2 at the */        \
+    /* start; technology raises it, M9): forts below it are obsolete to its sieges, its progress cap grows */   \
+    X(highest_fort)
 
 #define MC_MODIFIER_NAME(name) #name,
     inline constexpr std::string_view kCountryModifiers[] = { MC_COUNTRY_MODIFIERS(MC_MODIFIER_NAME) };
@@ -265,8 +282,9 @@ namespace mc
     inline constexpr std::uint32_t kLeaderSlots = 1024;
     inline constexpr std::uint32_t kBattleSlots = 1024;
     inline constexpr std::uint32_t kWarSlots = 256;
+    inline constexpr std::uint32_t kSiegeSlots = 1024;   // one a province at most, like the battles
     static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kLeaderSlots % 64 == 0 &&
-                      kBattleSlots % 64 == 0 && kWarSlots % 64 == 0,
+                      kBattleSlots % 64 == 0 && kWarSlots % 64 == 0 && kSiegeSlots % 64 == 0,
                   "whole words of the slot masks");
     static_assert(kLeaderSlots < 65536, "an army names its leader by slot + 1 in a u16");
     static_assert(kArmySlots <= 65536 && kRegimentSlots < 65536, "u16 slots, a regiment's slot + 1 too");
@@ -350,10 +368,11 @@ namespace mc
 
 #define MC_LEADER_COLUMNS(X)                                                                                    \
     X(leaders, std::uint16_t, owner, setup("owner", country))                                                   \
-    /* pips: EU4's leader fire, shock and maneuver, 0..leader_max_pips (defines.csv; siege comes with the siege) */ \
+    /* pips: EU4's leader fire, shock, maneuver and siege, 0..leader_max_pips (defines.csv) */                  \
     X(leaders, std::uint8_t, fire, setup("fire", whole))                                                        \
     X(leaders, std::uint8_t, shock, setup("shock", whole))                                                      \
     X(leaders, std::uint8_t, maneuver, setup("maneuver", whole))                                                \
+    X(leaders, std::uint8_t, siege, setup("siege", whole))                                                      \
     /* grows each time the slot is freed (like Armies::generation) */                                           \
     X(leaders, std::uint16_t, generation, runtime)
 
@@ -424,13 +443,60 @@ namespace mc
         void resize();
     };
 
-#define MC_WAR_COLUMNS(X)                                                                                           /* the country that declared it and the one it was declared on (no alliances yet: a country a side) */          X(wars, std::uint16_t, attacker, runtime)                                                                       X(wars, std::uint16_t, defender, runtime)                                                                       /* the day it began (World::day) */                                                                             X(wars, std::uint32_t, start, runtime)                                                                          /* grows each time the slot is freed (like Armies::generation) */                                               X(wars, std::uint16_t, generation, runtime)
+#define MC_WAR_COLUMNS(X)                                                                                       \
+    /* the country that declared it and the one it was declared on (no alliances yet: a country a side) */      \
+    X(wars, std::uint16_t, attacker, runtime)                                                                   \
+    X(wars, std::uint16_t, defender, runtime)                                                                   \
+    /* the day it began (World::day) */                                                                         \
+    X(wars, std::uint32_t, start, runtime)                                                                      \
+    /* grows each time the slot is freed (like Armies::generation) */                                           \
+    X(wars, std::uint16_t, generation, runtime)
 
     // Saved. The wars going on (game/war.h), in slots, kWarSlots long; runtime only (no setup file: no war at the
     // start). Two countries have one war between them at most.
     struct Wars
     {
         MC_WAR_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+
+        void resize();
+    };
+
+    // What the last phase of a siege came to (Sieges::result; EU4's ESiegeStatus, game/occupation.h).
+    enum class SiegeResult : std::uint8_t
+    {
+        none = 0,           // no phase yet
+        status_quo = 1,     // nothing
+        disease = 2,        // the besiegers lose men
+        breach = 3,         // the walls are breached
+        supplies = 4,       // supplies shortage
+        food = 5,           // food shortage
+        water = 6,          // water shortage
+        desertion = 7,      // the defenders desert
+    };
+
+#define MC_SIEGE_COLUMNS(X)                                                                                     \
+    /* the province besieged (one siege a province at most) and the country besieging it (no alliances yet) */  \
+    X(sieges, std::uint16_t, province, runtime)                                                                 \
+    X(sieges, std::uint16_t, country, runtime)                                                                  \
+    /* days into the current phase, and the phases done */                                                      \
+    X(sieges, std::uint16_t, days, runtime)                                                                     \
+    X(sieges, std::uint16_t, phases, runtime)                                                                   \
+    /* the walls breached, 0..max_breach */                                                                     \
+    X(sieges, std::uint8_t, breaches, runtime)                                                                  \
+    /* the last phase's roll, 1..siege_dice_sides (0: none yet), and what it came to (SiegeResult) */           \
+    X(sieges, std::uint8_t, roll, runtime)                                                                      \
+    X(sieges, SiegeResult, result, runtime)                                                                     \
+    /* grows each time the slot is freed (like Armies::generation): with the slot, the siege's name for its */  \
+    /* dice (core/random.h) */                                                                                  \
+    X(sieges, std::uint16_t, generation, runtime)
+
+    // Saved. The sieges going on (game/occupation.h), in slots, kSiegeSlots long; runtime only (no setup file). The
+    // siege's progress is the province's (Provinces::siege_progress: it outlives the siege), its armies are the
+    // besieging country's that stand in the province.
+    struct Sieges
+    {
+        MC_SIEGE_COLUMNS(MC_DECLARE_COLUMN)
         Column<std::uint64_t> alive;   // by hand, like Armies::alive
 
         void resize();
@@ -465,7 +531,8 @@ namespace mc
 #undef MC_DECLARE_TYPE_NUMBER
 
     // Content. The battle's constants (data/common/defines.csv: key, value; EU4's NDefines::NMilitary), every one
-    // required: X(kind, name), whole a whole number >= 1 (int), fixed a decimal number (Fixed).
+    // required: X(kind, name), whole a whole number >= 1 (int), count a whole number >= 0 (int), fixed a decimal
+    // number (Fixed).
 #define MC_COMBAT_DEFINES(X)                                                                                    \
     /* days a fire or shock phase lasts; the dice are rolled anew with each phase */                            \
     X(whole, days_per_phase)                                                                                    \
@@ -483,7 +550,7 @@ namespace mc
     X(fixed, daily_morale_damage)                                                                               \
     X(fixed, reserve_daily_morale_damage)                                                                       \
     X(fixed, front_line_modifier)                                                                               \
-    /* the most pips a general has in each of fire, shock and maneuver (EU4's LEADER_MAX_PIPS) */               \
+    /* the most pips a general has in each of fire, shock, maneuver and siege (EU4's LEADER_MAX_PIPS) */     \
     X(whole, leader_max_pips)                                                                                   \
     /* the back line (artillery): its shots' range (the front line's is front_line_modifier), the share of a hit */ \
     /* on the regiment in front of it that it takes, in morale and in men; how many regiments a day go into it */ \
@@ -491,8 +558,47 @@ namespace mc
     X(fixed, back_line_modifier)                                                                                \
     X(fixed, back_line_morale_damage_taken)                                                                     \
     X(fixed, back_line_strength_damage_taken)                                                                   \
-    X(whole, back_line_reinforce_speed)                                                                             /* the attacker's dice minus when it came into the province over a river (EU4's river crossing; no straits) */     X(whole, river_crossing_penalty)                                                                                /* out of battle, each month: the share of the maximum a regiment gets back (morale; men too, M8) on its */      /* country's land, on no one's or occupied land, on an enemy's, and while it retreats (game/recovery.h) */       X(fixed, recovery_own_land)                                                                                     X(fixed, recovery_neutral_land)                                                                                 X(fixed, recovery_enemy_land)                                                                                   X(fixed, recovery_retreating)
+    X(whole, back_line_reinforce_speed)                                                                         \
+    /* the attacker's dice minus when it came into the province over a river (EU4's river crossing; no straits) */ \
+    X(whole, river_crossing_penalty)                                                                            \
+    /* out of battle, each month: the share of the maximum a regiment gets back (morale; men too, M8) on its */ \
+    /* country's land, on no one's or occupied land, on an enemy's, and while it retreats (game/recovery.h) */  \
+    X(fixed, recovery_own_land)                                                                                 \
+    X(fixed, recovery_neutral_land)                                                                             \
+    X(fixed, recovery_enemy_land)                                                                               \
+    X(fixed, recovery_retreating)                                                                               \
+    /* the siege (game/occupation.h; EU4's names): the days of a phase before the modifiers; the siege's die, */ \
+    /* 1..siege_dice_sides (EU4 14: a breach needs this much); the roll + impact that makes the fort surrender; */ \
+    /* the most breaches; the progress's cap, siege_memory + siege_memory_scaled × the besieger's highest_fort */ \
+    X(whole, days_per_siege_phase)                                                                              \
+    X(whole, siege_dice_sides)                                                                                  \
+    X(whole, siege_win)                                                                                         \
+    X(whole, max_breach)                                                                                        \
+    X(whole, siege_memory)                                                                                      \
+    X(fixed, siege_memory_scaled)                                                                               \
+    /* the progress a result gives: supplies, food and water shortage, the defenders desert */                  \
+    X(whole, siege_bonus_supplies_shortage)                                                                     \
+    X(whole, siege_bonus_food_shortage)                                                                         \
+    X(whole, siege_bonus_water_shortage)                                                                        \
+    X(whole, siege_bonus_defenders_desert)                                                                      \
+    /* the share of their men the besiegers lose to a disease (a roll of 1) */                                  \
+    X(fixed, siege_disease_impact)                                                                              \
+    /* below this many men the garrison surrenders at the next phase */                                         \
+    X(whole, siege_garrison_surrender)                                                                          \
+    /* the men of the garrison a fort level; the besiegers need this × the maximum garrison, and never fewer */ \
+    /* than siege_min_men (the user's decision: 1000, also where there is no garrison) */                       \
+    X(whole, garrison_size)                                                                                     \
+    X(fixed, siege_force_needed_multiplier)                                                                     \
+    X(whole, siege_min_men)                                                                                     \
+    /* the fort levels a capital has on top of its fort (EU4 1; 0 = none) */                                    \
+    X(count, capital_fort_level)                                                                                \
+    /* the impact's minus at a fort with a port, not blockaded (there are no fleets yet: every such fort) */    \
+    X(count, siege_unblockaded_penalty)                                                                         \
+    /* the garrison of a fort just taken (EU4 100), and its growth a month out of a siege, of the maximum */    \
+    X(count, garrison_after_capture)                                                                            \
+    X(fixed, garrison_growth)
 #define MC_DEFINE_TYPE_whole int
+#define MC_DEFINE_TYPE_count int
 #define MC_DEFINE_TYPE_fixed Fixed
 #define MC_DECLARE_DEFINE(kind, name) MC_DEFINE_TYPE_##kind name = 0;
     struct CombatDefines
@@ -539,6 +645,7 @@ namespace mc
         Leaders leaders;
         Battles battles;
         Wars wars;
+        Sieges sieges;
     };
 
     // Loads Content and the start's WorldState from data/ (docs/GAMEDATA.md) and writes the start back (editor). In

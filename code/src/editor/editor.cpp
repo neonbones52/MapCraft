@@ -485,6 +485,9 @@ namespace mc
 
         ImGui::SeparatorText("Land");
         pick_listed("Terrain", game.content.terrain, game.state.provinces.terrain, selection_);
+        edit_whole("Fort", game.state.provinces.fort, selection_, 1, 255);
+        ImGui::SetItemTooltip("Fort level: castle 2, bastion 4, star fort 6, fortress 8; a capital has %d more",
+                              game.content.combat.capital_fort_level);
         ImGui::SeparatorText("Economy");
         pick_listed("Good", game.content.goods, game.state.provinces.good, selection_);
         edit_number("Base tax", game.state.provinces.base_tax, selection_, 1.0f);
@@ -704,6 +707,9 @@ namespace mc
             ImGui::TextDisabled("%s", std::string(map.region_name(map.region[id])).c_str());
             ImGui::Text("Owner: %s", country_label(game.content.countries, p.owner[id]).c_str());
             ImGui::Text("Terrain: %s", p.terrain[id] ? game.content.terrain.name[p.terrain[id]].c_str() : "-");
+            if (p.fort[id] != 0) {
+                ImGui::Text("Fort: %u", unsigned{ p.fort[id] });
+            }
             ImGui::Text("Good: %s", p.good[id] ? game.content.goods.name[p.good[id]].c_str() : "-");
             ImGui::Text("Base tax: %g, population: %g", p.base_tax[id], p.population[id]);
             std::size_t armies = 0;

@@ -57,6 +57,25 @@ namespace mc
         return 0;
     }
 
+    // The siege's (game/occupation.h): the country's siege ability and fort defence (shares: 0.1 = +10%), the most
+    // its artillery adds to a siege and the highest fort level it can build (whole).
+    [[nodiscard]] inline Fixed siege_ability(const CountryModifiers& sums, std::size_t country)
+    {
+        return sums.siege_ability[country];
+    }
+    [[nodiscard]] inline Fixed fort_defence(const CountryModifiers& sums, std::size_t country)
+    {
+        return sums.fort_defence[country];
+    }
+    [[nodiscard]] inline int artillery_vs_fort(const CountryModifiers& sums, std::size_t country)
+    {
+        return fx_to_int(sums.artillery_levels_available_vs_fort[country]);
+    }
+    [[nodiscard]] inline int highest_fort(const CountryModifiers& sums, std::size_t country)
+    {
+        return fx_to_int(sums.highest_fort[country]);
+    }
+
     // visit(name, span) for every column of the cache, over its used part (countries 0..count-1), in one fixed order
     // under stable names: mapcraft_sim's cache dump.
     template <class Visit>

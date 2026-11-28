@@ -6,7 +6,7 @@
 // into two worlds of their own; runs each the scenario's years a day at a time through World::advance_days, posting
 // the scenario's commands of each day before it (World::post), taking the state's checksum (CLAUDE.md, rule 11: here
 // and only here) after every day; checks that both runs match day for day, and their caches at the end. The first run's record goes to <run dir>
-// (headless/run_record.h), the arrivals of its armies' marches also to stderr.
+// (headless/run_record.h), the arrivals of its armies' marches and the changes of control also to stderr.
 // Exit codes: 0 the runs match, 1 bad arguments or a load or write failed, 3 the runs differ.
 
 #include <chrono>
@@ -25,6 +25,7 @@
 #include "game/armies.h"
 #include "game/calendar.h"
 #include "game/modifiers.h"
+#include "game/occupation.h"
 #include "game/world.h"
 #include "headless/run_record.h"
 #include "headless/scenario.h"
@@ -51,7 +52,89 @@ namespace
         // armies.csv: every live army at the start and at each month's start (after the monthly tick)
         std::string armies = "day,date,army,generation,owner,province,battle,retreating,regiments,men,morale,"
                              "max_morale\n";
+        // sieges.csv: each siege's beginning, phases and end (surrender, or lifted), with its numbers after it
+        std::string sieges = "day,date,province,country,event,phases,roll,result,progress,breaches,garrison,"
+                             "max_garrison,men,needed,impact,phase_days,surrender_chance\n";
+        // control.csv: each change of a province's controller
+        std::string control = "day,date,province,owner,controller_before,controller\n";
     };
+
+    // What the sieges' slots held before a day, and the provinces' controllers.
+    struct SiegesBefore
+    {
+        std::vector<std::uint64_t> alive;
+        std::vector<std::uint16_t> generation;
+        std::vector<std::uint16_t> phases;
+        std::vector<std::uint16_t> province;
+        std::vector<std::uint16_t> country;
+        std::vector<std::uint16_t> controller;
+
+        void take(const mc::WorldState& state)
+        {
+            const mc::Sieges& s = state.sieges;
+            alive.assign(s.alive.begin(), s.alive.end());
+            generation.assign(s.generation.begin(), s.generation.end());
+            phases.assign(s.phases.begin(), s.phases.end());
+            province.assign(s.province.begin(), s.province.end());
+            country.assign(s.country.begin(), s.country.end());
+            controller.assign(state.provinces.controller.begin(), state.provinces.controller.end());
+        }
+    };
+
+    constexpr std::string_view kSiegeResults[] = { "", "status_quo", "disease", "breach", "supplies", "food", "water",
+                                                   "desertion" };
+
+    // The sieges' and the controllers' changes over the day just passed, as rows of sieges.csv and control.csv; with
+    // `log`, each change of a controller also to stderr.
+    void record_sieges(const mc::MapData& map, const mc::World& world, const SiegesBefore& before, bool log,
+                       std::string* sieges, std::string* control)
+    {
+        const mc::WorldState& state = world.state();
+        const mc::Sieges& s = state.sieges;
+        const mc::Provinces& provinces = state.provinces;
+        const mc::CountryDefinitions& countries = world.content().countries;
+        const std::string date = mc::format(world.date());
+        for (std::uint32_t slot = 0; slot < mc::kSiegeSlots; ++slot) {
+            const bool was = (before.alive[slot / 64] >> (slot % 64)) & 1u;
+            const bool same = was && mc::slot_alive(s.alive, slot) && s.generation[slot] == before.generation[slot];
+            if (was && !same) {
+                const std::uint16_t p = before.province[slot];
+                const bool taken = provinces.controller[p] == before.country[slot] &&
+                                   before.controller[p] != before.country[slot];
+                *sieges += std::format("{},{},{},{},{},,,,{},,{},,,,,,\n", world.day(), date, p,
+                                       countries.tag_text(before.country[slot]), taken ? "surrender" : "lifted",
+                                       provinces.siege_progress[p], provinces.garrison[p]);
+            }
+            if (!mc::slot_alive(s.alive, slot) || (same && s.phases[slot] == before.phases[slot])) {
+                continue;
+            }
+            const auto siege = static_cast<std::uint16_t>(slot);
+            const std::uint16_t p = s.province[slot];
+            const mc::Besiegers b = mc::besiegers(state, world.content(), siege);
+            const mc::SiegeNumbers n =
+                mc::siege_numbers(state, world.content(), world.cache(), mc::has_port(map, p), siege, b);
+            const mc::SiegeChances chances =
+                mc::siege_chances(world.content().combat, n, s.breaches[slot], provinces.garrison[p]);
+            *sieges += std::format("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}/{}\n", world.day(), date, p,
+                                   countries.tag_text(s.country[slot]), same ? "phase" : "begin", s.phases[slot],
+                                   s.roll[slot], kSiegeResults[static_cast<std::size_t>(s.result[slot])],
+                                   provinces.siege_progress[p], s.breaches[slot], provinces.garrison[p],
+                                   n.max_garrison, b.men, n.needed, n.impact, n.phase_days, chances.surrender,
+                                   chances.sides);
+        }
+        for (std::uint32_t p = 1; p < provinces.count; ++p) {
+            if (provinces.controller[p] == before.controller[p]) {
+                continue;
+            }
+            *control += std::format("{},{},{},{},{},{}\n", world.day(), date, p, countries.tag_text(provinces.owner[p]),
+                                    countries.tag_text(before.controller[p]),
+                                    countries.tag_text(provinces.controller[p]));
+            if (log) {
+                mc::log::info("{} (day {} of the run): {} ({}) is controlled by {}", date, world.day() - mc::kStartDay,
+                              map.province_name(p), p, countries.tag_text(provinces.controller[p]));
+            }
+        }
+    }
 
     // Every live army now, as rows of armies.csv: its place, whether it fights or retreats, its regiments, men and
     // their average morale, and its country's maximum morale.
@@ -127,6 +210,7 @@ namespace
         run->hashes.push_back(mc::headless::checksum(world));
         record_armies(world, &run->armies);
         std::vector<std::uint16_t> before(mc::kArmySlots);
+        SiegesBefore sieges_before;
         std::size_t next = 0;   // the scenario's next command
         for (std::uint32_t d = 0; d < days; ++d) {
             for (; next < commands.size() && scenario.commands[next].day == d; ++next) {
@@ -134,11 +218,13 @@ namespace
             }
             const mc::Armies& armies = world.state().armies;
             std::copy(armies.province.begin(), armies.province.end(), before.begin());
+            sieges_before.take(world.state());
             const auto begin = std::chrono::steady_clock::now();
             world.advance_days(1);
             run->seconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
             run->hashes.push_back(mc::headless::checksum(world));
             record_moves(map, world, before, log, &run->moves);
+            record_sieges(map, world, sieges_before, log, &run->sieges, &run->control);
             if (world.day() % mc::kDaysPerMonth == 0) {
                 record_armies(world, &run->armies);
             }
@@ -178,7 +264,10 @@ int main(int argc, char** argv)
     mc::log::info("{} years twice: {:.3f} s and {:.3f} s in the rules, {:.4f} s per year", scenario.years,
                   a.seconds, b.seconds, (a.seconds + b.seconds) / 2.0 / scenario.years);
 
-    if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, a.moves, a.armies, &error)) {
+    const mc::headless::RunSeries series[] = {
+        { "moves.csv", a.moves }, { "armies.csv", a.armies }, { "sieges.csv", a.sieges }, { "control.csv", a.control }
+    };
+    if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, series, &error)) {
         mc::log::error("{}", error);
         return kFailed;
     }

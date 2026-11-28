@@ -26,7 +26,7 @@ namespace mc
     }
 
     // The lowest free slot of a mask, taken; false when every slot is taken. Only the functions that create an entity
-    // call it (here and game/war.h).
+    // call it (here, game/war.h and game/occupation.h).
     bool take_slot(Column<std::uint64_t>& alive, std::uint16_t* slot);
     void free_slot(Column<std::uint64_t>& alive, std::uint32_t slot);
 

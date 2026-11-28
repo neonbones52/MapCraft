@@ -8,6 +8,7 @@
 #include "app/scenery.h"
 #include "app/terrain_look.h"
 #include "core/log.h"
+#include "game/game_data.h"
 #include "minecraft/assets.h"
 
 namespace mc
@@ -172,14 +173,21 @@ namespace mc
                     float dt, const CameraInput& input)
     {
         ensure_camera(view_width, view_height);
+        if (game_ != nullptr && game_->loaded) {
+            const Column<std::uint16_t>& controller = game_->state.provinces.controller;
+            if (!std::equal(controllers_.begin(), controllers_.end(), controller.begin(), controller.end())) {
+                controllers_.assign(controller.begin(), controller.end());
+                fills_dirty_ = true;
+            }
+        }
         if (fills_dirty_ && !colors_dirty_) {
-            map_mode_colors(map_, game_, map_mode_, &fills_, &styles_);
-            renderer_.set_colors(context, fills_, styles_);
+            map_mode_colors(map_, game_, map_mode_, &fills_, &stripes_, &styles_);
+            renderer_.set_colors(context, fills_, stripes_, styles_);
         }
         fills_dirty_ = false;
         if (colors_dirty_) {
-            map_mode_colors(map_, game_, map_mode_, &fills_, &styles_);
-            renderer_.set_colors(context, fills_, styles_);
+            map_mode_colors(map_, game_, map_mode_, &fills_, &stripes_, &styles_);
+            renderer_.set_colors(context, fills_, stripes_, styles_);
             const auto started = std::chrono::steady_clock::now();
             labels_ = map_mode_labels(map_, game_, label_raster_, label_font_, map_mode_);
             renderer_.set_labels(map_, label_font_, labels_, map_mode_label_keys(map_, game_, map_mode_));

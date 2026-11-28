@@ -84,8 +84,7 @@ namespace mc::headless
     }
 
     bool write_run(const std::filesystem::path& dir, const std::filesystem::path& root, const Scenario& scenario,
-                   const World& end, std::span<const std::uint64_t> hashes, std::string_view moves,
-                   std::string_view armies,
+                   const World& end, std::span<const std::uint64_t> hashes, std::span<const RunSeries> series,
                    std::string* error)
     {
         std::error_code made;
@@ -123,9 +122,13 @@ namespace mc::headless
             days += std::format("{},{:016x}\n", kStartDay + d, hashes[d]);
         }
 
+        for (const RunSeries& s : series) {
+            if (!write_file(dir / s.file, s.text, error)) {
+                return false;
+            }
+        }
         return write_file(dir / "meta.json", meta, error) && write_file(dir / "hashes.csv", days, error) &&
-               write_file(dir / "moves.csv", moves, error) &&
-               write_file(dir / "armies.csv", armies, error) && write_file(dir / "state.csv", dump(end), error) &&
+               write_file(dir / "state.csv", dump(end), error) &&
                write_file(dir / "cache.csv", dump_cache(end), error) &&
                write_file(dir / "checksum.txt", std::format("{:016x}\n", checksum(end)), error);
     }

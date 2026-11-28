@@ -18,6 +18,7 @@ namespace mc
         movement_.build(map, data_.content, data_.state);
         movement_.rebuild_steps(data_.state);
         combat_.build(map);
+        occupation_.build(map, data_.content);
         recovery_.build();
         commands_ = {};
         log::info("world {}: {}", dir.string(), data_.summary());
@@ -95,6 +96,7 @@ namespace mc
     {
         movement_.day(data_.state);
         combat_.day(data_.state, data_.content, data_.cache, movement_, seed_, day_);
+        occupation_.day(data_.state, data_.content, data_.cache, seed_, day_);
         ++day_;
         if (day_ % kDaysPerMonth == 0) {
             tick_month();
@@ -104,6 +106,7 @@ namespace mc
     void World::tick_month()
     {
         recovery_.month(data_.state, data_.content, data_.cache);
+        occupation_.month(data_.state, data_.content);
     }
 
     void World::restart(std::uint32_t seed)

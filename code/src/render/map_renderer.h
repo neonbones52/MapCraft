@@ -60,9 +60,10 @@ namespace mc
     public:
         bool init(ID3D11Device* device, const MapView& map, const TerrainLook& look, const ModelSet& models,
                   const FigureSet& figures, std::string* error);
-        // Map mode data: one fill per province id, one style per border chain (MapView::border_chains order).
+        // Map mode data: one fill and one stripe colour per province id (a = 0: no stripes; app/map_modes.h), one
+        // style per border chain (MapView::border_chains order).
         void set_colors(ID3D11DeviceContext* context, std::span<const ProvinceFill> fills,
-                        std::span<const BorderStyle> styles);
+                        std::span<const ProvinceFill> stripes, std::span<const BorderStyle> styles);
         // Selected provinces (editor), one flag per province id; drawn brighter and hatched.
         void set_selection(ID3D11DeviceContext* context, std::span<const std::uint8_t> selected);
         void draw(ID3D11DeviceContext* context, ID3D11RenderTargetView* target, const FrameView& view);
@@ -95,6 +96,8 @@ namespace mc
         FigureLayer figures_;
         ComPtr<ID3D11Buffer> fills_buffer_;
         ComPtr<ID3D11ShaderResourceView> fills_;
+        ComPtr<ID3D11Buffer> stripes_buffer_;
+        ComPtr<ID3D11ShaderResourceView> stripes_;
         ComPtr<ID3D11Buffer> selection_buffer_;
         ComPtr<ID3D11ShaderResourceView> selection_;
         LabelLayer labels_;

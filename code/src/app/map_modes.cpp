@@ -217,12 +217,13 @@ namespace mc
     }
 
     void map_mode_colors(const MapView& map, const GameData* game, MapMode mode, std::vector<ProvinceFill>* fills,
-                         std::vector<BorderStyle>* styles)
+                         std::vector<ProvinceFill>* stripes, std::vector<BorderStyle>* styles)
     {
         const bool data = has_game(game);
         const bool by_region = !data || mode == MapMode::regions;
 
         fills->assign(map.count, ProvinceFill{});
+        stripes->assign(map.count, ProvinceFill{});
         for (std::uint32_t id = 1; id < map.count; ++id) {
             if (map.kind[id] == ProvinceKind::wasteland && mode != MapMode::terrain) {
                 (*fills)[id] = kWasteland;   // the terrain mode shows its true look, like the rest of the map
@@ -248,7 +249,14 @@ namespace mc
             const ProvinceFill political = owner != 0 ? rgba(game->content.countries.color[owner]) : kNone;
             switch (mode) {
             case MapMode::terrain: f = political; f.a = 0.0f; break;
-            case MapMode::political: f = political; break;
+            case MapMode::political: {
+                f = political;
+                const std::uint16_t controller = p.controller[id];
+                if (owner != 0 && controller != 0 && controller != owner) {
+                    (*stripes)[id] = rgba(game->content.countries.color[controller]);
+                }
+                break;
+            }
             case MapMode::terrain_type: f = listed(game->content.terrain, p.terrain[id]); break;
             case MapMode::trade_goods: f = listed(game->content.goods, p.good[id]); break;
             case MapMode::trade_nodes: f = listed(game->content.trade_nodes, trade_node_of(map, *game, id)); break;

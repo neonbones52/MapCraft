@@ -28,6 +28,7 @@ add_library(mc_sim STATIC
     src/game/game_data.cpp
     src/game/modifiers.cpp
     src/game/movement.cpp
+    src/game/occupation.cpp
     src/game/recovery.cpp
     src/game/war.cpp
     src/game/session.cpp

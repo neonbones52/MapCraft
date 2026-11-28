@@ -1,0 +1,17 @@
+# Occupation and the siege (M7, step 2): DUM declares war on NBR; NBR's army (slot 1) steps aside to Zombiecrag
+# (479). DUM's artillery army (slot 2, 2000 men) reaches NBR's capital Tulip Pass (476) alone: a capital is a fort of
+# level 1 (capital_fort_level), its garrison of 1000 asks for 3000 men, so there is no siege. DUM's first army (slot 0,
+# 3000 men) takes Azalea Heath (473), no fort: one phase of 30 days and DUM controls it. Then it joins the guns at Tulip
+# Pass: 5000 men, the siege begins, and the dice decide; NBR's army comes to relieve it on day 80, through Tulip Pass,
+# loses the battle there (the siege's days wait for it) and retreats. From its retreat NBR's army marches back to
+# Azalea Heath, which DUM's armies have left: a siege by its owner, 30 days, and NBR controls it again.
+years = 1
+seed = 1
+
+day 0 = DUM war NBR
+day 0 = NBR move 1:0 479
+day 0 = DUM move 2:0 476
+day 0 = DUM move 0:0 473
+day 75 = DUM move 0:0 476
+day 80 = NBR move 1:0 473
+day 160 = NBR move 1:0 473

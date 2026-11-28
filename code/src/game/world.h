@@ -9,6 +9,7 @@
 #include "game/commands.h"
 #include "game/game_data.h"
 #include "game/movement.h"
+#include "game/occupation.h"
 #include "game/recovery.h"
 
 namespace mc
@@ -22,7 +23,8 @@ namespace mc
     //   the day     the date, as a day count (game/calendar.h): one number, so it lives here and not among the columns
     //   the seed    the world's randomness (core/random.h): chosen when a game begins (the host's, then the save's)
     //   the rules   their cache (the modifier sums in GameData, the armies' march, game/movement.h, the battles,
-    //               game/combat.h, the recovery, game/recovery.h), rebuilt after a load and a restart
+    //               game/combat.h, the sieges, game/occupation.h, the recovery, game/recovery.h), rebuilt after a
+    //               load and a restart
     //   commands    the queue (game/commands.h): what the players ask, run between days
     // Everyone else reads: the map (App) through a const GameData pointer to colour its modes, the UI and the
     // Session through the const accessors. Lifetime: as long as whatever shows it (Shell declares it before App).
@@ -38,8 +40,8 @@ namespace mc
         // `days` days pass, one after another: the only way the date changes (the game's Shell, at the pace the
         // player set, view/pace.h; mapcraft_sim). Sets the simulation's floating-point environment first
         // (core/det_math.h). Each day first runs the commands due (run_commands), then the day's rules over the
-        // columns: the armies' march, then the battles; a day that ends a month (the next is the 1st) then runs the
-        // month's rules (tick_month).
+        // columns: the armies' march, then the battles, then the sieges; a day that ends a month (the next is the
+        // 1st) then runs the month's rules (tick_month).
         void advance_days(std::uint32_t days);
         // Queues a command for today (game/commands.h); it runs at run_commands or before the next day.
         void post(const Command& command) { commands_.post(day_, command); }
@@ -67,8 +69,9 @@ namespace mc
     private:
         void tick_day();     // one day of the rules
         // The monthly tick, at the start of each month's 1st day (never at the game's start): the main one of the
-        // rules that are not about moving and fighting. Now the armies' recovery; later the money, the economy and
-        // the sliders (M8, M9). A yearly tick (the census tax, EU3's) comes with the treasury.
+        // rules that are not about moving and fighting. Now the armies' recovery and the garrisons' growth; later
+        // the money, the economy and the sliders (M8, M9). A yearly tick (the census tax, EU3's) comes with the
+        // treasury.
         void tick_month();
         void apply(const Command& command);
 
@@ -78,6 +81,7 @@ namespace mc
         std::uint32_t seed_ = 0;
         Movement movement_;
         Combat combat_;
+        Occupation occupation_;
         Recovery recovery_;
         CommandQueue commands_;
     };

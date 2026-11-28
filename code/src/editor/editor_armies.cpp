@@ -76,7 +76,8 @@ namespace mc
                 ImGui::TextUnformatted("General");
                 for (auto [label, column] : { std::pair{ "fire", &state.leaders.fire },
                                               std::pair{ "shock", &state.leaders.shock },
-                                              std::pair{ "maneuver", &state.leaders.maneuver } }) {
+                                              std::pair{ "maneuver", &state.leaders.maneuver },
+                                              std::pair{ "siege", &state.leaders.siege } }) {
                     ImGui::SameLine();
                     ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
                     edit_whole(label, *column, one, 1, most);

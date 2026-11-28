@@ -60,6 +60,11 @@ namespace mc
             MC_WAR_COLUMNS(MC_VISIT_SLOTS)
             visit(std::string_view{ "wars.alive" }, std::span(state.wars.alive).first(used / 64));
         }
+        {
+            const std::size_t used = used_slots(state.sieges.alive);
+            MC_SIEGE_COLUMNS(MC_VISIT_SLOTS)
+            visit(std::string_view{ "sieges.alive" }, std::span(state.sieges.alive).first(used / 64));
+        }
 #undef MC_VISIT_SLOTS
     }
 
@@ -67,15 +72,15 @@ namespace mc
     // written by hand changes the number. Such a field must be labelled (saved, content or cache, game/game_data.h)
     // and, if saved, visited above before the number is updated. By hand now: the sizes (Provinces::count and
     // core_words, Regions::count, CountryStates::count and modifier_words), the cores, the countries' modifier
-    // bundles, the five slot masks, the armies' retreating mask and the battles, 248 bytes with their padding.
+    // bundles, the six slot masks, the armies' retreating mask and the battles, 272 bytes with their padding.
 #define MC_COUNT_COLUMN(table, type, name, start) +1
     inline constexpr std::size_t kListedColumns = 0
         MC_PROVINCE_COLUMNS(MC_COUNT_COLUMN) MC_REGION_COLUMNS(MC_COUNT_COLUMN)
         MC_BALANCE_COLUMNS(MC_COUNT_COLUMN) MC_COUNTRY_COLUMNS(MC_COUNT_COLUMN)
         MC_ARMY_COLUMNS(MC_COUNT_COLUMN) MC_REGIMENT_COLUMNS(MC_COUNT_COLUMN) MC_LEADER_COLUMNS(MC_COUNT_COLUMN)
-        MC_WAR_COLUMNS(MC_COUNT_COLUMN);
+        MC_WAR_COLUMNS(MC_COUNT_COLUMN) MC_SIEGE_COLUMNS(MC_COUNT_COLUMN);
 #undef MC_COUNT_COLUMN
     static_assert(sizeof(Column<std::uint8_t>) == sizeof(Column<Money>), "a list's columns differ in size");
-    static_assert(sizeof(WorldState) == 248 + kListedColumns * sizeof(Column<std::uint8_t>),
+    static_assert(sizeof(WorldState) == 272 + kListedColumns * sizeof(Column<std::uint8_t>),
                   "WorldState has a new field outside the column lists: label it and visit it in for_each_saved");
 }

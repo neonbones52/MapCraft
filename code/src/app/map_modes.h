@@ -25,11 +25,13 @@ namespace mc
     inline constexpr std::uint32_t kMapModeCount = 8;
     [[nodiscard]] const char* map_mode_name(MapMode mode);
 
-    // What a map mode paints: one fill per province and one border style per border chain. Country borders run
-    // between different owners in every mode, as in EU4 (between regions in the regions mode, and while there is no
-    // game data). `game` may be null or not loaded.
+    // What a map mode paints: one fill per province, one stripe colour per province and one border style per border
+    // chain. Country borders run between different owners in every mode, as in EU4 (between regions in the regions
+    // mode, and while there is no game data). The stripes are EU4's occupation: in the political mode a province
+    // controlled by another country than its owner has the controller's colour (a = 1), striped over the owner's;
+    // none elsewhere (a = 0). `game` may be null or not loaded.
     void map_mode_colors(const MapView& map, const GameData* game, MapMode mode, std::vector<ProvinceFill>* fills,
-                         std::vector<BorderStyle>* styles);
+                         std::vector<ProvinceFill>* stripes, std::vector<BorderStyle>* styles);
 
     // The map names a mode shows (EU4's SetMapNameMode): the countries (with their capitals) in the terrain and
     // political modes, the regions in the regions mode and without game data, the trade nodes in theirs; none in the

@@ -12,6 +12,7 @@
 #include "core/map_data.h"
 #include "game/armies.h"
 #include "game/modifiers.h"
+#include "game/occupation.h"
 #include "game/war.h"
 
 namespace mc
@@ -725,6 +726,15 @@ namespace mc
             *out = static_cast<int>(n);
             return true;
         }
+        bool parse_define_count(std::string_view text, int* out)
+        {
+            std::uint32_t n = 0;
+            if (!parse_uint(text, &n) || n > 1'000'000u) {
+                return false;
+            }
+            *out = static_cast<int>(n);
+            return true;
+        }
         bool parse_define_fixed(std::string_view text, Fixed* out) { return fx_parse(text, out); }
 
         bool read_defines(Source& src, const std::filesystem::path& path, CombatDefines* out, std::string* error)
@@ -765,8 +775,8 @@ namespace mc
                 MC_COMBAT_DEFINES(MC_PARSE_DEFINE)
 #undef MC_PARSE_DEFINE
                 if (!ok) {
-                    return ctx.fail(r, std::format("{} \"{}\": a whole number >= 1, or a decimal number with at most "
-                                                   "3 digits after the point",
+                    return ctx.fail(r, std::format("{} \"{}\": a whole number >= 1 (>= 0 for a count), or a decimal "
+                                                   "number with at most 3 digits after the point",
                                                    row[key], row[value]));
                 }
             }
@@ -890,6 +900,13 @@ namespace mc
         MC_WAR_COLUMNS(MC_FILL_COLUMN)
         alive.assign(kWarSlots / 64, 0);
     }
+
+    void Sieges::resize()
+    {
+        const std::size_t n = kSiegeSlots;
+        MC_SIEGE_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kSiegeSlots / 64, 0);
+    }
 #undef MC_FILL_COLUMN
 
     bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
@@ -963,6 +980,7 @@ namespace mc
         state.leaders.resize();
         state.battles.resize();
         state.wars.resize();
+        state.sieges.resize();
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
             const int c = content.countries.find(text);
@@ -1234,10 +1252,11 @@ namespace mc
                         return false;
                     }
                     const int most = content.combat.leader_max_pips;
-                    if (leaders.fire[slot] > most || leaders.shock[slot] > most || leaders.maneuver[slot] > most) {
-                        return ctx.fail(r, std::format("pips {} / {} / {}: at most {} each (leader_max_pips)",
+                    if (leaders.fire[slot] > most || leaders.shock[slot] > most || leaders.maneuver[slot] > most ||
+                        leaders.siege[slot] > most) {
+                        return ctx.fail(r, std::format("pips {} / {} / {} / {}: at most {} each (leader_max_pips)",
                                                        leaders.fire[slot], leaders.shock[slot],
-                                                       leaders.maneuver[slot], most));
+                                                       leaders.maneuver[slot], leaders.siege[slot], most));
                     }
                     if (row[army_column].empty()) {
                         continue;
@@ -1261,6 +1280,8 @@ namespace mc
         if (!src.all_used(error)) {
             return false;
         }
+        // The garrisons are full at the start (derived: the forts and the capitals).
+        fill_garrisons(state, content);
         warnings = check(map);
         loaded = true;
         return true;

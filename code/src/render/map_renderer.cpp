@@ -125,6 +125,8 @@ namespace mc
                texture(device, map.width, map.height, DXGI_FORMAT_R16_UINT, map.pixel_province.data(), map.width * 2,
                        &province_ids_, "province ids", error) &&
                structured(device, no_fill.size(), no_fill.data(), true, &fills_buffer_, &fills_, "fills", error) &&
+               structured(device, no_fill.size(), no_fill.data(), true, &stripes_buffer_, &stripes_, "stripes",
+                          error) &&
                structured(device, no_selection.size(), no_selection.data(), true, &selection_buffer_, &selection_,
                           "selection", error) &&
                labels_.init(device, map, error) && province_labels_.init(device, map, error);
@@ -351,10 +353,13 @@ namespace mc
     }
 
     void MapRenderer::set_colors(ID3D11DeviceContext* context, std::span<const ProvinceFill> fills,
-                                 std::span<const BorderStyle> styles)
+                                 std::span<const ProvinceFill> stripes, std::span<const BorderStyle> styles)
     {
         if (fills.size() == province_count_) {
             upload(context, fills_buffer_.Get(), fills);
+        }
+        if (stripes.size() == province_count_) {
+            upload(context, stripes_buffer_.Get(), stripes);
         }
         if (styles.size() == chain_count_ && chain_count_ > 0) {
             upload(context, border_styles_buffer_.Get(), styles);
@@ -406,7 +411,7 @@ namespace mc
         ID3D11SamplerState* samplers[] = { linear_.Get() };
         context->VSSetSamplers(0, 1, samplers);
         context->PSSetSamplers(0, 1, samplers);
-        ID3D11ShaderResourceView* common[] = { province_ids_.Get(), fills_.Get(), nullptr, selection_.Get() };
+        ID3D11ShaderResourceView* common[] = { province_ids_.Get(), fills_.Get(), stripes_.Get(), selection_.Get() };
         context->VSSetShaderResources(0, 4, common);
         context->PSSetShaderResources(0, 4, common);
 

@@ -22,6 +22,7 @@ cbuffer Frame : register(b0)
 
 Texture2D<uint>           province_ids  : register(t0);
 StructuredBuffer<float4>  fills         : register(t1);   // rgb, a = how much the map mode colours the province
+StructuredBuffer<float4>  stripes       : register(t2);   // per province: the occupier's colour, a = 1 striped
 StructuredBuffer<uint>    selected      : register(t3);   // per province: 1 = selected (editor)
 SamplerState              s_linear      : register(s0);
 
@@ -49,8 +50,8 @@ float value_noise(float2 p)
 // must not wash it out), and the fill is as strong as their share: next to an unfilled province (wasteland, water)
 // it fades out over a pixel. (A full fill as soon as any tap is filled flickered along such edges: the share of the
 // neighbour's tap there is a rounding error.) `hover` gets the hovered province's share, `pick` the selected
-// provinces'.
-float4 province_fill(float2 m, out float hover, out float pick)
+// provinces', `stripe` the occupation's colour blended the same way (a: the occupied provinces' share).
+float4 province_fill(float2 m, out float hover, out float pick, out float4 stripe)
 {
     float2 p = m - 0.5;
     float2 base = floor(p);
@@ -69,6 +70,11 @@ float4 province_fill(float2 m, out float hover, out float pick)
     float4 h = float4(i00 == hovered, i10 == hovered, i01 == hovered, i11 == hovered) * (hovered != 0);
     hover = dot(h, w);
     pick = dot(float4(selected[i00], selected[i10], selected[i01], selected[i11]), w);
+    float4 s00 = stripes[i00], s10 = stripes[i10], s01 = stripes[i01], s11 = stripes[i11];
+    float4 ws = w * float4(s00.a, s10.a, s01.a, s11.a);
+    float occupied = dot(ws, 1.0);
+    stripe.rgb = (s00.rgb * ws.x + s10.rgb * ws.y + s01.rgb * ws.z + s11.rgb * ws.w) / max(occupied, 1e-5);
+    stripe.a = saturate(occupied);
     return float4(rgb, saturate(total));
 }
 
@@ -112,6 +118,7 @@ cbuffer Terrain : register(b2)
 };
 
 static const uint  NO_TEXTURE = 0xFFFFFFFF;
+static const float HATCH_PERIOD = 12.0;   // map px from one band of the hatching to the next (ps_terrain)
 // FACE_SLOPE: a waterfall's top, water sloping from its source's level (the edge toward the source, a side Face) down
 // to its own.
 static const uint  FACE_TOP = 0, FACE_WEST = 1, FACE_EAST = 2, FACE_NORTH = 3, FACE_SOUTH = 4, FACE_SLOPE = 5;
@@ -313,15 +320,21 @@ float4 ps_terrain(TerrainOut input) : SV_Target
     // where the blended sample would catch the neighbour's colour at a weight of nothing (any filled tap colours a
     // pixel) and flicker with every rounding of the position.
     float hover, pick;
-    float4 fill;
+    float4 fill, stripe;
     if (face == FACE_TOP || face == FACE_SLOPE) {
-        fill = province_fill(inside, hover, pick);
+        fill = province_fill(inside, hover, pick, stripe);
     } else {
         uint pid = province_ids.Load(int3(owner * (int)block_size + (int)(block_size * 0.5), 0));
         fill = fills[pid];
+        stripe = stripes[pid];
         hover = (hovered != 0 && pid == hovered) ? 1.0 : 0.0;
         pick = (float)selected[pid];
     }
+    // The hatching of the selection and of the occupation: diagonal bands HATCH_PERIOD map px apart over the map's
+    // surface, the same for every province, so the bands run on unbroken from one province into the next.
+    float hatch = step(0.5, frac((m.x + m.y) / HATCH_PERIOD));
+    // Occupation (EU4's stripes): the bands of an occupied province take its controller's colour.
+    fill.rgb = lerp(fill.rgb, stripe.rgb, hatch * stripe.a);
     float dry = wet ? 0.0 : 1.0;
     fill.a *= dry;
     float3 color = base;
@@ -332,8 +345,7 @@ float4 ps_terrain(TerrainOut input) : SV_Target
     }
     color *= FACE_SHADE[face] * light;
     color = lerp(color, color * 1.2 + 0.06, hover * 0.6);
-    // Selected (editor): brighter, with light diagonal hatching 12 map px apart, so it reads apart from the hover.
-    float hatch = step(0.5, frac((m.x + m.y) / 12.0));
+    // Selected (editor): brighter, with the light hatching, so it reads apart from the hover.
     color = lerp(color, color * 1.25 + float3(0.10, 0.09, 0.05) + hatch * 0.10, pick * dry * 0.8);
 
     float edge = min(min(m.x, m.y), min(map_size.x - m.x, map_size.y - m.y));
@@ -384,6 +396,7 @@ struct ModelOut
     nointerpolation uint layer : TEXCOORD3;
     nointerpolation float shade : TEXCOORD6;    // Minecraft's directional shade of the face
     nointerpolation float4 fill : TEXCOORD4;    // the map mode's fill of its province, a = 0 for none
+    nointerpolation float4 stripe : TEXCOORD8;  // its province's occupation stripes (ps_terrain), a = 0 for none
     nointerpolation float hover : TEXCOORD5;
     nointerpolation float phase : TEXCOORD7;    // the copy's own offset into the dither
 };
@@ -415,11 +428,13 @@ ModelOut vs_model(uint vid : SV_VertexID, uint iid : SV_InstanceID)
     o.phase = frac(sin(dot(inst.pos.xz, float2(12.9898, 78.233))) * 43758.5453);
     // The province it stands in, read once at its ground point, so a whole tree takes one colour.
     o.fill = float4(0.0, 0.0, 0.0, 0.0);
+    o.stripe = float4(0.0, 0.0, 0.0, 0.0);
     o.hover = 0.0;
     if ((inst.turn_flags & 4) != 0) {
         int2 m = clamp(int2(inst.pos.x, -inst.pos.z), int2(0, 0), int2(map_size) - 1);
         uint pid = province_ids.Load(int3(m, 0));
         o.fill = fills[pid];
+        o.stripe = stripes[pid];
         o.hover = (hovered != 0 && pid == hovered) ? 1.0 : 0.0;
     }
     return o;
@@ -436,9 +451,12 @@ float4 ps_model(ModelOut input) : SV_Target
     }
     float3 base = texel.rgb * input.color;
     float3 color = base;
-    if (map_mode != 0) {   // as the blocks: EU4's political shading (ps_terrain)
+    if (map_mode != 0) {   // as the blocks: EU4's political shading and the occupation's stripes (ps_terrain)
+        // The hatching by the pixel's map point, as the ground's: seen from above the bands run on over the trees.
+        float hatch = step(0.5, frac((input.map.x + input.map.y) / HATCH_PERIOD));
+        float3 fill = lerp(input.fill.rgb, input.stripe.rgb, hatch * input.stripe.a);
         float grey = lerp(0.36, dot(base, GREYIFY), 0.5);
-        color = lerp(base, (0.4 * grey + 0.45 * input.fill.rgb) * 1.35, input.fill.a);
+        color = lerp(base, (0.4 * grey + 0.45 * fill) * 1.35, input.fill.a);
     }
     color *= input.shade;
     color = lerp(color, color * 1.2 + 0.06, input.hover * 0.6);

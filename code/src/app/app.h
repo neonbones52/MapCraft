@@ -90,7 +90,10 @@ namespace mc
         bool colors_dirty_ = true;
         bool fills_dirty_ = false;
         std::vector<ProvinceFill> fills_;
+        std::vector<ProvinceFill> stripes_;
         std::vector<BorderStyle> styles_;
+        // The provinces' controllers the colours were made for: the occupation's stripes follow the game's days.
+        std::vector<std::uint16_t> controllers_;
         bool camera_ready_ = false;
         double time_ = 0.0;   // s, the clock of animated block textures (stopped when zoomed out)
         ArmyFigures armies_;

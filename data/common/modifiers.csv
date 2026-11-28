@@ -8,3 +8,5 @@ base,Base Values,infantry_shock,0.95
 base,Base Values,cavalry_shock,1.2
 base,Base Values,artillery_fire,1
 base,Base Values,artillery_shock,0.05
+base,Base Values,artillery_levels_available_vs_fort,5
+base,Base Values,highest_fort,2

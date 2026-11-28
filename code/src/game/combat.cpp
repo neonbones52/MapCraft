@@ -1158,8 +1158,8 @@ namespace mc
     }
 
     // Where a beaten country's armies retreat from `from` (decision of the user, 26.11.2026): its own province the
-    // farthest away by the march; with none, the nearest province without armies of a country at war with it. Ties:
-    // the lower id. 0 if there is no way anywhere.
+    // farthest away by the march, one it controls too (not occupied: game/occupation.h); with none, the nearest
+    // province without armies of a country at war with it. Ties: the lower id. 0 if there is no way anywhere.
     std::uint16_t Combat::retreat_to(const WorldState& state, Movement& movement, std::uint16_t country,
                                      std::uint16_t from) const
     {
@@ -1169,7 +1169,8 @@ namespace mc
         float best_way = -1.0f;
         for (std::uint32_t p = 1; p < province_count_; ++p) {
             const float way = movement.way_from(static_cast<std::uint16_t>(p));
-            if (p != from && state.provinces.owner[p] == country && way > best_way) {
+            if (p != from && state.provinces.owner[p] == country && state.provinces.controller[p] == country &&
+                way > best_way) {
                 best = static_cast<std::uint16_t>(p);
                 best_way = way;
             }
