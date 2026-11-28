@@ -26,7 +26,7 @@
 | `common/goods.csv` | key, name, color, price, icon | товары (набор — пользователя, растёт строками: без фабрик и рецептов, cattle — и мясо, и кожа); `price` — базовая цена товара (base price EU3/EU4) в изумрудах за единицу производства, > 0 (у изумруда всегда 1); от неё мировая цена, которую будут менять модификаторы и события; правила её пока не читают; `icon` — предмет Майнкрафта для UI (M13), пока не читается |
 | `common/trade_nodes.csv` | key, name, color | торговые узлы; узел — из целых регионов (`setup/regions.csv`); необязателен; правил узлов пока нет (M14) |
 | `common/regiment_types.csv` | key, name, category, maneuver, off_fire, def_fire, off_shock, def_shock, off_morale, def_morale | типы полков — юниты (как Latin Knights в EU4); `category` — infantry, cavalry или artillery; `maneuver` — манёвр юнита EU4, дальность удара вбок (фланг; пехота 1, конница 2); пипсы атаки и защиты огня, натиска и морали — целые 0–255 («Бой»); необязателен (без него — без полков) |
-| `common/defines.csv` | key, value | константы боя (`NDefines::NMilitary` EU4), каждая обязательна, по строке: `days_per_phase`, `dice_sides`, `cannot_retreat_days`, `overrun_factor`, `overrun_factor_cannot_leave`, `max_combat_width` (≤ 40) — целые ≥ 1; `leader_max_pips` (EU4 6), `back_line_reinforce_speed` (EU4 2), `river_crossing_penalty` (минус к кубику атакующего за переправу через реку, 1) — целые ≥ 1; `war_length_damage`, `daily_morale_damage`, `reserve_daily_morale_damage`, `front_line_modifier`, `back_line_modifier` (EU4 0.5), `back_line_morale_damage_taken` (0.4), `back_line_strength_damage_taken` (0) — десятичные («Бой») |
+| `common/defines.csv` | key, value | константы боя (`NDefines::NMilitary` EU4), каждая обязательна, по строке: `days_per_phase`, `dice_sides`, `cannot_retreat_days`, `overrun_factor`, `overrun_factor_cannot_leave`, `max_combat_width` (≤ 40) — целые ≥ 1; `leader_max_pips` (EU4 6), `back_line_reinforce_speed` (EU4 2), `river_crossing_penalty` (минус к кубику атакующего за переправу через реку, 1) — целые ≥ 1; `recovery_own_land`, `recovery_neutral_land`, `recovery_enemy_land`, `recovery_retreating` (доли макс. морали за месяц вне боя: 0.2, 0.15, 0.1, 0.05; «Восстановление») — десятичные; `war_length_damage`, `daily_morale_damage`, `reserve_daily_morale_damage`, `front_line_modifier`, `back_line_modifier` (EU4 0.5), `back_line_morale_damage_taken` (0.4), `back_line_strength_damage_taken` (0) — десятичные («Бой») |
 | `common/modifiers.csv` | key, name, modifier, value | наборы модификаторов — источники («Модификаторы» ниже): строка на пару «набор — модификатор»; `key` — набор, `name` — имя для людей (на любой строке набора, где есть — одинаковое; по умолчанию key), `modifier` — модификатор из списка кода, в наборе один раз, `value` — число (может быть отрицательным); набор `base` есть у каждой страны (base_values EU4); необязателен |
 | `setup/provinces.csv` | id, name, owner, controller, cores, terrain, good, base_tax, population | провинции суши на старте (docs/ECONOMY.md, «Провинция») |
 | `setup/regions.csv` | region, name, trade_node | регион карты (номер из `regions.csv` карты) → торговый узел; пусто — без узла |
@@ -205,7 +205,7 @@
 по манёвру, стеквайп, отступление; генералы и артиллерия во второй линии (27.11.2026; BattleSim её не делает —
 по декомпиляции eu4.exe, `C:\Dev\Projects\eu4\archeologyEU4\UtilityAI\evidence`, адреса в `game/combat.cpp`);
 местность и переправы (28.11.2026). Ещё нет: нехватка поддержки конницы, combat
-ability и модификаторы урона (все 0), прорыв (`*_BREAKTHROUGH`, в EU4 0), восстановление морали вне боя. Известное
+ability и модификаторы урона (все 0), прорыв (`*_BREAKTHROUGH`, в EU4 0). Мораль вне боя — «Восстановление». Известное
 расхождение: EU4 при расстановке сортирует группы `CUnitCombatComparator`, он не разобран; у нас — порядок резерва,
 как в BattleSim.
 - **Враги до дипломатии** — все чужие армии (решение пользователя). У боя две стороны, по стране: защитник — страна
@@ -284,6 +284,22 @@ ability и модификаторы урона (все 0), прорыв (`*_BREA
   кубики) и пипсы генерала каждой армии. В `mapcraft_sim` — сценарии `battle`, `generals`, `artillery`, `crossing` и
   `crossing_plains` (docs/SIMULATION.md).
 
+## Восстановление (`game/recovery.h`)
+Вне боя армии восстанавливаются раз в месяц, на месячном тике («Время»; решение пользователя 28.11.2026: только
+месячный тик, как в EU4). Полк армии не в бою получает долю макс. морали своей страны (`game/modifiers.h`), не
+выше максимума; мораль выше максимума не срезается. Доля — по тому, где стоит армия (решение пользователя;
+`defines.csv`):
+- своя земля (страна армии владеет провинцией) — `recovery_own_land`, 0.2;
+- ничья земля (нет владельца) или оккупированная (страна армии контролирует, но не владеет) — `recovery_neutral_land`,
+  0.15;
+- вражеская (владеет другая страна, и страна армии её не контролирует; до войны M7 враги — все чужие страны) —
+  `recovery_enemy_land`, 0.1;
+- армия отступает (бит `armies.retreating`), где бы ни была, — `recovery_retreating`, 0.05.
+
+Те же доли потом — для пополнения людей полков (M8). Раскладка: раз в месяц, поэтому просто — проход по армиям (доля
+и максимум в рабочие столбцы `Recovery` по слотам армий), потом по полкам. В `mapcraft_sim` — сценарий `morale`,
+помесячный ряд `armies.csv` (docs/SIMULATION.md).
+
 ## Деньги (`core/money.h`, `game/economy/`)
 - **Тип.** `Money` — `i64`, целые крупинки, 10⁶ на изумруд. Сумма считается во `float`/`double`, округляется до
   крупинок один раз (`to_grains`), и ровно это целое переходит со счёта на счёт. `to_emeralds` — только для показа.
@@ -359,6 +375,10 @@ ability и модификаторы урона (все 0), прорыв (`*_BREA
 - **Кто кого зовёт.** `Shell::frame` → `Pace::advance(dt, run)` → `World::advance_days(n)`. `Pace` хранится в `Shell`;
   вне фазы `playing` (`Session::playing()`) время стоит и кнопки темпа ничего не делают. Дни идут до отрисовки карты
   и UI в том же кадре. `mapcraft_sim` зовёт ту же `World::advance_days`.
-- **Тик.** День `advance_days`: сначала команды дня (`run_commands`), потом `tick_day` — марш армий и `++day_`.
+- **Тик.** День `advance_days`: сначала команды дня (`run_commands`), потом `tick_day` — марш армий, бой и `++day_`.
+  Если новый день — 1-е число месяца, сразу за ним `tick_month` (на старте игры его нет). **Месячный тик — основной**
+  для правил не о марше и бое (решение пользователя 28.11.2026): сейчас восстановление армий («Восстановление»), потом
+  деньги, экономика, купцы, производство, вложения ползунками, пополнение людей (M8, M9). Годовой тик (census tax, как
+  в EU3) — позже, с казной.
   Правила дня пока дешёвые, поэтому скорость 5 за кадр делает очень много дней. Счётчик дней — `u32` (около 12 млн
   лет).

@@ -15,3 +15,7 @@ back_line_morale_damage_taken,0.4
 back_line_strength_damage_taken,0
 back_line_reinforce_speed,2
 river_crossing_penalty,1
+recovery_own_land,0.2
+recovery_neutral_land,0.15
+recovery_enemy_land,0.1
+recovery_retreating,0.05

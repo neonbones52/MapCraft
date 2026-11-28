@@ -24,6 +24,7 @@
 #include "core/map_data.h"
 #include "game/armies.h"
 #include "game/calendar.h"
+#include "game/modifiers.h"
 #include "game/world.h"
 #include "headless/run_record.h"
 #include "headless/scenario.h"
@@ -47,7 +48,28 @@ namespace
         std::vector<std::uint64_t> hashes;   // [0] the loaded state, then one per day
         double seconds = 0.0;                // in advance_days only
         std::string moves = "day,date,army,generation,province,next\n";   // moves.csv: each step an army ends
+        // armies.csv: every live army at the start and at each month's start (after the monthly tick)
+        std::string armies = "day,date,army,generation,owner,province,battle,retreating,regiments,men,morale,"
+                             "max_morale\n";
     };
+
+    // Every live army now, as rows of armies.csv: its place, whether it fights or retreats, its regiments, men and
+    // their average morale, and its country's maximum morale.
+    void record_armies(const mc::World& world, std::string* rows)
+    {
+        const mc::Armies& armies = world.state().armies;
+        const std::string date = mc::format(world.date());
+        mc::for_each_alive(armies.alive, [&](std::uint32_t a) {
+            const auto slot = static_cast<std::uint16_t>(a);
+            const mc::ArmyTotals totals = mc::army_totals(world.state().regiments, slot);
+            const std::uint16_t owner = armies.owner[a];
+            *rows += std::format("{},{},{},{},{},{},{},{},{},{},{:.3f},{:.3f}\n", world.day(), date, a,
+                                 armies.generation[a], world.content().countries.tag_text(owner), armies.province[a],
+                                 armies.battle[a] != 0 ? 1 : 0, (armies.retreating[a / 64] >> (a % 64)) & 1u,
+                                 totals.regiments, totals.men, mc::fx_to_double(totals.morale),
+                                 mc::fx_to_double(mc::max_morale(world.cache().country_modifiers, owner)));
+        });
+    }
 
     // The armies whose province changed over the day just passed, as rows of moves.csv (`before`: their provinces
     // before it, per slot); with `log`, each arrival where a march ends also to stderr.
@@ -95,6 +117,7 @@ namespace
         const std::uint32_t days = scenario.years * mc::kDaysPerYear;
         run->hashes.reserve(std::size_t{ days } + 1);
         run->hashes.push_back(mc::headless::checksum(world));
+        record_armies(world, &run->armies);
         std::vector<std::uint16_t> before(mc::kArmySlots);
         std::size_t next = 0;   // the scenario's next command
         for (std::uint32_t d = 0; d < days; ++d) {
@@ -108,6 +131,9 @@ namespace
             run->seconds += std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
             run->hashes.push_back(mc::headless::checksum(world));
             record_moves(map, world, before, log, &run->moves);
+            if (world.day() % mc::kDaysPerMonth == 0) {
+                record_armies(world, &run->armies);
+            }
         }
         return true;
     }
@@ -144,7 +170,7 @@ int main(int argc, char** argv)
     mc::log::info("{} years twice: {:.3f} s and {:.3f} s in the rules, {:.4f} s per year", scenario.years,
                   a.seconds, b.seconds, (a.seconds + b.seconds) / 2.0 / scenario.years);
 
-    if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, a.moves, &error)) {
+    if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, a.moves, a.armies, &error)) {
         mc::log::error("{}", error);
         return kFailed;
     }

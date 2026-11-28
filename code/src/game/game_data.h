@@ -463,7 +463,7 @@ namespace mc
     X(fixed, back_line_modifier)                                                                                \
     X(fixed, back_line_morale_damage_taken)                                                                     \
     X(fixed, back_line_strength_damage_taken)                                                                   \
-    X(whole, back_line_reinforce_speed)                                                                             /* the attacker's dice minus when it came into the province over a river (EU4's river crossing; no straits) */     X(whole, river_crossing_penalty)
+    X(whole, back_line_reinforce_speed)                                                                             /* the attacker's dice minus when it came into the province over a river (EU4's river crossing; no straits) */     X(whole, river_crossing_penalty)                                                                                /* out of battle, each month: the share of the maximum a regiment gets back (morale; men too, M8) on its */      /* country's land, on no one's or occupied land, on an enemy's, and while it retreats (game/recovery.h) */       X(fixed, recovery_own_land)                                                                                     X(fixed, recovery_neutral_land)                                                                                 X(fixed, recovery_enemy_land)                                                                                   X(fixed, recovery_retreating)
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_fixed Fixed
 #define MC_DECLARE_DEFINE(kind, name) MC_DEFINE_TYPE_##kind name = 0;

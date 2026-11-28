@@ -1,0 +1,9 @@
+# The recovery of morale out of battle (M6), on the monthly tick: the battle of battle.txt, DUM beats NBR in Anvilwick
+# (475). Each month (armies.csv of the run) a regiment out of battle gets back a share of its country's maximum
+# morale: NBR's army 5% while it retreats, then 20% in its own province; DUM's army 10% on NBR's land on 1 March,
+# then 20% on its own land on the way home to Golemtor (495), ordered on day 60.
+years = 1
+seed = 1
+
+day 0 = DUM move 0:0 475
+day 60 = DUM move 0:0 495
