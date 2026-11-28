@@ -407,7 +407,15 @@ namespace mc::mcui
         const Sprite sprite = selected ? (lit ? Sprite::tab_selected_highlighted : Sprite::tab_selected)
                                        : (lit ? Sprite::tab_highlighted : Sprite::tab);
         draw_sprite(window->DrawList, sprite, bb.Min, bb.Max);
-        centred(window->DrawList, bb.Min, bb.Max, selected ? kWhite : kDisabledText, name);
+        // The selected tab's sprite is see-through: its text is the window's (dark on a panel, light with a shadow on
+        // the dark windows); the others' are dark, their text light grey.
+        bool shadow = true;
+        const ImU32 color = selected ? label_color(&shadow) : kDisabledText;
+        const ImVec2 size = ImGui::CalcTextSize(name.data(), name.data() + name.size());
+        const ImVec2 at = snap(ImVec2((bb.Min.x + bb.Max.x - size.x) * 0.5f, (bb.Min.y + bb.Max.y - size.y) * 0.5f));
+        window->DrawList->PushClipRect(bb.Min, bb.Max, true);
+        draw_text(window->DrawList, at, color, name, shadow);
+        window->DrawList->PopClipRect();
         return pressed;
     }
 

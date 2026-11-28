@@ -62,7 +62,7 @@ namespace mc
             const WorldState& state = ui.state;
             auto cash = [&](Account a) { return to_emeralds(state.money.cash[account(me, a)]); };
             const ProvinceIncome income = country_income(state, ui.content, me);
-            heading("Treasury");
+            ImGui::Spacing();
             fact("Treasury", std::format("{:.2f}", cash(Account::treasury)));
             fact("Monthly income", std::format("{:+.2f}", income.monthly()));
             fact("  Taxes", std::format("{:.2f}", income.tax));
@@ -89,7 +89,7 @@ namespace mc
             std::uint32_t raising = 0;
             for_each_alive(state.recruits.alive,
                            [&](std::uint32_t r) { raising += state.recruits.country[r] == me ? 1u : 0u; });
-            heading("Manpower");
+            ImGui::Spacing();
             fact("Manpower", std::format("{} of {}", state.countries.manpower[me], maximum));
             fact("Recovery", std::format("+{} a month", monthly_manpower(ui.content.economy, maximum)));
             heading("Army");

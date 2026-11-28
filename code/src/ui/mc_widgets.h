@@ -53,7 +53,8 @@ namespace mc::mcui
     // A slider with "label: value" on it, `width` GUI px (0: the width left), 20 high; dragged or clicked anywhere on
     // it, its handle highlighted while held; true while the value changes.
     bool slider_int(const char* label, int* value, int min, int max, const char* format = "%d", int width = 0);
-    // A tab, `width` GUI px (0: fits the label), 24 high; true when clicked. Tabs follow each other with SameLine.
+    // A tab, `width` GUI px (0: fits the label), 24 high; true when clicked. Tabs follow each other with SameLine. The
+    // selected tab's label is in the window's text colour (its sprite is see-through), the others' light grey.
     bool tab(const char* label, bool selected, int width = 0);
     // A list that scrolls: an inset `height` GUI px high and the width left, Minecraft's scroller on its right
     // (dragged, or the wheel). Always pair with end_list.
