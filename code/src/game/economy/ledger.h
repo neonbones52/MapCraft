@@ -13,7 +13,7 @@
 
 namespace mc::ledger
 {
-    // `amount` >= 0 made out of nothing into `account` (taxes, production, trade, minting).
+    // `amount` >= 0 made out of nothing into `account` (taxes, production, trade, the Treasury share).
     void mint(Balances* money, std::size_t account, Money amount);
     // Moves `amount` >= 0 from one account to another; false (and nothing moves) if `from` has less.
     bool transfer(Balances* money, std::size_t from, std::size_t to, Money amount);
