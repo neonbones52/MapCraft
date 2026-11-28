@@ -21,7 +21,7 @@ namespace mc
     };
 
     // The "Dev" window (F9, docs/CODE.md, "Отладочное"): debug actions as the player's ordinary commands, a stand-in
-    // until the real UI (M13). Now: the player's treasury, monthly income, census, inflation and investments, and
+    // until the real UI's frame (M8). Now: the player's treasury, monthly income, census, inflation and investments, and
     // the five budget sliders, which move together to 100 and are set when let go (the command budget,
     // game/economy/budget.h); the army's upkeep and force limit, the maintenance slider, set when let go (the
     // command maintenance, game/economy/upkeep.h); the wars going on with their war scores (game/war_score.h); for each war of the
