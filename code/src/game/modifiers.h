@@ -66,5 +66,7 @@ namespace mc
 #define MC_VISIT_SUM(name) visit(std::string_view{ "country_modifiers." #name }, std::span(sums.name).first(sums.count));
         MC_COUNTRY_MODIFIERS(MC_VISIT_SUM)
 #undef MC_VISIT_SUM
+        const AtWar& at_war = cache.at_war;
+        visit(std::string_view{ "at_war" }, std::span(at_war.bits).first(at_war.count * at_war.words));
     }
 }

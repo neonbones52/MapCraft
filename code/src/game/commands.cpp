@@ -13,6 +13,7 @@ namespace mc
         army_slot_.push_back(command.army.slot);
         army_generation_.push_back(command.army.generation);
         province_.push_back(command.province);
+        target_.push_back(command.target);
         due_.reserve(day_.size());   // here, outside the day, so running them never allocates
     }
 
@@ -36,6 +37,7 @@ namespace mc
                 army_slot_[kept] = army_slot_[i];
                 army_generation_[kept] = army_generation_[i];
                 province_[kept] = province_[i];
+                target_[kept] = target_[i];
                 ++kept;
             }
         }
@@ -46,5 +48,6 @@ namespace mc
         army_slot_.resize(kept);
         army_generation_.resize(kept);
         province_.resize(kept);
+        target_.resize(kept);
     }
 }

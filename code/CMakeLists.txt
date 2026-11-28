@@ -29,6 +29,7 @@ add_library(mc_sim STATIC
     src/game/modifiers.cpp
     src/game/movement.cpp
     src/game/recovery.cpp
+    src/game/war.cpp
     src/game/session.cpp
     src/game/world.cpp
 )
@@ -85,6 +86,7 @@ add_library(mc_game STATIC
     src/ui/widgets.cpp
     src/ui/game_ui.cpp
     src/ui/screens/country_select.cpp
+    src/ui/screens/dev_window.cpp
     src/ui/screens/army_plates.cpp
     src/ui/screens/player_hud.cpp
     src/ui/screens/province_tooltip.cpp

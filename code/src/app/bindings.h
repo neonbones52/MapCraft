@@ -40,6 +40,9 @@ namespace mc
     };
     [[nodiscard]] ArmyInput army_input(const Input& input);
 
+    // F9: the Dev window (docs/CODE.md, "Отладочное").
+    [[nodiscard]] bool dev_key(const Input& input);
+
     // Esc: leave the game (close the window). The editor keeps Esc for its selection.
     [[nodiscard]] bool leave_key(const Input& input);
 }

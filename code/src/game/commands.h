@@ -14,7 +14,8 @@ namespace mc
     enum class CommandKind : std::uint8_t
     {
         none = 0,
-        move_army = 1,   // the army marches to `province` (game/movement.h)
+        move_army = 1,     // the army marches to `province` (game/movement.h)
+        declare_war = 2,   // the giver declares war on `target` (game/war.h)
     };
 
     struct Command
@@ -23,6 +24,7 @@ namespace mc
         std::uint16_t country = 0;   // who gives it: it must own the army
         ArmyRef army;
         std::uint16_t province = 0;
+        std::uint16_t target = 0;    // a country: the one war is declared on
     };
 
     // The one queue of commands of the game and mapcraft_sim (and later of the network): each command gets its place
@@ -50,7 +52,8 @@ namespace mc
             }
             sort_due();
             for (const std::uint32_t i : due_) {
-                run(Command{ kind_[i], country_[i], ArmyRef{ army_slot_[i], army_generation_[i] }, province_[i] });
+                run(Command{ kind_[i], country_[i], ArmyRef{ army_slot_[i], army_generation_[i] }, province_[i],
+                             target_[i] });
             }
             drop(today);
         }
@@ -67,6 +70,7 @@ namespace mc
         Column<std::uint16_t> army_slot_;
         Column<std::uint16_t> army_generation_;
         Column<std::uint16_t> province_;
+        Column<std::uint16_t> target_;
         std::uint32_t next_number_ = 0;
         Column<std::uint32_t> due_;   // working: the due commands' rows (reserved by post)
     };

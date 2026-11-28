@@ -52,12 +52,18 @@ namespace mc::headless
             return out;
         }
 
-        // "TAG move slot:generation province".
+        // "TAG move slot:generation province" or "TAG war TAG".
         bool parse_command(std::string_view text, ScenarioCommand* out, std::string* why)
         {
             const std::vector<std::string_view> w = words(text);
+            if (w.size() == 3 && w[1] == "war") {
+                out->country = std::string(w[0]);
+                out->target = std::string(w[2]);
+                out->command.kind = CommandKind::declare_war;
+                return true;
+            }
             if (w.size() != 4 || w[1] != "move") {
-                *why = "a command is TAG move slot:generation province";
+                *why = "a command is TAG move slot:generation province, or TAG war TAG";
                 return false;
             }
             const std::size_t colon = w[2].find(':');

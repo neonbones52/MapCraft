@@ -6,4 +6,5 @@ seed = 1
 setup/leaders.csv: 2.fire = 6
 setup/leaders.csv: 2.shock = 6
 
+day 0 = DUM war NBR
 day 0 = DUM move 0:0 475

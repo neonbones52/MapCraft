@@ -113,6 +113,14 @@ namespace
             }
             commands.push_back(c.command);
             commands.back().country = static_cast<std::uint16_t>(country);
+            if (!c.target.empty()) {
+                const int target = world.content().countries.find(c.target);
+                if (target <= 0) {
+                    mc::log::error("{}: unknown country \"{}\"", c.origin, c.target);
+                    return false;
+                }
+                commands.back().target = static_cast<std::uint16_t>(target);
+            }
         }
         const std::uint32_t days = scenario.years * mc::kDaysPerYear;
         run->hashes.reserve(std::size_t{ days } + 1);

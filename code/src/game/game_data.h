@@ -232,11 +232,26 @@ namespace mc
     };
 #undef MC_DECLARE_SUM
 
+    // Cache. Who is at war with whom (game/war.h), from the wars (Wars): a symmetric bit matrix, words u64 per
+    // country (64 countries a word): bit b of country a's row = a and b are at war.
+    struct AtWar
+    {
+        std::size_t count = 0;   // countries, 0 = none included
+        std::uint32_t words = 1;
+        Column<std::uint64_t> bits;
+
+        [[nodiscard]] bool has(std::size_t a, std::size_t b) const
+        {
+            return a < count && b < count && ((bits[a * words + b / 64] >> (b % 64)) & 1u);
+        }
+    };
+
     // Cache: the rules' data rebuilt from Content and WorldState (deterministically: CLAUDE.md, rule 9), never saved.
     // for_each_cached (game/modifiers.h) walks it for mapcraft_sim's cache dump.
     struct Cache
     {
         CountryModifiers country_modifiers;
+        AtWar at_war;
     };
 
     // Entities that are born and die (armies, regiments, leaders, battles) live in slots: a fixed number per table, so
@@ -249,8 +264,9 @@ namespace mc
     inline constexpr std::uint32_t kRegimentSlots = 65472;
     inline constexpr std::uint32_t kLeaderSlots = 1024;
     inline constexpr std::uint32_t kBattleSlots = 1024;
+    inline constexpr std::uint32_t kWarSlots = 256;
     static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kLeaderSlots % 64 == 0 &&
-                      kBattleSlots % 64 == 0,
+                      kBattleSlots % 64 == 0 && kWarSlots % 64 == 0,
                   "whole words of the slot masks");
     static_assert(kLeaderSlots < 65536, "an army names its leader by slot + 1 in a u16");
     static_assert(kArmySlots <= 65536 && kRegimentSlots < 65536, "u16 slots, a regiment's slot + 1 too");
@@ -408,6 +424,18 @@ namespace mc
         void resize();
     };
 
+#define MC_WAR_COLUMNS(X)                                                                                           /* the country that declared it and the one it was declared on (no alliances yet: a country a side) */          X(wars, std::uint16_t, attacker, runtime)                                                                       X(wars, std::uint16_t, defender, runtime)                                                                       /* the day it began (World::day) */                                                                             X(wars, std::uint32_t, start, runtime)                                                                          /* grows each time the slot is freed (like Armies::generation) */                                               X(wars, std::uint16_t, generation, runtime)
+
+    // Saved. The wars going on (game/war.h), in slots, kWarSlots long; runtime only (no setup file: no war at the
+    // start). Two countries have one war between them at most.
+    struct Wars
+    {
+        MC_WAR_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+
+        void resize();
+    };
+
     // The regiment types' categories (regiment_types.csv `category`): what a type is in battle.
     enum class RegimentCategory : std::uint8_t
     {
@@ -510,6 +538,7 @@ namespace mc
         Regiments regiments;
         Leaders leaders;
         Battles battles;
+        Wars wars;
     };
 
     // Loads Content and the start's WorldState from data/ (docs/GAMEDATA.md) and writes the start back (editor). In

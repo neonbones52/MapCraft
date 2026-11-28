@@ -12,6 +12,7 @@
 #include "game/game_data.h"
 #include "game/modifiers.h"
 #include "game/session.h"
+#include "game/war.h"
 #include "ui/flags.h"
 
 namespace mc
@@ -91,9 +92,9 @@ namespace mc
             const Fixed full = owner < sums.count ? max_morale(sums, owner) : 0;
             const float morale =
                 full > 0 ? std::clamp(static_cast<float>(totals.morale) / static_cast<float>(full), 0.0f, 1.0f) : 0.0f;
-            const Relation relation = owner != 0 && owner == me      ? Relation::own
-                                      : owner != 0 && me != 0       ? Relation::enemy
-                                                                    : Relation::neutral;
+            const Relation relation = owner != 0 && owner == me          ? Relation::own
+                                      : at_war(ui.cache.at_war, owner, me) ? Relation::enemy
+                                                                         : Relation::neutral;
 
             const std::string text = men_text(totals.men);
             const ImVec2 text_extent = font->CalcTextSizeA(text_size, FLT_MAX, 0.0f, text.c_str());

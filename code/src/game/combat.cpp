@@ -1,6 +1,7 @@
 #include "game/combat.h"
 
 #include <algorithm>
+#include <utility>
 #include <array>
 #include <bit>
 #include <limits>
@@ -11,6 +12,7 @@
 #include "game/armies.h"
 #include "game/modifiers.h"
 #include "game/movement.h"
+#include "game/war.h"
 
 // The order of operations and the integer arithmetic follow eu4.exe 1.37.5 as BattleSim reproduces it
 // (C:\Dev\Projects\eu4\BattleSim, src/core/Battle.cpp; addresses there); the artillery's back line, which BattleSim
@@ -354,9 +356,11 @@ namespace mc
 
     // ------------------------------------------------------------------------------------------------ the day
 
-    void Combat::day(WorldState& state, const Content& content, const CountryModifiers& sums, Movement& movement,
+    void Combat::day(WorldState& state, const Content& content, const Cache& cache, Movement& movement,
                      std::uint32_t seed, std::uint32_t day)
     {
+        const CountryModifiers& sums = cache.country_modifiers;
+        at_war_ = &cache.at_war;
         Armies& armies = state.armies;
         Regiments& regiments = state.regiments;
         // A retreat ends where its march does: the army stands again.
@@ -469,39 +473,56 @@ namespace mc
                 continue;
             }
             if (province_battle_[p] == 0) {
-                // A new battle where armies of two countries meet. The defender: the country of the first army (in
-                // slot order) that was here before today, else of the first; the attacker: the first other country
-                // that came in today, else the first other. A third country waits for the battle's end. The
-                // attacker crosses a river if the army that made it the attacker came in today over one.
+                // A new battle where armies of two countries at war meet. The pair: the country of the first army
+                // (in slot order) that was here before today and has an enemy here, else of the first that has one,
+                // against the first country at war with it that came in today, else the first at war with it. Who
+                // attacks: the one that came in, if the other stood here before today; otherwise (both stood here
+                // when the war began, or both came in today) the one that declared their war. A third country waits
+                // for the battle's end. The attacker crosses a river if its first army that came in today came over
+                // one.
                 std::uint16_t defender = 0;
                 std::uint16_t attacker = 0;
-                bool river = false;
-                for (std::uint32_t k = lo; k < hi && defender == 0; ++k) {
-                    const std::uint16_t a = army_list_[k];
-                    if (fighting(a) && !movement.arrived_today(a)) {
-                        defender = armies.owner[a];
+                bool stood = false;   // the defender's army was here before today
+                // The first army at war with `country` here (`today`: only one that came in today), or -1.
+                auto enemy_of = [&](std::uint16_t country, bool today) {
+                    for (std::uint32_t k = lo; k < hi; ++k) {
+                        const std::uint16_t a = army_list_[k];
+                        if (fighting(a) && at_war(*at_war_, armies.owner[a], country) &&
+                            (!today || movement.arrived_today(a))) {
+                            return static_cast<int>(a);
+                        }
+                    }
+                    return -1;
+                };
+                for (int pass = 0; pass < 2 && defender == 0; ++pass) {
+                    for (std::uint32_t k = lo; k < hi && defender == 0; ++k) {
+                        const std::uint16_t a = army_list_[k];
+                        if (fighting(a) && (pass == 1 || !movement.arrived_today(a)) &&
+                            enemy_of(armies.owner[a], false) >= 0) {
+                            defender = armies.owner[a];
+                            stood = pass == 0;
+                        }
                     }
                 }
-                for (std::uint32_t k = lo; k < hi && defender == 0; ++k) {
-                    if (fighting(army_list_[k])) {
-                        defender = armies.owner[army_list_[k]];
-                    }
-                }
-                for (std::uint32_t k = lo; k < hi && attacker == 0; ++k) {
-                    const std::uint16_t a = army_list_[k];
-                    if (fighting(a) && armies.owner[a] != defender && movement.arrived_today(a)) {
-                        attacker = armies.owner[a];
-                        river = movement.crossed_river_today(a);
-                    }
-                }
-                for (std::uint32_t k = lo; k < hi && attacker == 0; ++k) {
-                    const std::uint16_t a = army_list_[k];
-                    if (fighting(a) && armies.owner[a] != defender) {
-                        attacker = armies.owner[a];
-                    }
-                }
-                if (attacker == 0) {
+                if (defender == 0) {
                     continue;
+                }
+                const int came = enemy_of(defender, true);
+                if (stood && came >= 0) {
+                    attacker = armies.owner[static_cast<std::uint16_t>(came)];
+                } else {
+                    attacker = armies.owner[static_cast<std::uint16_t>(enemy_of(defender, false))];
+                    if (war_declarer(state.wars, attacker, defender) == defender) {
+                        std::swap(attacker, defender);
+                    }
+                }
+                bool river = false;
+                for (std::uint32_t k = lo; k < hi; ++k) {
+                    const std::uint16_t a = army_list_[k];
+                    if (fighting(a) && armies.owner[a] == attacker && movement.arrived_today(a)) {
+                        river = movement.crossed_river_today(a);
+                        break;
+                    }
                 }
                 std::uint32_t b = 0;
                 if (!take_battle_slot(battles.alive, &b)) {
@@ -1137,8 +1158,8 @@ namespace mc
     }
 
     // Where a beaten country's armies retreat from `from` (decision of the user, 26.11.2026): its own province the
-    // farthest away by the march; with none, the nearest province without foreign armies. Ties: the lower id. 0 if
-    // there is no way anywhere.
+    // farthest away by the march; with none, the nearest province without armies of a country at war with it. Ties:
+    // the lower id. 0 if there is no way anywhere.
     std::uint16_t Combat::retreat_to(const WorldState& state, Movement& movement, std::uint16_t country,
                                      std::uint16_t from) const
     {
@@ -1165,7 +1186,7 @@ namespace mc
             bool enemies = false;
             for (std::uint32_t k = army_offsets_[p]; k < army_offsets_[p + 1] && !enemies; ++k) {
                 const std::uint16_t a = army_list_[k];
-                enemies = slot_alive(armies.alive, a) && armies.owner[a] != 0 && armies.owner[a] != country;
+                enemies = slot_alive(armies.alive, a) && at_war(*at_war_, armies.owner[a], country);
             }
             if (!enemies) {
                 best = static_cast<std::uint16_t>(p);

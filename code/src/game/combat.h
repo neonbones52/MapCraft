@@ -13,7 +13,7 @@ namespace mc
 
     // The land battle (docs/GAMEDATA.md, "Бой"), EU4 1.37.5's day after day in its order of operations (as BattleSim
     // reproduces eu4.exe: CCombat::DailyUpdate, CLandCombatant::FireAt, ArrangeBattleField, ReorganizeTroops,
-    // CheckOverrun, WillLose), in Fixed (core/fixed.h). Enemies before diplomacy: every foreign army.
+    // CheckOverrun, WillLose), in Fixed (core/fixed.h). Enemies: the armies of countries at war (game/war.h).
     //
     // The state is WorldState's: a battle with its two lines and reserves (Battle, game/game_data.h), its armies
     // (Armies::battle, side and joined, the retreating mask) and their generals (Armies::leader, Leaders), its
@@ -27,10 +27,10 @@ namespace mc
         void build(const MapData& map);
 
         // One day of the battles, after the march (World::tick_day): retreats that arrived end; new battles where
-        // foreign armies meet; armies of a battle's countries coming into its province join it; every battle fights
-        // its day, in slot order; the ones decided end (the loser retreats or is wiped out). `day` and `seed` name the
-        // dice (core/random.h).
-        void day(WorldState& state, const Content& content, const CountryModifiers& sums, Movement& movement,
+        // armies of countries at war meet; armies of a battle's countries coming into its province join it; every
+        // battle fights its day, in slot order; the ones decided end (the loser retreats or is wiped out). `cache`:
+        // the modifier sums and who is at war; `day` and `seed` name the dice (core/random.h).
+        void day(WorldState& state, const Content& content, const Cache& cache, Movement& movement,
                  std::uint32_t seed, std::uint32_t day);
 
     private:
@@ -98,6 +98,7 @@ namespace mc
                                                std::uint16_t from) const;
 
         std::uint32_t province_count_ = 0;
+        const AtWar* at_war_ = nullptr;          // the day's (Cache::at_war), set by day()
         Column<std::uint32_t> army_offsets_;     // live armies by province: CSR over province ids
         Column<std::uint16_t> army_list_;
         Column<std::uint32_t> fill_;             // scratch of the counting sort

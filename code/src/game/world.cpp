@@ -2,6 +2,7 @@
 
 #include "core/det_math.h"
 #include "core/log.h"
+#include "game/war.h"
 
 namespace mc
 {
@@ -73,6 +74,17 @@ namespace mc
             }
             return;
         }
+        case CommandKind::declare_war: {
+            const CountryDefinitions& countries = data_.content.countries;
+            auto tag = [&](std::uint16_t c) { return c < countries.size() ? countries.tag_text(c) : std::string("?"); };
+            if (const char* why = why_no_war(state, data_.cache.at_war, command.country, command.target)) {
+                log::warn("day {}: {} declares war on {}: {}", day_, tag(command.country), tag(command.target), why);
+                return;
+            }
+            declare_war(state, data_.cache.at_war, command.country, command.target, day_);
+            log::info("day {}: {} declares war on {}", day_, tag(command.country), tag(command.target));
+            return;
+        }
         case CommandKind::none:
             break;
         }
@@ -82,7 +94,7 @@ namespace mc
     void World::tick_day()
     {
         movement_.day(data_.state);
-        combat_.day(data_.state, data_.content, data_.cache.country_modifiers, movement_, seed_, day_);
+        combat_.day(data_.state, data_.content, data_.cache, movement_, seed_, day_);
         ++day_;
         if (day_ % kDaysPerMonth == 0) {
             tick_month();
@@ -91,7 +103,7 @@ namespace mc
 
     void World::tick_month()
     {
-        recovery_.month(data_.state, data_.content, data_.cache.country_modifiers);
+        recovery_.month(data_.state, data_.content, data_.cache);
     }
 
     void World::restart(std::uint32_t seed)

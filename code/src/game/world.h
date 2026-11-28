@@ -17,7 +17,8 @@ namespace mc
 
     // The running game's world, built from data/ at the start. Owns:
     //   Content     what the game is made of (lists, country definitions, strings): fixed once loaded
-    //   WorldState  the state (SoA columns): changed only by the World's own rules (the daily tick)
+    //   WorldState  the state (SoA columns): changed only by the World's own rules (the daily and monthly ticks) and
+    //               the commands' effects
     //   the day     the date, as a day count (game/calendar.h): one number, so it lives here and not among the columns
     //   the seed    the world's randomness (core/random.h): chosen when a game begins (the host's, then the save's)
     //   the rules   their cache (the modifier sums in GameData, the armies' march, game/movement.h, the battles,
@@ -45,7 +46,7 @@ namespace mc
         // Runs the commands due today, in their order: the other way the state changes, between days and in the
         // pause (the game calls it right after posting, so the player's orders take effect at once). A command that
         // cannot be carried out (an army that is gone or not the giver's, in a battle or retreating from one, no way
-        // there) changes nothing; it is logged.
+        // there; a war that cannot be declared, game/war.h) changes nothing; it is logged.
         void run_commands();
         // Back to the start: the start date and the state as loaded, with a new seed (a new game).
         void restart(std::uint32_t seed);

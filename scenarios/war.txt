@@ -1,0 +1,9 @@
+# The state of war (M7): only countries at war fight. DUM's army (slot 0) marches into Anvilwick (475), where NBR's
+# army (slot 1) stands, while the two are at peace: the armies stand side by side, no battle. DUM declares war on NBR on
+# day 60, the armies still side by side: the battle begins that day, and DUM attacks, as the one that declared the war
+# (neither came in that day; by the slots alone DUM's army would be the defender).
+years = 1
+seed = 1
+
+day 0 = DUM move 0:0 475
+day 60 = DUM war NBR

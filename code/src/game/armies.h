@@ -25,6 +25,11 @@ namespace mc
         return (alive[slot / 64] >> (slot % 64)) & 1u;
     }
 
+    // The lowest free slot of a mask, taken; false when every slot is taken. Only the functions that create an entity
+    // call it (here and game/war.h).
+    bool take_slot(Column<std::uint64_t>& alive, std::uint16_t* slot);
+    void free_slot(Column<std::uint64_t>& alive, std::uint32_t slot);
+
     // f(slot) for every live slot, in slot order.
     template <class F>
     void for_each_alive(const Column<std::uint64_t>& alive, F&& f)

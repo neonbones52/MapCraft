@@ -2,26 +2,22 @@
 
 namespace mc
 {
-    namespace
+    bool take_slot(Column<std::uint64_t>& alive, std::uint16_t* slot)
     {
-        // The lowest free slot of a mask, or false.
-        bool take_slot(Column<std::uint64_t>& alive, std::uint16_t* slot)
-        {
-            for (std::uint32_t w = 0; w < alive.size(); ++w) {
-                if (alive[w] != ~std::uint64_t{ 0 }) {
-                    const int bit = std::countr_one(alive[w]);
-                    alive[w] |= std::uint64_t{ 1 } << bit;
-                    *slot = static_cast<std::uint16_t>(w * 64 + static_cast<std::uint32_t>(bit));
-                    return true;
-                }
+        for (std::uint32_t w = 0; w < alive.size(); ++w) {
+            if (alive[w] != ~std::uint64_t{ 0 }) {
+                const int bit = std::countr_one(alive[w]);
+                alive[w] |= std::uint64_t{ 1 } << bit;
+                *slot = static_cast<std::uint16_t>(w * 64 + static_cast<std::uint32_t>(bit));
+                return true;
             }
-            return false;
         }
+        return false;
+    }
 
-        void free_slot(Column<std::uint64_t>& alive, std::uint32_t slot)
-        {
-            alive[slot / 64] &= ~(std::uint64_t{ 1 } << (slot % 64));
-        }
+    void free_slot(Column<std::uint64_t>& alive, std::uint32_t slot)
+    {
+        alive[slot / 64] &= ~(std::uint64_t{ 1 } << (slot % 64));
     }
 
     ArmyRef army_ref(const Armies& armies, std::uint16_t slot)

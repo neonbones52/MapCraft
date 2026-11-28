@@ -4,6 +4,7 @@
 
 #include "game/armies.h"
 #include "game/modifiers.h"
+#include "game/war.h"
 
 namespace mc
 {
@@ -13,8 +14,9 @@ namespace mc
         cap_.assign(kArmySlots, 0);
     }
 
-    void Recovery::month(WorldState& state, const Content& content, const CountryModifiers& sums)
+    void Recovery::month(WorldState& state, const Content& content, const Cache& cache)
     {
+        const CountryModifiers& sums = cache.country_modifiers;
         const Armies& armies = state.armies;
         const Provinces& provinces = state.provinces;
         const CombatDefines& defines = content.combat;
@@ -27,13 +29,14 @@ namespace mc
                 return;
             }
             const std::uint16_t p = armies.province[a];
-            Fixed share = defines.recovery_enemy_land;
+            const std::uint16_t owner = provinces.owner[p];
+            Fixed share = defines.recovery_neutral_land;
             if ((armies.retreating[a / 64] >> (a % 64)) & 1u) {
                 share = defines.recovery_retreating;
-            } else if (provinces.owner[p] == me) {
+            } else if (owner == me) {
                 share = defines.recovery_own_land;
-            } else if (provinces.owner[p] == 0 || provinces.controller[p] == me) {
-                share = defines.recovery_neutral_land;
+            } else if (at_war(cache.at_war, me, owner) && provinces.controller[p] != me) {
+                share = defines.recovery_enemy_land;
             }
             cap_[a] = max_morale(sums, me);
             gain_[a] = fx_mul(cap_[a], share);

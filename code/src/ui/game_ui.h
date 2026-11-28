@@ -33,6 +33,8 @@ namespace mc
         UiCommands build(const MapView& map, const World& world, const Session& session, const Pace& pace,
                          std::uint32_t hovered, const ArmyMarkers& armies, const Input& input);
         void render(ID3D11DeviceContext* context, ID3D11RenderTargetView* target);
+        // The Dev window (F9; ui/screens/dev_window.h), while playing.
+        void toggle_dev() { dev_open_ = !dev_open_; }
         // The army whose plate was under the cursor in the last build (its slot), -1 for none.
         [[nodiscard]] int army_plate_under_cursor() const { return plate_; }
 
@@ -42,6 +44,7 @@ namespace mc
         FlagCache flags_;
         bool ready_ = false;
         int plate_ = -1;
+        bool dev_open_ = false;
         float width_ = 0.0f;
         float height_ = 0.0f;
     };

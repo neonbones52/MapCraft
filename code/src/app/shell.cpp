@@ -118,6 +118,9 @@ namespace mc
         if (leave_key(input)) {
             exit_requested_ = true;
         }
+        if (dev_key(input) && session_.playing()) {
+            ui_.toggle_dev();
+        }
         if (const auto mode = map_mode_key(input)) {
             app_.set_map_mode(*mode);
         }
@@ -166,6 +169,13 @@ namespace mc
                            ui_.army_plate_under_cursor(), app_.hovered(), &commands_);
             for (const Command& command : commands_) {
                 world_.post(command);
+            }
+            if (commands.declare_war != 0) {
+                Command war;
+                war.kind = CommandKind::declare_war;
+                war.country = session_.player();
+                war.target = commands.declare_war;
+                world_.post(war);
             }
             world_.run_commands();
         }

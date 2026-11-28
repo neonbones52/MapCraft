@@ -5,6 +5,7 @@
 #include "game/world.h"
 #include "ui/screens/army_plates.h"
 #include "ui/screens/country_select.h"
+#include "ui/screens/dev_window.h"
 #include "ui/screens/player_hud.h"
 #include "ui/screens/province_tooltip.h"
 #include "ui/screens/time_bar.h"
@@ -51,6 +52,9 @@ namespace mc
         case Session::Phase::playing:
             player_hud(ui, &commands);
             time_bar(ui, &commands);
+            if (dev_open_) {
+                dev_window(ui, &commands, &dev_open_);
+            }
             province_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
             break;
         }

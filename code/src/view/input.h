@@ -21,6 +21,7 @@ namespace mc
         inline constexpr std::uint8_t s = 0x1F;
         inline constexpr std::uint8_t d = 0x20;
         inline constexpr std::uint8_t space = 0x39;
+        inline constexpr std::uint8_t f9 = 0x43;
         inline constexpr std::uint8_t numpad_minus = 0x4A;
         inline constexpr std::uint8_t numpad_plus = 0x4E;
         inline constexpr std::uint8_t home = 0xC7;

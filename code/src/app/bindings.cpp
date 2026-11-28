@@ -56,6 +56,11 @@ namespace mc
         return a;
     }
 
+    bool dev_key(const Input& input)
+    {
+        return input.hit(key::f9);
+    }
+
     bool leave_key(const Input& input)
     {
         return input.hit(key::escape);

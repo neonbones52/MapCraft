@@ -25,6 +25,7 @@ namespace mc::headless
     {
         std::uint32_t day = 0;     // of the run: 0 = the start
         std::string country;       // its tag
+        std::string target;        // the tag of the country war is declared on (declare_war), else empty
         Command command;           // the country still 0
         std::string origin;        // file:line
     };

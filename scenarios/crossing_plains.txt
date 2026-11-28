@@ -6,5 +6,6 @@ seed = 1
 setup/armies.csv: 2.province = 480
 setup/provinces.csv: 480.terrain = plains
 
+day 0 = DUM war NBR
 day 0 = DUM move 0:0 496
 day 40 = DUM move 0:0 480

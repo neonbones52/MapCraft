@@ -12,6 +12,7 @@
 #include "core/map_data.h"
 #include "game/armies.h"
 #include "game/modifiers.h"
+#include "game/war.h"
 
 namespace mc
 {
@@ -882,6 +883,13 @@ namespace mc
         MC_LEADER_COLUMNS(MC_FILL_COLUMN)
         alive.assign(kLeaderSlots / 64, 0);
     }
+
+    void Wars::resize()
+    {
+        const std::size_t n = kWarSlots;
+        MC_WAR_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kWarSlots / 64, 0);
+    }
 #undef MC_FILL_COLUMN
 
     bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
@@ -954,6 +962,7 @@ namespace mc
         state.regiments.resize();
         state.leaders.resize();
         state.battles.resize();
+        state.wars.resize();
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
             const int c = content.countries.find(text);
@@ -1275,6 +1284,7 @@ namespace mc
     void GameData::rebuild_cache()
     {
         sum_country_modifiers(content.modifiers, state.countries, &cache.country_modifiers);
+        rebuild_at_war(state.wars, state.countries.count, &cache.at_war);
     }
 
     std::vector<std::string> GameData::check(const MapData& map) const
