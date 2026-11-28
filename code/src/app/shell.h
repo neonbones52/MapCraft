@@ -33,9 +33,10 @@ namespace mc
     public:
         // After app().init: the world from data/ (docs/GAMEDATA.md); on an error the map shows the regions.
         bool load_world(const std::filesystem::path& dir, std::string* error);
-        // After load_world. `flags` holds <TAG>.png per country, `fonts` the UI's fonts (ui/imgui_layer.h).
+        // After load_world. `flags` holds <TAG>.png per country, `fonts` the UI's fonts (ui/imgui_layer.h), `jar` the
+        // Minecraft jar of the UI's sprites (ui/gui_sprites.h).
         void init(ID3D11Device* device, ID3D11DeviceContext* context, std::filesystem::path flags,
-                  const std::filesystem::path& fonts);
+                  const std::filesystem::path& fonts, const std::filesystem::path& jar);
         void frame(ID3D11DeviceContext* context, ID3D11RenderTargetView* target, float view_width, float view_height,
                    float dt, const Input& input);
 

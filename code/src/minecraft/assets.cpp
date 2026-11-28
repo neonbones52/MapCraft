@@ -221,6 +221,54 @@ namespace mc::minecraft
         return true;
     }
 
+    bool Assets::gui_sprite(std::string_view name, Image* out, GuiScaling* scaling, std::string* error) const
+    {
+        const std::string path = std::format("gui/sprites/{}", name);
+        if (!image(path, out, error)) {
+            return false;
+        }
+        *scaling = GuiScaling{};
+        scaling->width = out->width;
+        scaling->height = out->height;
+        std::vector<std::uint8_t> meta;
+        if (!file(std::format("{}{}.png.mcmeta", kTextures, path), &meta)) {
+            return true;
+        }
+        const nlohmann::json json = nlohmann::json::parse(meta.begin(), meta.end(), nullptr, false);
+        if (!json.is_object() || !json.contains("gui") || !json["gui"].is_object() ||
+            !json["gui"].contains("scaling") || !json["gui"]["scaling"].is_object()) {
+            return true;
+        }
+        const nlohmann::json& s = json["gui"]["scaling"];
+        auto whole = [](const nlohmann::json& object, const char* key, std::uint32_t fallback) {
+            const nlohmann::json value = object.value(key, nlohmann::json());
+            return value.is_number_integer() && value.get<std::int64_t>() >= 0
+                       ? static_cast<std::uint32_t>(value.get<std::int64_t>())
+                       : fallback;
+        };
+        const std::string type = s.value("type", std::string("stretch"));
+        if (type == "tile" || type == "nine_slice") {
+            scaling->kind = type == "tile" ? GuiScaling::Kind::tile : GuiScaling::Kind::nine_slice;
+            scaling->width = whole(s, "width", out->width);
+            scaling->height = whole(s, "height", out->height);
+        }
+        if (type == "nine_slice") {
+            const nlohmann::json border = s.value("border", nlohmann::json());
+            if (border.is_number_integer()) {
+                const std::uint32_t b = whole(s, "border", 0);
+                scaling->left = scaling->top = scaling->right = scaling->bottom = b;
+            } else if (border.is_object()) {
+                scaling->left = whole(border, "left", 0);
+                scaling->top = whole(border, "top", 0);
+                scaling->right = whole(border, "right", 0);
+                scaling->bottom = whole(border, "bottom", 0);
+            }
+            const nlohmann::json inner = s.value("stretch_inner", nlohmann::json());
+            scaling->stretch_inner = inner.is_boolean() && inner.get<bool>();
+        }
+        return true;
+    }
+
     bool Assets::biome(std::string_view name, Biome* out, std::string* error) const
     {
         std::vector<std::uint8_t> bytes;

@@ -23,6 +23,18 @@ namespace mc
                 return nullptr;
             }
         }
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view = make_texture(device, image);
+        if (!view) {
+            log::warn("cannot create a texture for {}", path.string());
+        }
+        return view;
+    }
+
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> make_texture(ID3D11Device* device, const minecraft::Image& image)
+    {
+        if (image.width == 0 || image.height == 0) {
+            return nullptr;
+        }
         D3D11_TEXTURE2D_DESC desc{};
         desc.Width = image.width;
         desc.Height = image.height;
@@ -37,7 +49,6 @@ namespace mc
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> view;
         if (FAILED(device->CreateTexture2D(&desc, &data, &texture)) ||
             FAILED(device->CreateShaderResourceView(texture.Get(), nullptr, &view))) {
-            log::warn("cannot create a texture for {}", path.string());
             return nullptr;
         }
         return view;

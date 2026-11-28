@@ -36,16 +36,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show)
     }
 
     mc::Shell shell;
+    const std::filesystem::path jar = mc::minecraft::find_jar();
     if (!shell.app().init(target.device(), MC_DEFAULT_MAP,
-                          std::filesystem::path(MC_DEFAULT_DATA) / "common" / "biomes.csv", mc::minecraft::find_jar(),
-                          &error)) {
+                          std::filesystem::path(MC_DEFAULT_DATA) / "common" / "biomes.csv", jar, &error)) {
         return fail(window.hwnd(), error);
     }
     if (std::filesystem::exists(MC_DEFAULT_DATA) && !shell.load_world(MC_DEFAULT_DATA, &error)) {
         mc::log::error("{}", error);
         MessageBoxA(window.hwnd(), error.c_str(), "MapCraft: game data", MB_ICONWARNING);
     }
-    shell.init(target.device(), target.context(), MC_DEFAULT_FLAGS, MC_DEFAULT_FONTS);
+    shell.init(target.device(), target.context(), MC_DEFAULT_FLAGS, MC_DEFAULT_FONTS, jar);
     window.show(show);
 
     auto previous = std::chrono::steady_clock::now();

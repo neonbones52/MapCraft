@@ -34,9 +34,9 @@ namespace mc
     }
 
     void Shell::init(ID3D11Device* device, ID3D11DeviceContext* context, std::filesystem::path flags,
-                     const std::filesystem::path& fonts)
+                     const std::filesystem::path& fonts, const std::filesystem::path& jar)
     {
-        ui_.init(device, context, std::move(flags), fonts);
+        ui_.init(device, context, std::move(flags), fonts, jar);
         new_game();
     }
 
@@ -115,7 +115,8 @@ namespace mc
             map_input.pressed = 0;
             map_input.buttons &= ~mouse_left;
         }
-        if (leave_key(input)) {
+        // Esc closes the game window opened last; with none open it leaves the game.
+        if (leave_key(input) && !ui_.close_top_window()) {
             exit_requested_ = true;
         }
         if (dev_key(input) && session_.playing()) {

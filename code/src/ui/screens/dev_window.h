@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "ui/screens/screen.h"
+#include "ui/screens/widget_showcase.h"
 
 namespace mc
 {
@@ -20,10 +21,12 @@ namespace mc
         bool maintenance_edited = false;
         std::uint16_t recruit_province = 0;   // where to recruit (0: the player's seat)
         std::uint8_t recruit_type = 1;        // the regiment type to recruit
+        ShowcaseState showcase;               // the Widgets tab (ui/screens/widget_showcase.h)
     };
 
-    // The "Dev" window (F9, docs/CODE.md, "Отладочное"): debug actions as the player's ordinary commands, a stand-in
-    // until the real UI's frame (M8). Now: the player's treasury, monthly income, census, inflation and investments, and
+    // The "Dev" window (F9, docs/CODE.md, "Отладочное"): two tabs, Game and Widgets (the widget showcase,
+    // ui/screens/widget_showcase.h). Game: debug actions as the player's ordinary commands, a stand-in until the real
+    // UI's frame (M8). Now: the player's treasury, monthly income, census, inflation and investments, and
     // the five budget sliders, which move together to 100 and are set when let go (the command budget,
     // game/economy/budget.h); the army's upkeep and force limit, the maintenance slider, set when let go (the
     // command maintenance, game/economy/upkeep.h); the manpower pool, its maximum and growth (game/economy/manpower.h),

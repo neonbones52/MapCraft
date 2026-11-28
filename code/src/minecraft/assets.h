@@ -30,6 +30,28 @@ namespace mc::minecraft
         float frame_time = 0.05f;
     };
 
+    // How a GUI sprite is drawn at another size (`textures/gui/sprites/<name>.png.mcmeta`, "gui" / "scaling"):
+    // stretched (the default), tiled, or nine-sliced (the corners as they are, the edges and the middle tiled, or
+    // stretched with stretch_inner). `width` x `height` is the size the tiles and the slices are laid out at, in GUI
+    // pixels (the image's own without .mcmeta).
+    struct GuiScaling
+    {
+        enum class Kind : std::uint8_t
+        {
+            stretch,
+            tile,
+            nine_slice,
+        };
+        Kind kind = Kind::stretch;
+        std::uint32_t width = 0;
+        std::uint32_t height = 0;
+        std::uint32_t left = 0;     // the nine slices' borders
+        std::uint32_t top = 0;
+        std::uint32_t right = 0;
+        std::uint32_t bottom = 0;
+        bool stretch_inner = false;
+    };
+
     // What a vanilla biome (data/minecraft/worldgen/biome/<name>.json) says about colours. Optional colours override
     // the colour maps.
     struct Biome
@@ -60,6 +82,8 @@ namespace mc::minecraft
         bool texture(std::string_view name, Texture* out, std::string* error) const;
         bool image(std::string_view name, Image* out, std::string* error) const;
         bool biome(std::string_view name, Biome* out, std::string* error) const;
+        // A GUI sprite, `name` relative to textures/gui/sprites without .png ("widget/button"), and its scaling.
+        bool gui_sprite(std::string_view name, Image* out, GuiScaling* scaling, std::string* error) const;
 
         // Any entry of the jar by its full path ("data/minecraft/structure/....nbt"); false if there is none.
         bool file(std::string_view entry, std::vector<std::uint8_t>* out) const;

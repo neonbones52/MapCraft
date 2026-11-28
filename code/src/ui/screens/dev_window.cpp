@@ -300,6 +300,19 @@ namespace mc
         const CountryDefinitions& countries = ui.content.countries;
         const Wars& wars = ui.state.wars;
         const std::uint16_t me = ui.session.player();
+        if (!ImGui::BeginTabBar("dev tabs")) {
+            ImGui::End();
+            return;
+        }
+        if (ImGui::BeginTabItem("Widgets")) {
+            widget_showcase(&state->showcase, false);
+            ImGui::EndTabItem();
+        }
+        if (!ImGui::BeginTabItem("Game")) {
+            ImGui::EndTabBar();
+            ImGui::End();
+            return;
+        }
         ImGui::TextUnformatted("Budget");
         budget(ui, me, state, commands);
 
@@ -354,6 +367,8 @@ namespace mc
             }
             ImGui::PopID();
         }
+        ImGui::EndTabItem();
+        ImGui::EndTabBar();
         ImGui::End();
     }
 }

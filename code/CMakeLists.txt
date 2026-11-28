@@ -72,6 +72,7 @@ add_library(mc_game STATIC
     src/minecraft/blocks.cpp
     src/minecraft/voxels.cpp
     src/minecraft/entity_models.cpp
+    src/minecraft/banners.cpp
     src/render/map_renderer.cpp
     src/render/terrain.cpp
     src/render/models.cpp
@@ -89,6 +90,10 @@ add_library(mc_game STATIC
     src/app/shell.cpp
     src/app/bindings.cpp
     src/ui/imgui_layer.cpp
+    src/ui/gui_sprites.cpp
+    src/ui/banners.cpp
+    src/ui/windows.cpp
+    src/ui/mc_widgets.cpp
     src/ui/image.cpp
     src/ui/flags.cpp
     src/ui/widgets.cpp
@@ -96,9 +101,11 @@ add_library(mc_game STATIC
     src/ui/screens/country_select.cpp
     src/ui/screens/dev_window.cpp
     src/ui/screens/army_plates.cpp
-    src/ui/screens/player_hud.cpp
+    src/ui/screens/top_bar.cpp
+    src/ui/screens/date_bar.cpp
+    src/ui/screens/country_window.cpp
     src/ui/screens/province_tooltip.cpp
-    src/ui/screens/time_bar.cpp
+    src/ui/screens/widget_showcase.cpp
 )
 find_package(imgui CONFIG REQUIRED)
 find_package(miniz CONFIG REQUIRED)

@@ -43,6 +43,7 @@ namespace mc
     // F9: the Dev window (docs/CODE.md, "Отладочное").
     [[nodiscard]] bool dev_key(const Input& input);
 
-    // Esc: leave the game (close the window). The editor keeps Esc for its selection.
+    // Esc: close the game window opened last (ui/windows.h), with none open leave the game (close the window). The
+    // editor keeps Esc for its selection.
     [[nodiscard]] bool leave_key(const Input& input);
 }
