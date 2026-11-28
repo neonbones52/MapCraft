@@ -25,6 +25,8 @@
 #include "core/map_data.h"
 #include "game/armies.h"
 #include "game/calendar.h"
+#include "game/economy/budget.h"
+#include "game/economy/taxes.h"
 #include "game/modifiers.h"
 #include "game/occupation.h"
 #include "game/war_score.h"
@@ -63,7 +65,29 @@ namespace
         // the score it ended at; from the attacker's side
         std::string wars = "day,date,war,attacker,defender,event,battles,attacker_occupation,defender_occupation,"
                            "complete,score\n";
+        // treasury.csv: every country at the start and at each month's start (after the monthly tick): its
+        // accounts in emeralds, its inflation, its tax a month and census now (game/economy/taxes.h), its sliders
+        std::string treasury = "day,date,country,treasury,army,production,government,stability,inflation,tax,census,"
+                               "budget\n";
     };
+
+    // Every country now, as rows of treasury.csv.
+    void record_treasury(const mc::World& world, std::string* rows)
+    {
+        const mc::WorldState& state = world.state();
+        const std::string date = mc::format(world.date());
+        for (std::uint16_t c = 1; c < state.countries.count; ++c) {
+            auto cash = [&](mc::Account a) { return mc::to_emeralds(state.money.cash[mc::account(c, a)]); };
+            const mc::ProvinceIncome income = mc::country_income(state, world.content(), c);
+            const mc::BudgetShares s = mc::budget_shares(state.countries, c);
+            *rows += std::format("{},{},{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.4f},{:.6f},{:.6f},{}/{}/{}/{}/{}\n",
+                                 world.day(), date, world.content().countries.tag_text(c),
+                                 cash(mc::Account::treasury), cash(mc::Account::army), cash(mc::Account::production),
+                                 cash(mc::Account::government), cash(mc::Account::stability),
+                                 state.countries.inflation[c], income.tax, income.census, s[0], s[1], s[2], s[3],
+                                 s[4]);
+        }
+    }
 
     // The wars as wars.csv last saw them: per slot, whether it held a war, its generation, its countries and score.
     struct WarsSeen
@@ -275,6 +299,7 @@ namespace
         run->hashes.reserve(std::size_t{ days } + 1);
         run->hashes.push_back(mc::headless::checksum(world));
         record_armies(world, &run->armies);
+        record_treasury(world, &run->treasury);
         std::vector<std::uint16_t> before(mc::kArmySlots);
         SiegesBefore sieges_before;
         WarsSeen wars_seen;
@@ -295,6 +320,7 @@ namespace
             record_wars(world, &wars_seen, &run->wars);
             if (world.day() % mc::kDaysPerMonth == 0) {
                 record_armies(world, &run->armies);
+                record_treasury(world, &run->treasury);
             }
         }
         return true;
@@ -334,7 +360,7 @@ int main(int argc, char** argv)
 
     const mc::headless::RunSeries series[] = {
         { "moves.csv", a.moves }, { "armies.csv", a.armies }, { "sieges.csv", a.sieges }, { "control.csv", a.control },
-        { "wars.csv", a.wars }
+        { "wars.csv", a.wars }, { "treasury.csv", a.treasury }
     };
     if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, series, &error)) {
         mc::log::error("{}", error);

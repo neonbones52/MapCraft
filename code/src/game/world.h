@@ -6,6 +6,7 @@
 
 #include "game/calendar.h"
 #include "game/combat.h"
+#include "game/economy/budget.h"
 #include "game/commands.h"
 #include "game/game_data.h"
 #include "game/movement.h"
@@ -70,11 +71,12 @@ namespace mc
     private:
         void tick_day();     // one day of the rules
         // The monthly tick, at the start of each month's 1st day (never at the game's start): the main one of the
-        // rules that are not about moving and fighting. Now the armies' recovery, the garrisons' growth and the
-        // truces that ran out (game/war.h); later
-        // the money, the economy and the sliders (M8, M9). A yearly tick (the census tax, EU3's) comes with the
-        // treasury.
+        // rules that are not about moving and fighting, in this order: on 1 January first the yearly tick; then the
+        // armies' recovery, the garrisons' growth, the truces that ran out (game/war.h) and the monthly income
+        // through the budget sliders (game/economy/budget.h); later production, the upkeep (M8).
         void tick_month();
+        // The yearly tick, on 1 January (the first in year 2): the census into the treasuries (game/economy/budget.h).
+        void tick_year();
         void apply(const Command& command);
 
         GameData data_;
@@ -85,6 +87,7 @@ namespace mc
         Combat combat_;
         Occupation occupation_;
         Recovery recovery_;
+        Budget budget_;
         CommandQueue commands_;
     };
 }

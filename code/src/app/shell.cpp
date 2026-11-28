@@ -177,6 +177,13 @@ namespace mc
                 war.target = commands.declare_war;
                 world_.post(war);
             }
+            if (commands.set_budget) {
+                Command budget;
+                budget.kind = CommandKind::budget;
+                budget.country = session_.player();
+                budget.shares = commands.budget;
+                world_.post(budget);
+            }
             if (commands.peace_with != 0) {
                 Command peace;
                 peace.kind = CommandKind::peace;

@@ -9,6 +9,33 @@ namespace mc::ledger
         money->cash[account] += amount;
     }
 
+    void mint_shares(Balances* money, std::span<const std::size_t> accounts, Money amount,
+                     std::span<const std::uint8_t> weights)
+    {
+        Money weight = 0;
+        std::size_t largest = 0;
+        for (std::size_t i = 0; i < weights.size(); ++i) {
+            weight += weights[i];
+            if (weights[i] > weights[largest]) {
+                largest = i;
+            }
+        }
+        if (weight == 0) {
+            return;
+        }
+        // amount = whole × weight + rest: a share is whole × w + floor(rest × w / weight), with no product that
+        // could overflow (rest < weight).
+        const Money whole = amount / weight;
+        const Money rest = amount % weight;
+        Money given = 0;
+        for (std::size_t i = 0; i < accounts.size(); ++i) {
+            const Money part = whole * weights[i] + rest * weights[i] / weight;
+            money->cash[accounts[i]] += part;
+            given += part;
+        }
+        money->cash[accounts[largest]] += amount - given;
+    }
+
     bool transfer(Balances* money, std::size_t from, std::size_t to, Money amount)
     {
         if (money->cash[from] < amount) {

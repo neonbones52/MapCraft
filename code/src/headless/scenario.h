@@ -22,6 +22,9 @@ namespace mc::headless
     //     day 0 = DUM war NBR              DUM declares war on NBR (game/war.h)
     //     day 300 = DUM peace NBR 476 473  DUM offers NBR a peace taking provinces 476 and 473; with no provinces a
     //                                      white peace (game/peace.h)
+    //     day 0 = DUM budget 20 20 20 20 20
+    //                                      DUM sets its budget sliders, whole percents: Army, Production,
+    //                                      Government, stability, Treasury (game/economy/budget.h)
     // years and seed are required; an unknown key, a repeated key or change, a command past the run's days, or a
     // malformed line fails with its line. The command's country is checked once the data is loaded (main.cpp).
     struct ScenarioCommand

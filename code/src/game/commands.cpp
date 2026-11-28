@@ -14,6 +14,7 @@ namespace mc
         army_generation_.push_back(command.army.generation);
         province_.push_back(command.province);
         target_.push_back(command.target);
+        shares_.push_back(command.shares);
         list_first_.push_back(static_cast<std::uint32_t>(list_.size()));
         list_count_.push_back(static_cast<std::uint32_t>(command.provinces.size()));
         list_.insert(list_.end(), command.provinces.begin(), command.provinces.end());
@@ -42,6 +43,7 @@ namespace mc
                 army_generation_[kept] = army_generation_[i];
                 province_[kept] = province_[i];
                 target_[kept] = target_[i];
+                shares_[kept] = shares_[i];
                 // A kept list moves down to the end of the kept ones (never up: the lists are in post order).
                 std::copy_n(list_.begin() + list_first_[i], list_count_[i], list_.begin() + kept_list);
                 list_first_[kept] = static_cast<std::uint32_t>(kept_list);
@@ -58,6 +60,7 @@ namespace mc
         army_generation_.resize(kept);
         province_.resize(kept);
         target_.resize(kept);
+        shares_.resize(kept);
         list_first_.resize(kept);
         list_count_.resize(kept);
         list_.resize(kept_list);

@@ -6,7 +6,10 @@
 
 #include <imgui.h>
 
+#include "core/money.h"
 #include "game/armies.h"
+#include "game/economy/budget.h"
+#include "game/economy/taxes.h"
 #include "game/game_data.h"
 #include "game/peace.h"
 #include "game/session.h"
@@ -83,6 +86,58 @@ namespace mc
             ImGui::SameLine();
             ImGui::TextDisabled("%s", white.accepted ? "(would accept)" : "(would refuse)");
         }
+
+        // The player's money (game/economy/budget.h): the treasury, the income, the inflation, the investments and
+        // the budget sliders.
+        void budget(const ScreenContext& ui, std::uint16_t me, DevWindowState* state, UiCommands* commands)
+        {
+            const WorldState& world = ui.state;
+            auto cash = [&](std::size_t a) {
+                return to_emeralds(world.money.cash[account(me, static_cast<Account>(a))]);
+            };
+            const ProvinceIncome income = country_income(world, ui.content, me);
+            ImGui::Text("Treasury %.2f", cash(static_cast<std::size_t>(Account::treasury)));
+            ImGui::Text("Monthly income %.3f (taxes)", income.tax);
+            ImGui::Text("Census on 1 January %.2f", income.census);
+            ImGui::Text("Inflation %.2f%%", static_cast<double>(world.countries.inflation[me]));
+
+            const BudgetShares now = budget_shares(world.countries, me);
+            if (!state->budget_edited) {
+                state->budget = now;
+            }
+            constexpr const char* kLabels[kAccountsPerCountry] = { "Army", "Production", "Government", "Stability",
+                                                                   "Treasury" };
+            int sum = 0;
+            ImGui::PushItemWidth(140.0f * ui.scale);
+            for (std::size_t a = 0; a < kAccountsPerCountry; ++a) {
+                int share = state->budget[a];
+                if (ImGui::SliderInt(kLabels[a], &share, 0, 100, "%d%%")) {
+                    state->budget[a] = static_cast<std::uint8_t>(share);
+                    state->budget_edited = true;
+                }
+                if (static_cast<Account>(a) != Account::treasury) {
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("%.2f invested", cash(a));
+                }
+                sum += state->budget[a];
+            }
+            ImGui::PopItemWidth();
+            ImGui::BeginDisabled(sum != 100 || state->budget == now);
+            if (ImGui::SmallButton("Apply")) {
+                commands->set_budget = true;
+                commands->budget = state->budget;
+                state->budget_edited = false;
+            }
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::BeginDisabled(!state->budget_edited);
+            if (ImGui::SmallButton("Reset")) {
+                state->budget_edited = false;
+            }
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            ImGui::TextDisabled(sum == 100 ? "(%d%%)" : "(%d%%: must be 100%%)", sum);
+        }
     }
 
     void dev_window(const ScreenContext& ui, DevWindowState* state, UiCommands* commands, bool* open)
@@ -95,6 +150,10 @@ namespace mc
         const CountryDefinitions& countries = ui.content.countries;
         const Wars& wars = ui.state.wars;
         const std::uint16_t me = ui.session.player();
+        ImGui::TextUnformatted("Budget");
+        budget(ui, me, state, commands);
+
+        ImGui::Separator();
         ImGui::TextUnformatted("Wars");
         bool any = false;
         for_each_alive(wars.alive, [&](std::uint32_t w) {

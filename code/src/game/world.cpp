@@ -112,6 +112,19 @@ namespace mc
             }
             return;
         }
+        case CommandKind::budget: {
+            const CountryDefinitions& countries = data_.content.countries;
+            const std::string tag = command.country < countries.size() ? countries.tag_text(command.country) : "?";
+            const BudgetShares& s = command.shares;
+            if (const char* why = why_no_budget(state, command.country, s)) {
+                log::warn("day {}: {} sets its budget to {}/{}/{}/{}/{}: {}", day_, tag, s[0], s[1], s[2], s[3], s[4],
+                          why);
+                return;
+            }
+            set_budget(state, command.country, s);
+            log::info("day {}: {} sets its budget to {}/{}/{}/{}/{}", day_, tag, s[0], s[1], s[2], s[3], s[4]);
+            return;
+        }
         case CommandKind::none:
             break;
         }
@@ -131,9 +144,18 @@ namespace mc
 
     void World::tick_month()
     {
+        if (date().month == 1) {
+            tick_year();
+        }
         recovery_.month(data_.state, data_.content, data_.cache);
         occupation_.month(data_.state, data_.content);
         expire_truces(data_.state.truces, day_);
+        budget_.month(data_.state, data_.content);
+    }
+
+    void World::tick_year()
+    {
+        budget_.census(data_.state, data_.content);
     }
 
     void World::restart(std::uint32_t seed)

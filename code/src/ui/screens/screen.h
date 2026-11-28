@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "game/calendar.h"
+#include "game/game_data.h"
 
 struct ImFont;
 
@@ -46,5 +47,7 @@ namespace mc
         std::uint16_t declare_war = 0;   // the country the player declares war on (the Dev window); 0 = none
         std::uint16_t peace_with = 0;    // the country the player offers peace to (the Dev window); 0 = none
         std::vector<std::uint16_t> peace_provinces;   // of it, taken by that peace; none: a white peace
+        bool set_budget = false;   // the player sets their budget sliders to `budget` (the Dev window)
+        BudgetShares budget{};
     };
 }

@@ -149,17 +149,49 @@ namespace mc
 #define MC_BALANCE_COLUMNS(X)                                                                                   \
     X(money, Money, cash, runtime)
 
-    // Saved. Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts; runtime only (no
-    // setup file). Written only by the ledger (game/economy/ledger.h). No accounts yet: the countries' treasuries get
-    // theirs with the treasury (M8), and with them the ledger's counters per kind of flow.
+    // The accounts of a country (docs/GAMEDATA.md, "Деньги"): the four the budget sliders put the monthly income into
+    // (EU3's investments: the areas of technology and stability; what they buy is M9's) and the treasury (the
+    // Treasury slider's share, the census, later the upkeep and the costs). In the sliders' order.
+    enum class Account : std::uint8_t
+    {
+        army = 0,
+        production = 1,
+        government = 2,
+        stability = 3,
+        treasury = 4,
+    };
+    inline constexpr std::size_t kAccountsPerCountry = 5;
+    inline constexpr std::string_view kAccountNames[kAccountsPerCountry] = { "army", "production", "government",
+                                                                             "stability", "treasury" };
+    // The account's index in Balances::cash: kAccountsPerCountry a country, in Account's order (country 0 has its
+    // own, never used).
+    [[nodiscard]] constexpr std::size_t account(std::size_t country, Account kind)
+    {
+        return country * kAccountsPerCountry + static_cast<std::size_t>(kind);
+    }
+
+    // Saved. Every balance of the world (docs/ECONOMY.md, "Деньги в i64"), one column of accounts (account() above),
+    // padded(countries × kAccountsPerCountry) long; runtime only (no setup file). Written only by the ledger
+    // (game/economy/ledger.h).
     struct Balances
     {
         MC_BALANCE_COLUMNS(MC_DECLARE_COLUMN)
+
+        void resize(std::size_t country_count);
     };
 
 #define MC_COUNTRY_COLUMNS(X)                                                                                   \
     /* province id, 0 = none */                                                                                 \
-    X(countries, std::uint16_t, capital, by_hand)
+    X(countries, std::uint16_t, capital, by_hand)                                                               \
+    /* the budget sliders (game/economy/budget.h): the shares of the monthly income, whole percents adding */   \
+    /* up to 100, in Account's order; at the start defines.csv's budget_* (the same for every country) */       \
+    X(countries, std::uint8_t, budget_army, derived)                                                            \
+    X(countries, std::uint8_t, budget_production, derived)                                                      \
+    X(countries, std::uint8_t, budget_government, derived)                                                      \
+    X(countries, std::uint8_t, budget_stability, derived)                                                       \
+    X(countries, std::uint8_t, budget_treasury, derived)                                                        \
+    /* EU3's inflation, in percent (4 = everything 4% dearer), >= 0: grows with the Treasury share */           \
+    X(countries, float, inflation, runtime)
 
     // Saved. Country state (data/setup/countries.csv at the start: tag by hand), one column per field, indexed like
     // CountryDefinitions, padded(count) long.
@@ -185,6 +217,14 @@ namespace mc
             word = on ? (word | bit) : (word & ~bit);
         }
     };
+
+    // The budget sliders' columns, in Account's order: kBudgetShares[a] is the share that goes to account a.
+    inline constexpr Column<std::uint8_t> CountryStates::* kBudgetShares[kAccountsPerCountry] = {
+        &CountryStates::budget_army, &CountryStates::budget_production, &CountryStates::budget_government,
+        &CountryStates::budget_stability, &CountryStates::budget_treasury
+    };
+    // One country's sliders, in Account's order.
+    using BudgetShares = std::array<std::uint8_t, kAccountsPerCountry>;
 
     // The modifiers (docs/GAMEDATA.md, "Модификаторы"): what a source gives a country. A source is a bundle of
     // data/common/modifiers.csv (bundle, modifier, value); a country's sum of a modifier is the sum of the values of
@@ -638,6 +678,24 @@ namespace mc
     X(fixed, land_forcelimit_per_development)                                                                   \
     /* the years of a truce after a peace (EU4's TRUCE_YEARS) */                                                \
     X(whole, truce_years)
+    // Content. The economy's constants (data/common/defines.csv too; EU3's, docs/ECONOMY.md), the same kinds, every
+    // one required (game/economy/taxes.h, budget.h).
+#define MC_ECONOMY_DEFINES(X)                                                                                   \
+    /* what a capital adds to its base_tax, in the tax and the census (EU3 2) */                                \
+    X(fixed, capital_tax)                                                                                       \
+    /* the census's share of a province with its owner's core (EU3 100%) and of one without (10%) */            \
+    X(fixed, census_core)                                                                                       \
+    X(fixed, census_no_core)                                                                                    \
+    /* the budget sliders at the start, whole percents adding up to 100 (the user's decision: 25 each, */       \
+    /* Treasury 0) */                                                                                           \
+    X(count, budget_army)                                                                                       \
+    X(count, budget_production)                                                                                 \
+    X(count, budget_government)                                                                                 \
+    X(count, budget_stability)                                                                                  \
+    X(count, budget_treasury)                                                                                   \
+    /* the inflation a year of the whole monthly income in the Treasury gives, in percent (EU3 1:100: 60% */    \
+    /* in the Treasury, +0.6 a year) */                                                                         \
+    X(fixed, treasury_inflation)
 
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_count int
@@ -650,6 +708,10 @@ namespace mc
     struct WarDefines
     {
         MC_WAR_DEFINES(MC_DECLARE_DEFINE)
+    };
+    struct EconomyDefines
+    {
+        MC_ECONOMY_DEFINES(MC_DECLARE_DEFINE)
     };
 #undef MC_DECLARE_DEFINE
 
@@ -674,6 +736,7 @@ namespace mc
         RegimentTypeNumbers regiment_numbers;              // per type: maneuver and pips
         CombatDefines combat;             // data/common/defines.csv
         WarDefines war;                   // data/common/defines.csv too
+        EconomyDefines economy;           // and these
         ModifierBundles modifiers;        // data/common/modifiers.csv
         CountryDefinitions countries;
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules

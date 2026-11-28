@@ -1,5 +1,5 @@
 # A white peace (M7, step 1): DUM declares war on NBR and its first army (slot 0) takes Azalea Heath (473, no fort)
-# on day 75: DUM's war score +6, NBR is losing. On day 100 DUM offers a white peace and NBR accepts: the war ends,
+# on day 75: DUM's war score +5 (base_tax 1 everywhere), NBR is losing. On day 100 DUM offers a white peace and NBR accepts: the war ends,
 # Azalea Heath is NBR's again (controlled by its owner), DUM's army stays where it stands, a truce of 5 years.
 years = 1
 seed = 1

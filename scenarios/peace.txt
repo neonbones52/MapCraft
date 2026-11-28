@@ -1,10 +1,10 @@
 # The war score and the peace (M7, step 1): the war of scenarios/siege.txt, but NBR's army does not go back to Azalea
-# Heath (473). DUM asks for Azalea Heath on day 30, before it holds anything: war score 0, the price 2 (a province of
-# no fort), refused. DUM takes Azalea Heath on day 75 (+6 of the war score: its value 2 of NBR's 30, × 100) and beats
-# NBR's army at Tulip Pass (476, NBR's capital), +1.66 for 1 regiment lost of a force limit of 6. On day 120 NBR, the
-# one losing, offers a white peace: DUM is not losing, refused. Tulip Pass falls to DUM's siege (+20: its value 6, a
-# capital with its fort). On day 300 DUM demands both: the price 8, the war score 27, accepted: both are DUM's, owned
-# and controlled, NBR's capital moves to its province of the most base_tax (all 0: the lowest id), a truce of 5 years.
+# Heath (473). base_tax is 1 everywhere. DUM asks for Azalea Heath on day 30, before it holds anything: war score 0,
+# the price 1 (a province of no fort), refused. DUM takes Azalea Heath on day 75 (+5 of the war score, wars.csv) and
+# beats NBR's army at Tulip Pass (476, NBR's capital), +1 for 1 regiment lost. On day 120 NBR, the one losing, offers a
+# white peace: DUM is not losing, refused. Tulip Pass falls to DUM's siege (occupation +43 in all, a capital with its
+# fort). On day 300 DUM demands both: the price 8.2, the war score 44, accepted: both are DUM's, owned and
+# controlled, NBR's capital moves to its province of the most base_tax (all 1: the lowest id), a truce of 5 years.
 # On day 301 DUM declares war on NBR again: refused, the truce.
 years = 1
 seed = 1

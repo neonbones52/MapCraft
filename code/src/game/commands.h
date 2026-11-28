@@ -19,6 +19,7 @@ namespace mc
         move_army = 1,     // the army marches to `province` (game/movement.h)
         declare_war = 2,   // the giver declares war on `target` (game/war.h)
         peace = 3,         // the giver offers `target` a peace taking `provinces`, none: a white peace (game/peace.h)
+        budget = 4,        // the giver sets its budget sliders to `shares` (game/economy/budget.h)
     };
 
     struct Command
@@ -29,6 +30,7 @@ namespace mc
         std::uint16_t province = 0;
         std::uint16_t target = 0;    // a country: the one war is declared on, the one peace is offered to
         std::span<const std::uint16_t> provinces;   // the peace's provinces
+        BudgetShares shares{};                      // the budget's, in Account's order
     };
 
     // The one queue of commands of the game and mapcraft_sim (and later of the network): each command gets its place
@@ -59,7 +61,7 @@ namespace mc
             sort_due();
             for (const std::uint32_t i : due_) {
                 run(Command{ kind_[i], country_[i], ArmyRef{ army_slot_[i], army_generation_[i] }, province_[i],
-                             target_[i], std::span(list_).subspan(list_first_[i], list_count_[i]) });
+                             target_[i], std::span(list_).subspan(list_first_[i], list_count_[i]), shares_[i] });
             }
             drop(today);
         }
@@ -77,6 +79,7 @@ namespace mc
         Column<std::uint16_t> army_generation_;
         Column<std::uint16_t> province_;
         Column<std::uint16_t> target_;
+        Column<BudgetShares> shares_;
         Column<std::uint32_t> list_first_;
         Column<std::uint32_t> list_count_;
         Column<std::uint16_t> list_;   // the lists of the commands, in post order

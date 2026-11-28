@@ -47,3 +47,12 @@ fort_per_dev_ratio,50
 land_forcelimit_base,6
 land_forcelimit_per_development,0.3
 truce_years,5
+capital_tax,2
+census_core,1
+census_no_core,0.1
+budget_army,25
+budget_production,25
+budget_government,25
+budget_stability,25
+budget_treasury,0
+treasury_inflation,1

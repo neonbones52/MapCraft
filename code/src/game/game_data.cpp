@@ -715,8 +715,8 @@ namespace mc
             return true;
         }
 
-        // defines.csv (required): key, value; a line for every define of MC_COMBAT_DEFINES and MC_WAR_DEFINES, once
-        // each: a whole one a whole number >= 1 (max_combat_width at most kMaxCombatWidth), a fixed one a decimal number.
+        // defines.csv (required): key, value; a line for every define of MC_COMBAT_DEFINES, MC_WAR_DEFINES and
+        // MC_ECONOMY_DEFINES, once each (the budget_* adding up to 100): a whole one a whole number >= 1 (max_combat_width at most kMaxCombatWidth), a fixed one a decimal number.
         bool parse_define_whole(std::string_view text, int* out)
         {
             std::uint32_t n = 0;
@@ -738,10 +738,11 @@ namespace mc
         bool parse_define_fixed(std::string_view text, Fixed* out) { return fx_parse(text, out); }
 
         bool read_defines(Source& src, const std::filesystem::path& path, CombatDefines* out, WarDefines* war,
-                          std::string* error)
+                          EconomyDefines* economy, std::string* error)
         {
             *out = {};
             *war = {};
+            *economy = {};
             csv::Table table;
             if (!src.read(path, &table, error)) {
                 return false;
@@ -756,6 +757,7 @@ namespace mc
 #define MC_NAME_OF(type, name) #name,
                 MC_COMBAT_DEFINES(MC_NAME_OF)
                 MC_WAR_DEFINES(MC_NAME_OF)
+                MC_ECONOMY_DEFINES(MC_NAME_OF)
 #undef MC_NAME_OF
             };
             std::uint8_t seen[std::size(kNames)] = {};
@@ -783,6 +785,9 @@ namespace mc
     }
                 MC_WAR_DEFINES(MC_PARSE_WAR_DEFINE)
 #undef MC_PARSE_WAR_DEFINE
+#define MC_PARSE_ECONOMY_DEFINE(type, name)                                                                         if (i++ == k) {                                                                                                     ok = parse_define_##type(row[value], &economy->name);                                                       }
+                MC_ECONOMY_DEFINES(MC_PARSE_ECONOMY_DEFINE)
+#undef MC_PARSE_ECONOMY_DEFINE
                 if (!ok) {
                     return ctx.fail(r, std::format("{} \"{}\": a whole number >= 1 (>= 0 for a count), or a decimal "
                                                    "number with at most 3 digits after the point",
@@ -798,6 +803,12 @@ namespace mc
             if (out->max_combat_width > kMaxCombatWidth) {
                 *error = std::format("{}: max_combat_width {}: at most {}", path.string(), out->max_combat_width,
                                      kMaxCombatWidth);
+                return false;
+            }
+            const int shares = economy->budget_army + economy->budget_production + economy->budget_government +
+                               economy->budget_stability + economy->budget_treasury;
+            if (shares != 100) {
+                *error = std::format("{}: the budget_* shares add up to {}, not 100", path.string(), shares);
                 return false;
             }
             return true;
@@ -875,6 +886,12 @@ namespace mc
         modifiers.assign(n * modifier_words, 0);
     }
 
+    void Balances::resize(std::size_t country_count)
+    {
+        const std::size_t n = padded(country_count * kAccountsPerCountry);
+        MC_BALANCE_COLUMNS(MC_FILL_COLUMN)
+    }
+
     void Armies::resize()
     {
         const std::size_t n = kArmySlots;
@@ -939,7 +956,7 @@ namespace mc
             !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,
                                  &content.regiment_category, &content.regiment_numbers, error) ||
             !read_modifiers(src, common / "modifiers.csv", &content.modifiers, error) ||
-            !read_defines(src, common / "defines.csv", &content.combat, &content.war, error)) {
+            !read_defines(src, common / "defines.csv", &content.combat, &content.war, &content.economy, error)) {
             return false;
         }
 
@@ -990,7 +1007,17 @@ namespace mc
         state.provinces.resize(map.count, content.countries.size());
         state.regions.resize(map.region_count());
         content.province_region.assign(map.region.begin(), map.region.end());
-        state.money = {};   // runtime: no accounts yet (their resize comes with the treasury, M8)
+        state.money.resize(content.countries.size());
+        // The budget sliders at the start (derived): defines.csv's, the same for every country.
+        {
+            const EconomyDefines& e = content.economy;
+            const int start[kAccountsPerCountry] = { e.budget_army, e.budget_production, e.budget_government,
+                                                     e.budget_stability, e.budget_treasury };
+            for (std::size_t a = 0; a < kAccountsPerCountry; ++a) {
+                Column<std::uint8_t>& shares = state.countries.*kBudgetShares[a];
+                std::fill(shares.begin(), shares.end(), static_cast<std::uint8_t>(start[a]));
+            }
+        }
         state.armies.resize();
         state.regiments.resize();
         state.leaders.resize();
