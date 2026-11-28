@@ -13,6 +13,7 @@
 #include "game/modifiers.h"
 #include "game/movement.h"
 #include "game/war.h"
+#include "game/war_score.h"
 
 // The order of operations and the integer arithmetic follow eu4.exe 1.37.5 as BattleSim reproduces it
 // (C:\Dev\Projects\eu4\BattleSim, src/core/Battle.cpp; addresses there); the artillery's back line, which BattleSim
@@ -44,6 +45,16 @@ namespace mc
         constexpr SlotOrder kOrder;
 
         int order_at(int i) { return kOrder.out[static_cast<std::size_t>(i)]; }
+
+        // A battle's slot is freed: Battle{} but for its generation, one more.
+        void free_battle(Battles& battles, std::uint32_t slot)
+        {
+            Battle& b = battles.list[slot];
+            const std::uint16_t generation = b.generation;
+            b = Battle{};
+            b.generation = static_cast<std::uint16_t>(generation + 1);
+            battles.alive[slot / 64] &= ~(std::uint64_t{ 1 } << (slot % 64));
+        }
 
         // A battle names a regiment by its slot + 1, 0 = none (game/game_data.h, Battle): the slot, -1 for none.
         int regiment_of(std::uint16_t ref) { return static_cast<int>(ref) - 1; }
@@ -1146,15 +1157,41 @@ namespace mc
                 set_retreating(armies, a, true);
             }
         }
-        log::info("battle in province {} after {} days: {} beats {}, who {}", province, b.duration,
-                  content.countries.tag_text(countries[winner]), content.countries.tag_text(countries[loser]),
-                  wiped ? "is wiped out" : destination != 0 ? "retreats" : "has nowhere to retreat");
+        // The war's score of it: the loser lost the men it brought but those still standing (all when wiped out).
+        const std::int64_t standing = wiped ? 0 : today_[battle].sides[loser].men;
+        const std::int64_t losses = std::max<std::int64_t>(0, std::int64_t{ b.joined[loser] } - standing);
+        const Fixed score = add_battle_score(state, content, countries[winner], countries[loser], losses);
+        log::info("battle in province {} after {} days: {} beats {}, who {}; {} men lost, {:.3f} war score",
+                  province, b.duration, content.countries.tag_text(countries[winner]),
+                  content.countries.tag_text(countries[loser]),
+                  wiped ? "is wiped out" : destination != 0 ? "retreats" : "has nowhere to retreat", losses,
+                  fx_to_double(score));
 
         province_battle_[province] = 0;
-        const std::uint16_t generation = b.generation;
-        b = Battle{};
-        b.generation = static_cast<std::uint16_t>(generation + 1);
-        state.battles.alive[battle / 64] &= ~(std::uint64_t{ 1 } << (battle % 64));
+        free_battle(state.battles, battle);
+    }
+
+    void end_battle(WorldState& state, std::uint16_t slot)
+    {
+        Armies& armies = state.armies;
+        Regiments& regiments = state.regiments;
+        for_each_alive(regiments.alive, [&](std::uint32_t r) {
+            if (armies.battle[regiments.army[r]] != slot + 1u) {
+                return;
+            }
+            regiments.place[r] = kPlaceNone;
+            regiments.reserve_prev[r] = 0;
+            regiments.reserve_next[r] = 0;
+        });
+        for_each_alive(armies.alive, [&](std::uint32_t a) {
+            if (armies.battle[a] != slot + 1u) {
+                return;
+            }
+            armies.battle[a] = 0;
+            armies.side[a] = 0;
+            armies.joined[a] = 0;
+        });
+        free_battle(state.battles, slot);
     }
 
     // Where a beaten country's armies retreat from `from` (decision of the user, 26.11.2026): its own province the

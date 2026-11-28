@@ -11,6 +11,7 @@
 #include "view/input.h"
 #include "ui/flags.h"
 #include "ui/imgui_layer.h"
+#include "ui/screens/dev_window.h"
 #include "ui/screens/screen.h"
 
 namespace mc
@@ -45,6 +46,7 @@ namespace mc
         bool ready_ = false;
         int plate_ = -1;
         bool dev_open_ = false;
+        DevWindowState dev_;
         float width_ = 0.0f;
         float height_ = 0.0f;
     };

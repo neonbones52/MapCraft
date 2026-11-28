@@ -179,6 +179,11 @@ namespace mc
                 controllers_.assign(controller.begin(), controller.end());
                 fills_dirty_ = true;
             }
+            const Column<std::uint16_t>& owner = game_->state.provinces.owner;
+            if (!std::equal(owners_.begin(), owners_.end(), owner.begin(), owner.end())) {
+                owners_.assign(owner.begin(), owner.end());
+                colors_dirty_ = true;
+            }
         }
         if (fills_dirty_ && !colors_dirty_) {
             map_mode_colors(map_, game_, map_mode_, &fills_, &stripes_, &styles_);

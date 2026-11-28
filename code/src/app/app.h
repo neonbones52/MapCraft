@@ -92,8 +92,10 @@ namespace mc
         std::vector<ProvinceFill> fills_;
         std::vector<ProvinceFill> stripes_;
         std::vector<BorderStyle> styles_;
-        // The provinces' controllers the colours were made for: the occupation's stripes follow the game's days.
+        // The provinces' controllers and owners the colours were made for: the occupation's stripes follow the
+        // game's days, and so do the countries' colours and names on the map when a peace moves provinces.
         std::vector<std::uint16_t> controllers_;
+        std::vector<std::uint16_t> owners_;
         bool camera_ready_ = false;
         double time_ = 0.0;   // s, the clock of animated block textures (stopped when zoomed out)
         ArmyFigures armies_;

@@ -20,6 +20,11 @@ namespace mc
     // regiments (Regiments::place and the reserve's links). This
     // class holds the day's working data only, rebuilt each day from that state (so a load, a restart or a save change
     // nothing), sized once in build and reused.
+    // The battle in `slot` ends with no winner (a peace between its countries, game/peace.h): its regiments leave its
+    // lines and reserves, its armies stand where they are (no retreat, no morale for anyone), its slot is freed. No
+    // score for the war.
+    void end_battle(WorldState& state, std::uint16_t slot);
+
     class Combat
     {
     public:
@@ -91,7 +96,8 @@ namespace mc
         [[nodiscard]] int overrun(const WorldState& state, const Content& content, std::uint32_t battle, int factor,
                                   bool daily) const;
 
-        // The end: the winner's morale, the loser retreats or is wiped out, the battle's slot is freed.
+        // The end: the winner's morale, the war's score of the battle (game/war_score.h), the loser retreats or is
+        // wiped out, the battle's slot is freed.
         void finish(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle, int winner,
                     bool wiped);
         [[nodiscard]] std::uint16_t retreat_to(const WorldState& state, Movement& movement, std::uint16_t country,

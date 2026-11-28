@@ -38,3 +38,12 @@ capital_fort_level,1
 siege_unblockaded_penalty,2
 garrison_after_capture,100
 garrison_growth,0.05
+max_warscore,100
+warscore_max_from_battles,40
+province_value_base,5
+province_value_cap,30
+capital_value_mult,1.2
+fort_per_dev_ratio,50
+land_forcelimit_base,6
+land_forcelimit_per_development,0.3
+truce_years,5

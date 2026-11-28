@@ -19,13 +19,17 @@ namespace mc::headless
     //     day 12 = DUM move 0:0 476        a command on day 12 of the run (0 = the start, before the first day
     //                                      passes): DUM orders the army in slot 0, generation 0, to march to
     //                                      province 476 (game/commands.h); commands of one day go in file order
+    //     day 0 = DUM war NBR              DUM declares war on NBR (game/war.h)
+    //     day 300 = DUM peace NBR 476 473  DUM offers NBR a peace taking provinces 476 and 473; with no provinces a
+    //                                      white peace (game/peace.h)
     // years and seed are required; an unknown key, a repeated key or change, a command past the run's days, or a
     // malformed line fails with its line. The command's country is checked once the data is loaded (main.cpp).
     struct ScenarioCommand
     {
         std::uint32_t day = 0;     // of the run: 0 = the start
         std::string country;       // its tag
-        std::string target;        // the tag of the country war is declared on (declare_war), else empty
+        std::string target;        // the tag of the country war is declared on or peace offered to, else empty
+        std::vector<std::uint16_t> provinces;   // the peace's (Command::provinces is set to them when posted)
         Command command;           // the country still 0
         std::string origin;        // file:line
     };

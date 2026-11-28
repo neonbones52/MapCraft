@@ -271,8 +271,12 @@ namespace mc
 
     void Occupation::end(WorldState& state, std::uint16_t slot)
     {
-        Sieges& sieges = state.sieges;
-        siege_mark_[sieges.province[slot]] = 0;
+        siege_mark_[state.sieges.province[slot]] = 0;
+        lift_siege(state.sieges, slot);
+    }
+
+    void lift_siege(Sieges& sieges, std::uint16_t slot)
+    {
         const std::uint16_t generation = sieges.generation[slot];
 #define MC_CLEAR_SLOT(table, type, name, start) sieges.name[slot] = type{};
         MC_SIEGE_COLUMNS(MC_CLEAR_SLOT)

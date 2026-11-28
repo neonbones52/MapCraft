@@ -177,6 +177,14 @@ namespace mc
                 war.target = commands.declare_war;
                 world_.post(war);
             }
+            if (commands.peace_with != 0) {
+                Command peace;
+                peace.kind = CommandKind::peace;
+                peace.country = session_.player();
+                peace.target = commands.peace_with;
+                peace.provinces = commands.peace_provinces;
+                world_.post(peace);
+            }
             world_.run_commands();
         }
         if (commands.play) {

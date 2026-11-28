@@ -6,7 +6,8 @@
 // into two worlds of their own; runs each the scenario's years a day at a time through World::advance_days, posting
 // the scenario's commands of each day before it (World::post), taking the state's checksum (CLAUDE.md, rule 11: here
 // and only here) after every day; checks that both runs match day for day, and their caches at the end. The first run's record goes to <run dir>
-// (headless/run_record.h), the arrivals of its armies' marches and the changes of control also to stderr.
+// (headless/run_record.h), the arrivals of its armies' marches and the changes of control and of owner also to
+// stderr.
 // Exit codes: 0 the runs match, 1 bad arguments or a load or write failed, 3 the runs differ.
 
 #include <chrono>
@@ -26,6 +27,7 @@
 #include "game/calendar.h"
 #include "game/modifiers.h"
 #include "game/occupation.h"
+#include "game/war_score.h"
 #include "game/world.h"
 #include "headless/run_record.h"
 #include "headless/scenario.h"
@@ -55,9 +57,63 @@ namespace
         // sieges.csv: each siege's beginning, phases and end (surrender, or lifted), with its numbers after it
         std::string sieges = "day,date,province,country,event,phases,roll,result,progress,breaches,garrison,"
                              "max_garrison,men,needed,impact,phase_days,surrender_chance\n";
-        // control.csv: each change of a province's controller
-        std::string control = "day,date,province,owner,controller_before,controller\n";
+        // control.csv: each change of a province's controller or owner (a peace)
+        std::string control = "day,date,province,owner_before,owner,controller_before,controller\n";
+        // wars.csv: each war's beginning, each change of its war score (game/war_score.h), its end (a peace) with
+        // the score it ended at; from the attacker's side
+        std::string wars = "day,date,war,attacker,defender,event,battles,attacker_occupation,defender_occupation,"
+                           "complete,score\n";
     };
+
+    // The wars as wars.csv last saw them: per slot, whether it held a war, its generation, its countries and score.
+    struct WarsSeen
+    {
+        std::vector<std::uint64_t> alive = std::vector<std::uint64_t>(mc::kWarSlots / 64, 0);
+        std::vector<std::uint16_t> generation = std::vector<std::uint16_t>(mc::kWarSlots, 0);
+        std::vector<std::uint16_t> attacker = std::vector<std::uint16_t>(mc::kWarSlots, 0);
+        std::vector<std::uint16_t> defender = std::vector<std::uint16_t>(mc::kWarSlots, 0);
+        std::vector<mc::WarScore> score = std::vector<mc::WarScore>(mc::kWarSlots);
+    };
+
+    // The wars' changes since `seen`, as rows of wars.csv; `seen` then holds today's.
+    void record_wars(const mc::World& world, WarsSeen* seen, std::string* rows)
+    {
+        const mc::Wars& wars = world.state().wars;
+        const mc::CountryDefinitions& countries = world.content().countries;
+        const std::string date = mc::format(world.date());
+        auto row = [&](std::uint32_t slot, const char* event, const mc::WarScore& s) {
+            *rows += std::format("{},{},{},{},{},{},{},{},{},{},{}\n", world.day(), date, slot,
+                                 countries.tag_text(seen->attacker[slot]), countries.tag_text(seen->defender[slot]),
+                                 event, s.battles, s.attacker_occupation, s.defender_occupation, s.complete, s.total);
+        };
+        for (std::uint32_t slot = 0; slot < mc::kWarSlots; ++slot) {
+            const bool was = (seen->alive[slot / 64] >> (slot % 64)) & 1u;
+            const bool is = mc::slot_alive(wars.alive, slot);
+            const bool same = was && is && wars.generation[slot] == seen->generation[slot];
+            if (was && !same) {
+                row(slot, "end", seen->score[slot]);
+                seen->alive[slot / 64] &= ~(std::uint64_t{ 1 } << (slot % 64));
+            }
+            if (!is) {
+                continue;
+            }
+            const mc::WarScore s = mc::war_score(world.state(), world.content(), static_cast<std::uint16_t>(slot));
+            const mc::WarScore& last = seen->score[slot];
+            const bool changed = s.battles != last.battles || s.attacker_occupation != last.attacker_occupation ||
+                                 s.defender_occupation != last.defender_occupation || s.complete != last.complete ||
+                                 s.total != last.total;
+            seen->alive[slot / 64] |= std::uint64_t{ 1 } << (slot % 64);
+            seen->generation[slot] = wars.generation[slot];
+            seen->attacker[slot] = wars.attacker[slot];
+            seen->defender[slot] = wars.defender[slot];
+            seen->score[slot] = s;
+            if (!same) {
+                row(slot, "begin", s);
+            } else if (changed) {
+                row(slot, "score", s);
+            }
+        }
+    }
 
     // What the sieges' slots held before a day, and the provinces' controllers.
     struct SiegesBefore
@@ -68,6 +124,7 @@ namespace
         std::vector<std::uint16_t> province;
         std::vector<std::uint16_t> country;
         std::vector<std::uint16_t> controller;
+        std::vector<std::uint16_t> owner;
 
         void take(const mc::WorldState& state)
         {
@@ -78,14 +135,15 @@ namespace
             province.assign(s.province.begin(), s.province.end());
             country.assign(s.country.begin(), s.country.end());
             controller.assign(state.provinces.controller.begin(), state.provinces.controller.end());
+            owner.assign(state.provinces.owner.begin(), state.provinces.owner.end());
         }
     };
 
     constexpr std::string_view kSiegeResults[] = { "", "status_quo", "disease", "breach", "supplies", "food", "water",
                                                    "desertion" };
 
-    // The sieges' and the controllers' changes over the day just passed, as rows of sieges.csv and control.csv; with
-    // `log`, each change of a controller also to stderr.
+    // The sieges' and the controllers' and owners' changes over the day just passed, as rows of sieges.csv and
+    // control.csv; with `log`, each change of a controller or an owner also to stderr.
     void record_sieges(const mc::MapData& map, const mc::World& world, const SiegesBefore& before, bool log,
                        std::string* sieges, std::string* control)
     {
@@ -123,13 +181,20 @@ namespace
                                    chances.sides);
         }
         for (std::uint32_t p = 1; p < provinces.count; ++p) {
-            if (provinces.controller[p] == before.controller[p]) {
+            const bool owner = provinces.owner[p] != before.owner[p];
+            const bool controller = provinces.controller[p] != before.controller[p];
+            if (!owner && !controller) {
                 continue;
             }
-            *control += std::format("{},{},{},{},{},{}\n", world.day(), date, p, countries.tag_text(provinces.owner[p]),
+            *control += std::format("{},{},{},{},{},{},{}\n", world.day(), date, p,
+                                    countries.tag_text(before.owner[p]), countries.tag_text(provinces.owner[p]),
                                     countries.tag_text(before.controller[p]),
                                     countries.tag_text(provinces.controller[p]));
-            if (log) {
+            if (log && owner) {
+                mc::log::info("{} (day {} of the run): {} ({}) is owned by {}", date, world.day() - mc::kStartDay,
+                              map.province_name(p), p, countries.tag_text(provinces.owner[p]));
+            }
+            if (log && controller) {
                 mc::log::info("{} (day {} of the run): {} ({}) is controlled by {}", date, world.day() - mc::kStartDay,
                               map.province_name(p), p, countries.tag_text(provinces.controller[p]));
             }
@@ -196,6 +261,7 @@ namespace
             }
             commands.push_back(c.command);
             commands.back().country = static_cast<std::uint16_t>(country);
+            commands.back().provinces = c.provinces;   // the scenario outlives the run
             if (!c.target.empty()) {
                 const int target = world.content().countries.find(c.target);
                 if (target <= 0) {
@@ -211,6 +277,7 @@ namespace
         record_armies(world, &run->armies);
         std::vector<std::uint16_t> before(mc::kArmySlots);
         SiegesBefore sieges_before;
+        WarsSeen wars_seen;
         std::size_t next = 0;   // the scenario's next command
         for (std::uint32_t d = 0; d < days; ++d) {
             for (; next < commands.size() && scenario.commands[next].day == d; ++next) {
@@ -225,6 +292,7 @@ namespace
             run->hashes.push_back(mc::headless::checksum(world));
             record_moves(map, world, before, log, &run->moves);
             record_sieges(map, world, sieges_before, log, &run->sieges, &run->control);
+            record_wars(world, &wars_seen, &run->wars);
             if (world.day() % mc::kDaysPerMonth == 0) {
                 record_armies(world, &run->armies);
             }
@@ -265,7 +333,8 @@ int main(int argc, char** argv)
                   a.seconds, b.seconds, (a.seconds + b.seconds) / 2.0 / scenario.years);
 
     const mc::headless::RunSeries series[] = {
-        { "moves.csv", a.moves }, { "armies.csv", a.armies }, { "sieges.csv", a.sieges }, { "control.csv", a.control }
+        { "moves.csv", a.moves }, { "armies.csv", a.armies }, { "sieges.csv", a.sieges }, { "control.csv", a.control },
+        { "wars.csv", a.wars }
     };
     if (!mc::headless::write_run(run_dir, MC_ROOT, scenario, *a.world, a.hashes, series, &error)) {
         mc::log::error("{}", error);

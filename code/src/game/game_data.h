@@ -284,8 +284,10 @@ namespace mc
     inline constexpr std::uint32_t kBattleSlots = 1024;
     inline constexpr std::uint32_t kWarSlots = 256;
     inline constexpr std::uint32_t kSiegeSlots = 1024;   // one a province at most, like the battles
+    inline constexpr std::uint32_t kTruceSlots = 256;    // like the wars: a truce follows a war
     static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kLeaderSlots % 64 == 0 &&
-                      kBattleSlots % 64 == 0 && kWarSlots % 64 == 0 && kSiegeSlots % 64 == 0,
+                      kBattleSlots % 64 == 0 && kWarSlots % 64 == 0 && kSiegeSlots % 64 == 0 &&
+                      kTruceSlots % 64 == 0,
                   "whole words of the slot masks");
     static_assert(kLeaderSlots < 65536, "an army names its leader by slot + 1 in a u16");
     static_assert(kArmySlots <= 65536 && kRegimentSlots < 65536, "u16 slots, a regiment's slot + 1 too");
@@ -450,6 +452,9 @@ namespace mc
     X(wars, std::uint16_t, defender, runtime)                                                                   \
     /* the day it began (World::day) */                                                                         \
     X(wars, std::uint32_t, start, runtime)                                                                      \
+    /* Fixed: the sum of its battles' scores (game/war_score.h), + for the attacker; not capped (the */         \
+    /* warscore_max_from_battles cap is the war score's) */                                                     \
+    X(wars, Fixed, battle_score, runtime)                                                                       \
     /* grows each time the slot is freed (like Armies::generation) */                                           \
     X(wars, std::uint16_t, generation, runtime)
 
@@ -458,6 +463,23 @@ namespace mc
     struct Wars
     {
         MC_WAR_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+
+        void resize();
+    };
+
+#define MC_TRUCE_COLUMNS(X)                                                                                     \
+    /* the two countries that made peace, the lower index first */                                              \
+    X(truces, std::uint16_t, first, runtime)                                                                    \
+    X(truces, std::uint16_t, second, runtime)                                                                   \
+    /* the first day they may declare war on each other again */                                                \
+    X(truces, std::uint32_t, until, runtime)
+
+    // Saved. The truces (game/war.h), in slots, kTruceSlots long; runtime only (no setup file). Two countries have
+    // one at most; the month frees the ones that ran out.
+    struct Truces
+    {
+        MC_TRUCE_COLUMNS(MC_DECLARE_COLUMN)
         Column<std::uint64_t> alive;   // by hand, like Armies::alive
 
         void resize();
@@ -598,6 +620,25 @@ namespace mc
     /* the garrison of a fort just taken (EU4 100), and its growth a month out of a siege, of the maximum */    \
     X(count, garrison_after_capture)                                                                            \
     X(fixed, garrison_growth)
+    // Content. The war's and the peace's constants (data/common/defines.csv too: EU4's NDiplomacy and NMilitary), the
+    // same kinds as the battle's, every one required.
+#define MC_WAR_DEFINES(X)                                                                                       \
+    /* the most a war score is (EU4's MAX_WARSCORE), the most its battles give (WARSCORE_MAX_FROM_BATTLES) */   \
+    X(whole, max_warscore)                                                                                      \
+    X(whole, warscore_max_from_battles)                                                                         \
+    /* a province's war value (game/war_score.h): its base, the cap of its development (AE_PROVINCE_CAP), */    \
+    /* the capital's multiplier (PEACE_COST_DEMAND_CAPITAL_MULT), the development a fort answers for */         \
+    /* (FORT_PER_DEV_RATIO) */                                                                                  \
+    X(fixed, province_value_base)                                                                               \
+    X(fixed, province_value_cap)                                                                                \
+    X(fixed, capital_value_mult)                                                                                \
+    X(fixed, fort_per_dev_ratio)                                                                                \
+    /* a stand-in for the land force limit until M8: the base + this × the development (base_tax) */            \
+    X(fixed, land_forcelimit_base)                                                                              \
+    X(fixed, land_forcelimit_per_development)                                                                   \
+    /* the years of a truce after a peace (EU4's TRUCE_YEARS) */                                                \
+    X(whole, truce_years)
+
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_count int
 #define MC_DEFINE_TYPE_fixed Fixed
@@ -605,6 +646,10 @@ namespace mc
     struct CombatDefines
     {
         MC_COMBAT_DEFINES(MC_DECLARE_DEFINE)
+    };
+    struct WarDefines
+    {
+        MC_WAR_DEFINES(MC_DECLARE_DEFINE)
     };
 #undef MC_DECLARE_DEFINE
 
@@ -628,6 +673,7 @@ namespace mc
         std::vector<RegimentCategory> regiment_category;   // per type
         RegimentTypeNumbers regiment_numbers;              // per type: maneuver and pips
         CombatDefines combat;             // data/common/defines.csv
+        WarDefines war;                   // data/common/defines.csv too
         ModifierBundles modifiers;        // data/common/modifiers.csv
         CountryDefinitions countries;
         std::vector<std::uint16_t> province_region;   // from the map (MapData::region), for the rules
@@ -647,6 +693,7 @@ namespace mc
         Battles battles;
         Wars wars;
         Sieges sieges;
+        Truces truces;
     };
 
     // Loads Content and the start's WorldState from data/ (docs/GAMEDATA.md) and writes the start back (editor). In

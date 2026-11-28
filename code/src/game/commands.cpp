@@ -14,6 +14,9 @@ namespace mc
         army_generation_.push_back(command.army.generation);
         province_.push_back(command.province);
         target_.push_back(command.target);
+        list_first_.push_back(static_cast<std::uint32_t>(list_.size()));
+        list_count_.push_back(static_cast<std::uint32_t>(command.provinces.size()));
+        list_.insert(list_.end(), command.provinces.begin(), command.provinces.end());
         due_.reserve(day_.size());   // here, outside the day, so running them never allocates
     }
 
@@ -28,6 +31,7 @@ namespace mc
     void CommandQueue::drop(std::uint32_t today)
     {
         std::size_t kept = 0;
+        std::size_t kept_list = 0;
         for (std::size_t i = 0; i < day_.size(); ++i) {
             if (day_[i] > today) {
                 day_[kept] = day_[i];
@@ -38,6 +42,11 @@ namespace mc
                 army_generation_[kept] = army_generation_[i];
                 province_[kept] = province_[i];
                 target_[kept] = target_[i];
+                // A kept list moves down to the end of the kept ones (never up: the lists are in post order).
+                std::copy_n(list_.begin() + list_first_[i], list_count_[i], list_.begin() + kept_list);
+                list_first_[kept] = static_cast<std::uint32_t>(kept_list);
+                list_count_[kept] = list_count_[i];
+                kept_list += list_count_[i];
                 ++kept;
             }
         }
@@ -49,5 +58,8 @@ namespace mc
         army_generation_.resize(kept);
         province_.resize(kept);
         target_.resize(kept);
+        list_first_.resize(kept);
+        list_count_.resize(kept);
+        list_.resize(kept_list);
     }
 }

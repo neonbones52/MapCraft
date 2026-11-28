@@ -53,7 +53,7 @@ namespace mc
             player_hud(ui, &commands);
             time_bar(ui, &commands);
             if (dev_open_) {
-                dev_window(ui, &commands, &dev_open_);
+                dev_window(ui, &dev_, &commands, &dev_open_);
             }
             province_tooltip(ui, hovered, input.cursor_x, input.cursor_y);
             break;

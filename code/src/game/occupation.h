@@ -47,6 +47,9 @@ namespace mc
     [[nodiscard]] bool has_port(const MapData& map, std::uint16_t province);
     // Every garrison full: at the load (GameData::load).
     void fill_garrisons(WorldState& state, const Content& content);
+    // The siege in `slot` ends: its slot is cleared, its generation grows; the province keeps its progress (a peace's
+    // part, game/peace.h; the day's rule ends its sieges through it too).
+    void lift_siege(Sieges& sieges, std::uint16_t slot);
 
     // A siege's besiegers today: the besieging country's armies in the province, standing and not retreating.
     struct Besiegers

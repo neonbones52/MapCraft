@@ -52,7 +52,7 @@ namespace mc::headless
             return out;
         }
 
-        // "TAG move slot:generation province" or "TAG war TAG".
+        // "TAG move slot:generation province", "TAG war TAG" or "TAG peace TAG [province ...]".
         bool parse_command(std::string_view text, ScenarioCommand* out, std::string* why)
         {
             const std::vector<std::string_view> w = words(text);
@@ -62,8 +62,22 @@ namespace mc::headless
                 out->command.kind = CommandKind::declare_war;
                 return true;
             }
+            if (w.size() >= 3 && w[1] == "peace") {
+                for (std::size_t i = 3; i < w.size(); ++i) {
+                    std::uint16_t province = 0;
+                    if (!parse_whole(w[i], &province) || province == 0) {
+                        *why = std::format("province \"{}\": an id of the map", w[i]);
+                        return false;
+                    }
+                    out->provinces.push_back(province);
+                }
+                out->country = std::string(w[0]);
+                out->target = std::string(w[2]);
+                out->command.kind = CommandKind::peace;
+                return true;
+            }
             if (w.size() != 4 || w[1] != "move") {
-                *why = "a command is TAG move slot:generation province, or TAG war TAG";
+                *why = "a command is TAG move slot:generation province, TAG war TAG, or TAG peace TAG [province ...]";
                 return false;
             }
             const std::size_t colon = w[2].find(':');

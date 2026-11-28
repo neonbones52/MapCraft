@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 #include "game/calendar.h"
 
@@ -43,5 +44,7 @@ namespace mc
         int set_speed = 0;       // 1..5: that speed (view/pace.h); 0 = leave it
         bool toggle_pause = false;
         std::uint16_t declare_war = 0;   // the country the player declares war on (the Dev window); 0 = none
+        std::uint16_t peace_with = 0;    // the country the player offers peace to (the Dev window); 0 = none
+        std::vector<std::uint16_t> peace_provinces;   // of it, taken by that peace; none: a white peace
     };
 }

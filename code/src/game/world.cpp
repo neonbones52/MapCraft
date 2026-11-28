@@ -1,7 +1,11 @@
 #include "game/world.h"
 
+#include <format>
+#include <string>
+
 #include "core/det_math.h"
 #include "core/log.h"
+#include "game/peace.h"
 #include "game/war.h"
 
 namespace mc
@@ -78,12 +82,34 @@ namespace mc
         case CommandKind::declare_war: {
             const CountryDefinitions& countries = data_.content.countries;
             auto tag = [&](std::uint16_t c) { return c < countries.size() ? countries.tag_text(c) : std::string("?"); };
-            if (const char* why = why_no_war(state, data_.cache.at_war, command.country, command.target)) {
+            if (const char* why = why_no_war(state, data_.cache.at_war, command.country, command.target, day_)) {
                 log::warn("day {}: {} declares war on {}: {}", day_, tag(command.country), tag(command.target), why);
                 return;
             }
             declare_war(state, data_.cache.at_war, command.country, command.target, day_);
             log::info("day {}: {} declares war on {}", day_, tag(command.country), tag(command.target));
+            return;
+        }
+        case CommandKind::peace: {
+            const CountryDefinitions& countries = data_.content.countries;
+            auto tag = [&](std::uint16_t c) { return c < countries.size() ? countries.tag_text(c) : std::string("?"); };
+            const std::string kind = command.provinces.empty()
+                                         ? std::string("a white peace")
+                                         : std::format("a peace of {} provinces", command.provinces.size());
+            if (const char* why = why_no_peace(state, data_.cache.at_war, command.country, command.target,
+                                               command.provinces)) {
+                log::warn("day {}: {} offers {} {}: {}", day_, tag(command.country), tag(command.target), kind, why);
+                return;
+            }
+            const PeaceAnswer answer =
+                peace_answer(state, data_.content, command.country, command.target, command.provinces);
+            log::info("day {}: {} offers {} {}, cost {:.3f}, war score {}: {}", day_, tag(command.country),
+                      tag(command.target), kind, fx_to_double(answer.cost), answer.score,
+                      answer.accepted ? "accepted" : "refused");
+            if (answer.accepted) {
+                make_peace(state, data_.content, data_.cache.at_war, command.country, command.target,
+                           command.provinces, day_);
+            }
             return;
         }
         case CommandKind::none:
@@ -107,6 +133,7 @@ namespace mc
     {
         recovery_.month(data_.state, data_.content, data_.cache);
         occupation_.month(data_.state, data_.content);
+        expire_truces(data_.state.truces, day_);
     }
 
     void World::restart(std::uint32_t seed)

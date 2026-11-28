@@ -48,7 +48,8 @@ namespace mc
         // Runs the commands due today, in their order: the other way the state changes, between days and in the
         // pause (the game calls it right after posting, so the player's orders take effect at once). A command that
         // cannot be carried out (an army that is gone or not the giver's, in a battle or retreating from one, no way
-        // there; a war that cannot be declared, game/war.h) changes nothing; it is logged.
+        // there; a war that cannot be declared, game/war.h; a peace that cannot be offered, game/peace.h) changes
+        // nothing; it is logged. A peace offered is accepted or refused at once (game/peace.h), and logged.
         void run_commands();
         // Back to the start: the start date and the state as loaded, with a new seed (a new game).
         void restart(std::uint32_t seed);
@@ -69,7 +70,8 @@ namespace mc
     private:
         void tick_day();     // one day of the rules
         // The monthly tick, at the start of each month's 1st day (never at the game's start): the main one of the
-        // rules that are not about moving and fighting. Now the armies' recovery and the garrisons' growth; later
+        // rules that are not about moving and fighting. Now the armies' recovery, the garrisons' growth and the
+        // truces that ran out (game/war.h); later
         // the money, the economy and the sliders (M8, M9). A yearly tick (the census tax, EU3's) comes with the
         // treasury.
         void tick_month();

@@ -715,8 +715,8 @@ namespace mc
             return true;
         }
 
-        // defines.csv (required): key, value; a line for every define of MC_COMBAT_DEFINES, once each: a whole one a
-        // whole number >= 1 (max_combat_width at most kMaxCombatWidth), a fixed one a decimal number.
+        // defines.csv (required): key, value; a line for every define of MC_COMBAT_DEFINES and MC_WAR_DEFINES, once
+        // each: a whole one a whole number >= 1 (max_combat_width at most kMaxCombatWidth), a fixed one a decimal number.
         bool parse_define_whole(std::string_view text, int* out)
         {
             std::uint32_t n = 0;
@@ -737,9 +737,11 @@ namespace mc
         }
         bool parse_define_fixed(std::string_view text, Fixed* out) { return fx_parse(text, out); }
 
-        bool read_defines(Source& src, const std::filesystem::path& path, CombatDefines* out, std::string* error)
+        bool read_defines(Source& src, const std::filesystem::path& path, CombatDefines* out, WarDefines* war,
+                          std::string* error)
         {
             *out = {};
+            *war = {};
             csv::Table table;
             if (!src.read(path, &table, error)) {
                 return false;
@@ -753,6 +755,7 @@ namespace mc
             constexpr std::string_view kNames[] = {
 #define MC_NAME_OF(type, name) #name,
                 MC_COMBAT_DEFINES(MC_NAME_OF)
+                MC_WAR_DEFINES(MC_NAME_OF)
 #undef MC_NAME_OF
             };
             std::uint8_t seen[std::size(kNames)] = {};
@@ -774,6 +777,12 @@ namespace mc
     }
                 MC_COMBAT_DEFINES(MC_PARSE_DEFINE)
 #undef MC_PARSE_DEFINE
+#define MC_PARSE_WAR_DEFINE(type, name)                                                                         \
+    if (i++ == k) {                                                                                             \
+        ok = parse_define_##type(row[value], &war->name);                                                       \
+    }
+                MC_WAR_DEFINES(MC_PARSE_WAR_DEFINE)
+#undef MC_PARSE_WAR_DEFINE
                 if (!ok) {
                     return ctx.fail(r, std::format("{} \"{}\": a whole number >= 1 (>= 0 for a count), or a decimal "
                                                    "number with at most 3 digits after the point",
@@ -907,6 +916,13 @@ namespace mc
         MC_SIEGE_COLUMNS(MC_FILL_COLUMN)
         alive.assign(kSiegeSlots / 64, 0);
     }
+
+    void Truces::resize()
+    {
+        const std::size_t n = kTruceSlots;
+        MC_TRUCE_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kTruceSlots / 64, 0);
+    }
 #undef MC_FILL_COLUMN
 
     bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
@@ -923,7 +939,7 @@ namespace mc
             !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,
                                  &content.regiment_category, &content.regiment_numbers, error) ||
             !read_modifiers(src, common / "modifiers.csv", &content.modifiers, error) ||
-            !read_defines(src, common / "defines.csv", &content.combat, error)) {
+            !read_defines(src, common / "defines.csv", &content.combat, &content.war, error)) {
             return false;
         }
 
@@ -981,6 +997,7 @@ namespace mc
         state.battles.resize();
         state.wars.resize();
         state.sieges.resize();
+        state.truces.resize();
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
             const int c = content.countries.find(text);
