@@ -22,6 +22,7 @@ namespace mc
         to_.clear();
         cost_.clear();
         back_.clear();
+        river_.clear();
         for (std::uint32_t p = 0; p < n; ++p) {
             offsets_[p] = static_cast<std::uint32_t>(to_.size());
             if (!land(p)) {
@@ -38,6 +39,7 @@ namespace mc
                 to_.push_back(q);
                 cost_.push_back(px * multiplier(q));
                 back_.push_back(px * multiplier(p));
+                river_.push_back(map.march_river[k]);
             }
         }
         offsets_[n] = static_cast<std::uint32_t>(to_.size());
@@ -45,6 +47,7 @@ namespace mc
         to_.resize(padded(steps), 0);
         cost_.resize(padded(steps), 0.0f);
         back_.resize(padded(steps), 0.0f);
+        river_.resize(padded(steps), 0);
 
         way_.assign(padded(n), 0.0f);
         toward_.assign(padded(n), 0);
@@ -55,6 +58,7 @@ namespace mc
         heap_province_.assign(padded(steps + 1), 0);
         heap_size_ = 0;
         arrived_.assign(kArmySlots / 64, 0);
+        crossed_.assign(kArmySlots / 64, 0);
         army_step_.assign(kArmySlots, 0.0f);
         army_after_.assign(kArmySlots, 0);
     }
@@ -72,17 +76,29 @@ namespace mc
         });
     }
 
-    float Movement::step_cost(std::uint16_t from, std::uint16_t to) const
+    int Movement::step_index(std::uint16_t from, std::uint16_t to) const
     {
         if (std::size_t{ from } + 1 >= offsets_.size()) {
-            return 0.0f;
+            return -1;
         }
         for (std::uint32_t k = offsets_[from]; k < offsets_[from + 1]; ++k) {
             if (to_[k] == to) {
-                return cost_[k];
+                return static_cast<int>(k);
             }
         }
-        return 0.0f;
+        return -1;
+    }
+
+    float Movement::step_cost(std::uint16_t from, std::uint16_t to) const
+    {
+        const int k = step_index(from, to);
+        return k >= 0 ? cost_[static_cast<std::size_t>(k)] : 0.0f;
+    }
+
+    bool Movement::step_river(std::uint16_t from, std::uint16_t to) const
+    {
+        const int k = step_index(from, to);
+        return k >= 0 && river_[static_cast<std::size_t>(k)] != 0;
     }
 
     void Movement::begin_step(Armies& armies, std::uint16_t slot, std::uint16_t from, std::uint16_t to)
@@ -166,11 +182,15 @@ namespace mc
             }
         }
         // They arrive, in slot order: the march ends or the next step begins with what is left of the day.
+        std::fill(crossed_.begin(), crossed_.end(), std::uint64_t{ 0 });
         for (std::size_t w = 0; w < used / 64; ++w) {
             for (std::uint64_t b = arrived_[w]; b != 0; b &= b - 1) {
                 const auto s = static_cast<std::uint16_t>(w * 64 + static_cast<std::size_t>(std::countr_zero(b)));
                 const std::uint16_t here = armies.next[s];
                 const float done = army_step_[s];
+                if (step_river(armies.province[s], here)) {
+                    crossed_[w] |= std::uint64_t{ 1 } << (s % 64);
+                }
                 armies.province[s] = here;
                 const std::uint16_t step = army_after_[s];   // found when this step began
                 if (step == 0) {

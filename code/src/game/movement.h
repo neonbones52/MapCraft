@@ -21,7 +21,8 @@ namespace mc
     //   the graph    the land provinces' steps (wasteland, seas and lakes are not crossed): to each land neighbour,
     //                the length of the march path (MapData::march_length: the curve from unit point to unit point
     //                over the land of the two provinces, tools/mapbake/marches.py) times the movement_cost
-    //                (data/common/terrain.csv) of the province the step goes into
+    //                (data/common/terrain.csv) of the province the step goes into, and whether the path crosses a
+    //                river (MapData::march_river: the battle's river crossing, game/combat.h)
     //   the steps    per army slot, the cost of the step it is on (0 standing) and the step after it (the
     //                province the march goes on to from the next one; 0 where it ends there): found one step ahead,
     //                when a step begins, so the map's figure walks on through a province without a stop, and
@@ -53,6 +54,11 @@ namespace mc
         void halt(WorldState& state, std::uint16_t slot) { stop(state.armies, slot); }
         // The army in `slot` ended a step today (the last day()): it came into the province it is in.
         [[nodiscard]] bool arrived_today(std::uint16_t slot) const { return (arrived_[slot / 64] >> (slot % 64)) & 1u; }
+        // It arrived today over a river (MapData::march_river: its step's march path crosses one).
+        [[nodiscard]] bool crossed_river_today(std::uint16_t slot) const
+        {
+            return (crossed_[slot / 64] >> (slot % 64)) & 1u;
+        }
 
         // The cost of the way from `from` to every land province it reaches (a full search over the steps forward);
         // way_from(p) reads it until the next search or order, < 0 where there is no way.
@@ -64,12 +70,16 @@ namespace mc
 
         // The cost of the step from province `from` into its neighbour `to`; 0 if it is not a step.
         [[nodiscard]] float step_cost(std::uint16_t from, std::uint16_t to) const;
+        // Whether the step from `from` into `to` crosses a river (false if it is not a step).
+        [[nodiscard]] bool step_river(std::uint16_t from, std::uint16_t to) const;
         // The cost of the step the army in `slot` is on; 0 while it stands.
         [[nodiscard]] float army_step(std::uint16_t slot) const { return army_step_[slot]; }
         // The province the march of the army in `slot` goes on to after its next one; 0 if it ends there.
         [[nodiscard]] std::uint16_t army_after(std::uint16_t slot) const { return army_after_[slot]; }
 
     private:
+        // The graph's index of the step from `from` into `to`, -1 if it is not a step.
+        [[nodiscard]] int step_index(std::uint16_t from, std::uint16_t to) const;
         // The first step from `from` on the way to `to`: the neighbour, or 0 if there is no way (or from == to).
         [[nodiscard]] std::uint16_t first_step(std::uint16_t from, std::uint16_t to);
         void begin_step(Armies& armies, std::uint16_t slot, std::uint16_t from, std::uint16_t to);
@@ -85,6 +95,7 @@ namespace mc
         Column<std::uint16_t> to_;
         Column<float> cost_;
         Column<float> back_;
+        Column<std::uint8_t> river_;         // 1: the step's march path crosses a river (MapData::march_river)
         Column<float> army_step_;            // per army slot
         Column<std::uint16_t> army_after_;   // per army slot
 
@@ -101,5 +112,6 @@ namespace mc
         std::uint32_t heap_size_ = 0;
         // The day's arrivals: bit s of word s / 64 = the army in slot s ends its step today.
         Column<std::uint64_t> arrived_;
+        Column<std::uint64_t> crossed_;   // the same bits: of those, the ones whose step crossed a river
     };
 }

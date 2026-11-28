@@ -40,7 +40,8 @@ namespace mc
         struct SideDay
         {
             int commander = -1;   // the general's slot, -1: none
-            int global = 0;       // added to the dice of every shot (EU4's DetermineGlobalModifiers)
+            int global = 0;       // added to the dice of every shot (EU4's DetermineGlobalModifiers), < 0 for an
+                                  // attacker into hard terrain or over a river
             Fixed discipline = 0;
             Fixed tactics = 0;
             Fixed max_morale = 0;
@@ -72,8 +73,9 @@ namespace mc
         bool fight(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle,
                    std::uint32_t seed, std::uint32_t day);
         void settle(WorldState& state, const Content& content, Movement& movement, std::uint32_t battle);
-        // The sides' commanders and the dice's global modifiers, for the day's phase.
-        void command(const WorldState& state, std::uint32_t battle);
+        // The sides' commanders and the dice's global modifiers, for the day's phase: the generals, the terrain and
+        // the crossing.
+        void command(const WorldState& state, const Content& content, std::uint32_t battle);
         void arrange(WorldState& state, const Content& content, std::uint32_t battle, int side);
         void shoot(WorldState& state, const Content& content, std::uint32_t battle, int side);
         // A regiment of a line at `position` shoots, `range` the line's (front_line_modifier, back_line_modifier).

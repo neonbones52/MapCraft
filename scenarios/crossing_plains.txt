@@ -1,0 +1,10 @@
+# The attack of crossing.txt over the plains: Dripstonebarrow (480) made plains here, DUM's army comes in from
+# Golemscar (496), whose step into 480 crosses no river: the attacker takes nothing off its dice but what the generals
+# give.
+years = 1
+seed = 1
+setup/armies.csv: 2.province = 480
+setup/provinces.csv: 480.terrain = plains
+
+day 0 = DUM move 0:0 496
+day 40 = DUM move 0:0 480

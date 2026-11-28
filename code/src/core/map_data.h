@@ -46,6 +46,8 @@ namespace mc
                                                         // [march_offsets[k], march_offsets[k + 1])
         std::span<const float> march_points;            // (MPTV) x, y pairs, map px
         std::span<const float> march_length;            // (MPTL) per entry, px
+        std::span<const std::uint8_t> march_river;      // (MPTR) per entry, 1: the path crosses a river (the battle's
+                                                        // river crossing, game/combat.h); 0 where it is not a step
 
         // Map px points of a province (positions): its city, where its armies stand (their march goes from one
         // province's to the next's, game/movement.h), and its name's anchor.

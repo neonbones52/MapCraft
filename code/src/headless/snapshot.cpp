@@ -69,7 +69,7 @@ namespace mc::headless
         // slot × kFrontSlots + position,value.
         void dump_battles(std::span<const Battle> battles, std::string* out)
         {
-            static_assert(sizeof(Battle) == 360, "a new field of Battle: dump it here");
+            static_assert(sizeof(Battle) == 364, "a new field of Battle: dump it here");
             constexpr std::string_view kSides[] = { "attacker", "defender" };
             for (std::size_t b = 0; b < battles.size(); ++b) {
                 const Battle& battle = battles[b];
@@ -78,6 +78,7 @@ namespace mc::headless
                 *out += std::format("battles.phase_day,{},{}\n", b, battle.phase_day);
                 *out += std::format("battles.phase,{},{}\n", b, battle.phase);
                 *out += std::format("battles.generation,{},{}\n", b, battle.generation);
+                *out += std::format("battles.crossing,{},{}\n", b, battle.crossing);
                 for (std::size_t s = 0; s < 2; ++s) {
                     const BattleSide& side = battle.sides[s];
                     const std::string_view n = kSides[s];

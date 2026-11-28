@@ -31,6 +31,7 @@ namespace mc
         march_offsets = as_span<std::uint32_t>(reader.exact("MPTO", (adjacency_ids.size() + 1) * 4));
         march_points = as_span<float>(reader.whole("MPTV", 8, true));
         march_length = as_span<float>(reader.exact("MPTL", adjacency_ids.size() * 4));
+        march_river = as_span<std::uint8_t>(reader.exact("MPTR", adjacency_ids.size()));
         names_ = reader.strings("PNAM", n);
 
         // Regions and lands: RPAR has a byte per region and [0]; the lands are what RPAR points to.
@@ -69,6 +70,11 @@ namespace mc
             if (!std::isfinite(march_length[k]) || march_length[k] < 0.0f || (points >= 2) != (march_length[k] > 0.0f) ||
                 points == 1) {
                 reader.bad("section MPTL: a march path's length does not fit its points");
+            }
+        }
+        for (std::size_t k = 0; k < march_river.size() && reader.ok(); ++k) {
+            if (march_river[k] > 1 || (march_river[k] == 1 && march_length[k] == 0.0f)) {
+                reader.bad("section MPTR: a river crossing is not 0 or 1, or is not on a march path");
             }
         }
         if (!std::ranges::all_of(march_points, [](float v) { return std::isfinite(v); })) {

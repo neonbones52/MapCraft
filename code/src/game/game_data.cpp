@@ -512,18 +512,23 @@ namespace mc
         constexpr std::string_view kLeaderHand[] = { "leader", "army" };
 
         // terrain.csv (required): key, name, color, movement_cost (how much longer a march over it takes than over
-        // the plains, 1; > 0; game/movement.h).
+        // the plains, 1; > 0; game/movement.h), attacker_penalty (what an attacker into it takes off its dice, EU4's
+        // terrain defence: a whole number 0..9; game/combat.h).
         bool read_terrain(Source& src, const std::filesystem::path& path, DefinitionList* terrain,
-                          std::vector<float>* movement_cost, std::string* error)
+                          std::vector<float>* movement_cost, std::vector<std::uint8_t>* attacker_penalty,
+                          std::string* error)
         {
             csv::Table table;
             if (!read_list(src, path, true, true, terrain, error, &table)) {
                 return false;
             }
             movement_cost->assign(terrain->size(), 1.0f);
+            attacker_penalty->assign(terrain->size(), 0);
             const Context ctx{ path, &table, error };
             int column = 0;
-            if (!need_column(path, table, "movement_cost", &column, error)) {
+            int penalty = 0;
+            if (!need_column(path, table, "movement_cost", &column, error) ||
+                !need_column(path, table, "attacker_penalty", &penalty, error)) {
                 return false;
             }
             for (std::size_t r = 0; r < table.rows.size(); ++r) {
@@ -531,6 +536,12 @@ namespace mc
                     return ctx.fail(r, std::format("movement_cost \"{}\": the march's multiplier, > 0",
                                                    table.rows[r][column]));
                 }
+                std::uint32_t n = 0;
+                if (!parse_uint(table.rows[r][penalty], &n) || n > 9) {
+                    return ctx.fail(r, std::format("attacker_penalty \"{}\": the attacker's dice minus, 0..9",
+                                                   table.rows[r][penalty]));
+                }
+                (*attacker_penalty)[r + 1] = static_cast<std::uint8_t>(n);
             }
             return true;
         }
@@ -880,7 +891,8 @@ namespace mc
         Source src(dir, patches);
         const auto common = dir / "common";
         const auto setup = dir / "setup";
-        if (!read_terrain(src, common / "terrain.csv", &content.terrain, &content.terrain_movement_cost, error) ||
+        if (!read_terrain(src, common / "terrain.csv", &content.terrain, &content.terrain_movement_cost,
+                          &content.terrain_attacker_penalty, error) ||
             !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, error) ||
             !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error) ||
             !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,

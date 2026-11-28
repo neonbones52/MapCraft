@@ -385,6 +385,9 @@ namespace mc
     {
         std::array<std::int32_t, 2> joined{};   // the men who joined each side, for the winner's morale (EU4's
                                                 // GiveEndOfCombatMoraleBoost)
+        // The attacker's crossing (EU4's GetCrossingType before the maneuver): river_crossing_penalty if the army
+        // that began the battle came into the province over a river (MapData::march_river), else 0.
+        std::int32_t crossing = 0;
         std::array<BattleSide, 2> sides{};      // 0 the attacker (it came into the province), 1 the defender
         std::uint16_t province = 0;
         std::uint16_t duration = 0;     // days fought (EU4's _nDuration)
@@ -460,7 +463,7 @@ namespace mc
     X(fixed, back_line_modifier)                                                                                \
     X(fixed, back_line_morale_damage_taken)                                                                     \
     X(fixed, back_line_strength_damage_taken)                                                                   \
-    X(whole, back_line_reinforce_speed)
+    X(whole, back_line_reinforce_speed)                                                                             /* the attacker's dice minus when it came into the province over a river (EU4's river crossing; no straits) */     X(whole, river_crossing_penalty)
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_fixed Fixed
 #define MC_DECLARE_DEFINE(kind, name) MC_DEFINE_TYPE_##kind name = 0;
@@ -480,6 +483,8 @@ namespace mc
         DefinitionList terrain;
         std::vector<float> terrain_movement_cost;   // terrain.csv `movement_cost`: a march's multiplier over it (the
                                                     // plains 1; game/movement.h); [0] (no terrain) 1
+        std::vector<std::uint8_t> terrain_attacker_penalty;   // terrain.csv `attacker_penalty`: the dice's minus of
+                                                              // an attacker into it (game/combat.h); [0] 0
         DefinitionList goods;
         std::vector<float> goods_price;   // goods.csv `price`: the base price, emeralds per unit produced (the money
                                           // good: 1); no rule reads it yet

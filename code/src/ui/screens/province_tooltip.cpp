@@ -57,6 +57,14 @@ namespace mc
                             battle.phase == kPhaseFire ? "fire" : "shock", unsigned{ battle.sides[0].dice },
                             unsigned{ battle.sides[1].dice });
             }
+            // The attacker's minus (game/combat.h): the terrain's and the river's (lifted by a better maneuver).
+            const std::uint8_t terrain = ui.state.provinces.terrain[province];
+            const int penalty = terrain < ui.content.terrain_attacker_penalty.size()
+                                    ? ui.content.terrain_attacker_penalty[terrain]
+                                    : 0;
+            if (penalty != 0 || battle.crossing != 0) {
+                ImGui::TextDisabled("Attacker: terrain -%d, river crossing -%d", penalty, int{ battle.crossing });
+            }
         });
         for (const std::uint16_t army : here) {
             const std::uint16_t army_owner = armies.owner[army];

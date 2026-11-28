@@ -16,8 +16,7 @@
 // (C:\Dev\Projects\eu4\BattleSim, src/core/Battle.cpp; addresses there); the artillery's back line, which BattleSim
 // leaves out, from eu4.exe itself (C:\Dev\Projects\eu4\archeologyEU4, UtilityAI/evidence: ArrangeBattleField
 // 0x140229210, ReinforceFrontLineAtIndex 0x140228280, ReinforceBackLine 0x140228A60, DailyUpdate 0x140226F70, FireAt
-// 0x140225820). Not yet here: terrain and crossings (the dice's global modifier is the generals' alone), the
-// cavalry's insufficient support, combat ability and the damage modifiers (all 0).
+// 0x140225820). Not yet here: the cavalry's insufficient support, combat ability and the damage modifiers (all 0).
 
 namespace mc
 {
@@ -472,9 +471,11 @@ namespace mc
             if (province_battle_[p] == 0) {
                 // A new battle where armies of two countries meet. The defender: the country of the first army (in
                 // slot order) that was here before today, else of the first; the attacker: the first other country
-                // that came in today, else the first other. A third country waits for the battle's end.
+                // that came in today, else the first other. A third country waits for the battle's end. The
+                // attacker crosses a river if the army that made it the attacker came in today over one.
                 std::uint16_t defender = 0;
                 std::uint16_t attacker = 0;
+                bool river = false;
                 for (std::uint32_t k = lo; k < hi && defender == 0; ++k) {
                     const std::uint16_t a = army_list_[k];
                     if (fighting(a) && !movement.arrived_today(a)) {
@@ -490,6 +491,7 @@ namespace mc
                     const std::uint16_t a = army_list_[k];
                     if (fighting(a) && armies.owner[a] != defender && movement.arrived_today(a)) {
                         attacker = armies.owner[a];
+                        river = movement.crossed_river_today(a);
                     }
                 }
                 for (std::uint32_t k = lo; k < hi && attacker == 0; ++k) {
@@ -512,9 +514,11 @@ namespace mc
                 battle.sides[0].country = attacker;
                 battle.sides[1].country = defender;
                 battle.phase_day = kNotDeployed;
+                battle.crossing = river ? content.combat.river_crossing_penalty : 0;
                 province_battle_[p] = static_cast<std::uint16_t>(b + 1);
-                log::info("day {}: battle in province {}: {} attacks {}", day, p, content.countries.tag_text(attacker),
-                          content.countries.tag_text(defender));
+                log::info("day {}: battle in province {}: {} attacks {}{}", day, p,
+                          content.countries.tag_text(attacker), content.countries.tag_text(defender),
+                          river ? " across a river" : "");
             }
             // The armies of the battle's two countries that are not in it yet join it (EU4's TryToJoin), in slot
             // order.
@@ -644,7 +648,7 @@ namespace mc
             b.phase_day = 0;
             b.phase = b.phase == kPhaseFire ? kPhaseShock : kPhaseFire;
         }
-        command(state, battle);
+        command(state, content, battle);
         // The back line takes back_line_reinforce_speed + the commander's maneuver / 2 a day, at least 1.
         int speed[2] = { 0, 0 };
         for (int s = 0; s < 2; ++s) {
@@ -700,9 +704,10 @@ namespace mc
     // EU4's CalcHighestCommander and DetermineGlobalModifiers, every day after the dice: a side's commander is the
     // general with the most fire + shock + 1 among its armies in the battle (equal ones: the army that joined first,
     // then the lower slot, as EU4 keeps a side's armies in the order they joined); a side's global modifier is its
-    // commander's pips of the phase above the enemy commander's, never below 0 (no commander: 0 pips). Terrain and
-    // crossings: not yet.
-    void Combat::command(const WorldState& state, std::uint32_t battle)
+    // commander's pips of the phase above the enemy commander's, never below 0 (no commander: 0 pips); the attacker
+    // also takes off the attacker_penalty of the province's terrain, always, and the battle's crossing, but for while
+    // its commander's maneuver is above the defending commander's (EU4's GetCrossingType; no commander: 0 maneuver).
+    void Combat::command(const WorldState& state, const Content& content, std::uint32_t battle)
     {
         const Armies& armies = state.armies;
         const Leaders& leaders = state.leaders;
@@ -735,6 +740,20 @@ namespace mc
         }
         today.sides[0].global = std::max(0, pips[0] - pips[1]);
         today.sides[1].global = std::max(0, pips[1] - pips[0]);
+
+        const std::uint8_t terrain = state.provinces.terrain[b.province];
+        const int penalty = terrain < content.terrain_attacker_penalty.size()
+                                ? content.terrain_attacker_penalty[terrain]
+                                : 0;
+        int maneuver[2] = { 0, 0 };
+        for (int s = 0; s < 2; ++s) {
+            const int l = today.sides[s].commander;
+            if (l >= 0) {
+                maneuver[s] = leaders.maneuver[static_cast<std::size_t>(l)];
+            }
+        }
+        const int crossing = maneuver[0] > maneuver[1] ? 0 : b.crossing;
+        today.sides[0].global -= penalty + crossing;
     }
 
     // EU4's ArrangeBattleField: the artillery to the back line, centre outwards, up to the width; in the centre
@@ -920,7 +939,7 @@ namespace mc
             morale_pips -= (n.def_morale[art] + art_phase) / 2;
         }
         const int dice = b.sides[side].dice;
-        const int global = today_[battle].sides[side].global;   // the generals (terrain, crossings: not yet)
+        const int global = today_[battle].sides[side].global;   // the generals, the terrain and the crossing
         const int x = std::clamp(phase_pips + global + dice + 2, 0, 21);
         const int xm = std::clamp(morale_pips + global + dice + 2, 0, 21);
         const bool artillery_hit = category_of(content, regiments, target) == RegimentCategory::artillery;

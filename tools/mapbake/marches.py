@@ -11,7 +11,8 @@ For each pair of land neighbours, from the unit point of one to the unit point o
      dry border (Honeyford's with Meadowbay and Rabbit Haven);
   2. simplified (Douglas-Peucker, SIMPLIFY px), each piece kept only if it stays on the pair's land;
   3. smoothed by corner cutting (Chaikin, SMOOTHING rounds), a round kept only if every piece stays on the land.
-The curve of b -> a is a -> b's reversed (the same length). A pair whose unit points the pair's land does not join (a
+The curve of b -> a is a -> b's reversed (the same length). A step whose curve passes over river water is a river
+crossing (crosses_river; MPTR), both ways. A pair whose unit points the pair's land does not join (a
 province touching the other only with a piece cut off from its unit point) has no step: it is printed.
 
     python tools/mapbake/marches.py     # a summary only; bake.py builds the paths itself
@@ -91,6 +92,20 @@ def length(points):
     return float(np.hypot(*np.diff(points, axis=0).T).sum())
 
 
+def crosses_river(points, blocks):
+    """Whether a march path (x, y in map px) passes over river water (surface()'s cls, sampled every half pixel):
+    the step is a river crossing (docs/GAMEDATA.md, "Бой")."""
+    cls = blocks['cls']
+    for a, b in zip(points[:-1], points[1:]):
+        steps = max(2, int(math.ceil(math.hypot(b[0] - a[0], b[1] - a[1]) * 2)) + 1)
+        t = np.linspace(0.0, 1.0, steps)
+        bx = np.clip(np.floor((a[0] + (b[0] - a[0]) * t) / BLOCK).astype(int), 0, cls.shape[1] - 1)
+        by = np.clip(np.floor((a[1] + (b[1] - a[1]) * t) / BLOCK).astype(int), 0, cls.shape[0] - 1)
+        if (cls[by, bx] == RIVER).any():
+            return True
+    return False
+
+
 def land_pairs(provinces):
     """The neighbours (adjacency.csv, a < b) that are both land."""
     land = {pid for pid, row in provinces.items() if row['type'] == 'land'}
@@ -149,11 +164,14 @@ def main():
     unit = np.full((max(provinces) + 1, 2), np.nan)
     for r in read_csv(ROOT / 'positions.csv'):
         unit[int(r['id'])] = (float(r['unit_x']), float(r['unit_y']))
-    paths, failed = build(ids, land_pairs(provinces), unit, surface())
+    blocks = surface()
+    paths, failed = build(ids, land_pairs(provinces), unit, blocks)
     lengths = sorted(length(v) for v in paths.values())
     straight = sorted(math.dist(unit[p], unit[q]) for p, q in paths)
     print(f'{len(paths)} march paths, {sum(len(v) for v in paths.values())} points; length median '
           f'{lengths[len(lengths) // 2]:.1f} px (straight {straight[len(straight) // 2]:.1f}), max {lengths[-1]:.1f}')
+    rivers = sorted(pair for pair, path in paths.items() if crosses_river(path, blocks))
+    print(f'{len(rivers)} cross a river: {rivers}')
     if failed:
         print(f'no way within the pair: {failed}')
 

@@ -19,7 +19,7 @@ import marches  # noqa: E402
 import rivers  # noqa: E402
 
 MAGIC = b'MCMP'
-VERSION = 3
+VERSION = 4
 TYPES = {'land': 1, 'sea': 2, 'lake': 3, 'wasteland': 4}
 
 
@@ -86,6 +86,7 @@ def main():
     march_offsets = np.zeros(len(adj_id) + 1, np.uint32)
     march_points = []
     march_length = np.zeros(len(adj_id), np.float32)
+    march_river = np.zeros(len(adj_id), np.uint8)
     for pid in range(count):
         for k in range(offsets[pid], offsets[pid + 1]):
             other = int(adj_id[k])
@@ -93,6 +94,7 @@ def main():
             if path is not None:
                 march_points.append(path if pid < other else path[::-1])
                 march_length[k] = marches.length(path)
+                march_river[k] = marches.crosses_river(path, blocks)
             march_offsets[k + 1] = march_offsets[k] + (len(path) if path is not None else 0)
     march_points = np.vstack(march_points).astype(np.float32) if march_points else np.zeros((0, 2), np.float32)
 
@@ -127,6 +129,7 @@ def main():
         (b'MPTO', march_offsets.tobytes()),                       # u32[m+1] march path of each ADJI entry: points
         (b'MPTV', march_points.tobytes()),                        # f32[v*2] march path points (map px)
         (b'MPTL', march_length.tobytes()),                        # f32[m] march path length, px (0 = no step)
+        (b'MPTR', march_river.tobytes()),                         # u8[m] 1: the march path crosses a river
         (b'PNAM', strings(names)),                                # u32[n+1] offsets + UTF-8
         (b'RNAM', strings([''] + [r['name'] for r in regions])),  # regions, 1-based
         (b'RPAR', region_parent.tobytes()),                       # u8[regions+1] parent index into LNAM

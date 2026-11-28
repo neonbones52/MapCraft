@@ -1,0 +1,12 @@
+# Terrain and crossings (M6, step 5): the armies and generals of battle.txt, but NBR's army (slot 1) stands in
+# Dripstonebarrow (480), made mountains here; DUM's (slot 0) marches to Goatbrook (488), then over the river into
+# Dripstonebarrow. The attacker takes the terrain's attacker_penalty (mountains 2) and the river crossing (1) off its
+# dice: DUM's general does not out-maneuver NBR's (2 against 3), so the crossing stays. crossing_plains.txt is the
+# same attack over the plains without a river; over many seeds this one is lost more often.
+years = 1
+seed = 1
+setup/armies.csv: 2.province = 480
+setup/provinces.csv: 480.terrain = mountains
+
+day 0 = DUM move 0:0 488
+day 40 = DUM move 0:0 480
