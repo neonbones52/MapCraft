@@ -23,8 +23,7 @@ namespace mc
     {
         return static_cast<Fixed>(a * kFixedOne / b);
     }
-    [[nodiscard]] constexpr Fixed fx_from_int(std::int32_t n) { return n * kFixedOne; }
-    // The whole part, truncated toward zero.
+    [[nodiscard]] constexpr Fixed fx_from_int(std::int32_t n) { return n * kFixedOne; }    // The whole part, truncated toward zero.
     [[nodiscard]] constexpr std::int32_t fx_to_int(Fixed f) { return f / kFixedOne; }
     // For display only (UI, logs): never back into the simulation.
     [[nodiscard]] constexpr double fx_to_double(Fixed f) { return static_cast<double>(f) / kFixedOne; }

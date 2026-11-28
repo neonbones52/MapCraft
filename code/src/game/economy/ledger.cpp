@@ -36,6 +36,11 @@ namespace mc::ledger
         money->cash[accounts[largest]] += amount - given;
     }
 
+    void spend(Balances* money, std::size_t account, Money amount)
+    {
+        money->cash[account] -= amount;
+    }
+
     bool transfer(Balances* money, std::size_t from, std::size_t to, Money amount)
     {
         if (money->cash[from] < amount) {

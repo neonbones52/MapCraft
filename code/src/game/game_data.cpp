@@ -664,13 +664,14 @@ namespace mc
         // then the numbers of MC_REGIMENT_TYPE_NUMBERS (maneuver and pips), whole numbers 0..255.
         bool read_regiment_types(Source& src, const std::filesystem::path& path, DefinitionList* types,
                                  std::vector<RegimentCategory>* category, RegimentTypeNumbers* numbers,
-                                 std::string* error)
+                                 std::vector<float>* cost, std::string* error)
         {
             csv::Table table;
             if (!read_list(src, path, false, false, types, error, &table)) {
                 return false;
             }
             category->assign(types->size(), RegimentCategory::infantry);
+            cost->assign(types->size(), 0.0f);
             std::vector<std::uint8_t>* columns[] = {
 #define MC_NUMBER_OF(name) &numbers->name,
                 MC_REGIMENT_TYPE_NUMBERS(MC_NUMBER_OF)
@@ -698,6 +699,10 @@ namespace mc
                     return false;
                 }
             }
+            int cost_column = 0;
+            if (!need_column(path, table, "cost", &cost_column, error)) {
+                return false;
+            }
             for (std::size_t r = 0; r < table.rows.size(); ++r) {
                 const std::string& text = table.rows[r][column];
                 const auto* found = std::find(std::begin(kRegimentCategories), std::end(kRegimentCategories), text);
@@ -713,12 +718,18 @@ namespace mc
                     }
                     (*columns[k])[r + 1] = static_cast<std::uint8_t>(n);
                 }
+                if (!parse_number(table.rows[r][cost_column], &(*cost)[r + 1], false, true)) {
+                    return ctx.fail(r, std::format("cost \"{}\": emeralds to raise a regiment, > 0",
+                                                   table.rows[r][cost_column]));
+                }
             }
             return true;
         }
 
         // defines.csv (required): key, value; a line for every define of MC_COMBAT_DEFINES, MC_WAR_DEFINES and
-        // MC_ECONOMY_DEFINES, once each (the budget_* adding up to 100): a whole one a whole number >= 1 (max_combat_width at most kMaxCombatWidth), a fixed one a decimal number.
+        // MC_ECONOMY_DEFINES, once each (the budget_* adding up to 100, maintenance_min <= maintenance_start <= 100):
+        // a whole one a whole number >= 1 (max_combat_width at most kMaxCombatWidth), a count one >= 0, a fixed one a
+        // decimal number with at most 3 digits after the point, a real one a decimal number.
         bool parse_define_whole(std::string_view text, int* out)
         {
             std::uint32_t n = 0;
@@ -738,6 +749,11 @@ namespace mc
             return true;
         }
         bool parse_define_fixed(std::string_view text, Fixed* out) { return fx_parse(text, out); }
+        bool parse_define_real(std::string_view text, double* out)
+        {
+            const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), *out);
+            return !text.empty() && ec == std::errc{} && ptr == text.data() + text.size() && std::isfinite(*out);
+        }
 
         bool read_defines(Source& src, const std::filesystem::path& path, CombatDefines* out, WarDefines* war,
                           EconomyDefines* economy, std::string* error)
@@ -787,12 +803,15 @@ namespace mc
     }
                 MC_WAR_DEFINES(MC_PARSE_WAR_DEFINE)
 #undef MC_PARSE_WAR_DEFINE
-#define MC_PARSE_ECONOMY_DEFINE(type, name)                                                                         if (i++ == k) {                                                                                                     ok = parse_define_##type(row[value], &economy->name);                                                       }
+#define MC_PARSE_ECONOMY_DEFINE(type, name)                                                                     \
+    if (i++ == k) {                                                                                             \
+        ok = parse_define_##type(row[value], &economy->name);                                                   \
+    }
                 MC_ECONOMY_DEFINES(MC_PARSE_ECONOMY_DEFINE)
 #undef MC_PARSE_ECONOMY_DEFINE
                 if (!ok) {
                     return ctx.fail(r, std::format("{} \"{}\": a whole number >= 1 (>= 0 for a count), or a decimal "
-                                                   "number with at most 3 digits after the point",
+                                                   "number (at most 3 digits after the point for a fixed one)",
                                                    row[key], row[value]));
                 }
             }
@@ -811,6 +830,13 @@ namespace mc
                                economy->budget_stability + economy->budget_treasury;
             if (shares != 100) {
                 *error = std::format("{}: the budget_* shares add up to {}, not 100", path.string(), shares);
+                return false;
+            }
+            if (economy->maintenance_min >= 100 || economy->maintenance_start < economy->maintenance_min ||
+                economy->maintenance_start > 100) {
+                *error = std::format("{}: maintenance_min {} and maintenance_start {}: maintenance_min <= "
+                                     "maintenance_start <= 100, maintenance_min below 100",
+                                     path.string(), economy->maintenance_min, economy->maintenance_start);
                 return false;
             }
             return true;
@@ -957,7 +983,8 @@ namespace mc
                         error) ||
             !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error) ||
             !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,
-                                 &content.regiment_category, &content.regiment_numbers, error) ||
+                                 &content.regiment_category, &content.regiment_numbers, &content.regiment_cost,
+                                 error) ||
             !read_modifiers(src, common / "modifiers.csv", &content.modifiers, error) ||
             !read_defines(src, common / "defines.csv", &content.combat, &content.war, &content.economy, error)) {
             return false;
@@ -1020,6 +1047,9 @@ namespace mc
                 Column<std::uint8_t>& shares = state.countries.*kBudgetShares[a];
                 std::fill(shares.begin(), shares.end(), static_cast<std::uint8_t>(start[a]));
             }
+            // The maintenance slider too (game/economy/upkeep.h).
+            std::fill(state.countries.maintenance.begin(), state.countries.maintenance.end(),
+                      static_cast<std::uint8_t>(e.maintenance_start));
         }
         state.armies.resize();
         state.regiments.resize();

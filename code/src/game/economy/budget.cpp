@@ -20,7 +20,7 @@ namespace mc
     {
         world_income(state, content, &income_);
         CountryStates& countries = state.countries;
-        const double per_month = fx_to_double(content.economy.treasury_inflation) / static_cast<double>(kMonthsPerYear);
+        const double per_month = content.economy.treasury_inflation / static_cast<double>(kMonthsPerYear);
         for (std::size_t c = 1; c < countries.count; ++c) {
             const Money income = to_grains(income_.sum[c].monthly());
             if (income <= 0) {
@@ -36,6 +36,13 @@ namespace mc
             if (treasury > 0) {
                 countries.inflation[c] += static_cast<float>(static_cast<double>(treasury) / 100.0 * per_month);
             }
+        }
+        // The army's upkeep, after the income: out of the treasury, below 0 if need be.
+        world_upkeep(state, content, &upkeep_);
+        for (std::size_t c = 1; c < countries.count; ++c) {
+            const double upkeep = land_upkeep(content.economy, upkeep_.base[c], upkeep_.regiments[c], upkeep_.limit[c],
+                                              countries.maintenance[c], countries.inflation[c]);
+            ledger::spend(&state.money, account(c, Account::treasury), to_grains(upkeep));
         }
     }
 

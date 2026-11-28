@@ -52,7 +52,8 @@ namespace mc::headless
             return out;
         }
 
-        // "TAG move slot:generation province", "TAG war TAG", "TAG peace TAG [province ...]" or "TAG budget a p g s t".
+        // "TAG move slot:generation province", "TAG war TAG", "TAG peace TAG [province ...]", "TAG budget a p g s t" or
+        // "TAG maintenance N".
         bool parse_command(std::string_view text, ScenarioCommand* out, std::string* why)
         {
             const std::vector<std::string_view> w = words(text);
@@ -76,6 +77,17 @@ namespace mc::headless
                 out->command.kind = CommandKind::peace;
                 return true;
             }
+            if (w.size() == 3 && w[1] == "maintenance") {
+                std::uint32_t level = 0;
+                if (!parse_whole(w[2], &level) || level > 100) {
+                    *why = std::format("maintenance \"{}\": a whole percent 0..100", w[2]);
+                    return false;
+                }
+                out->command.level = static_cast<std::uint8_t>(level);
+                out->country = std::string(w[0]);
+                out->command.kind = CommandKind::maintenance;
+                return true;
+            }
             if (w.size() >= 2 && w[1] == "budget") {
                 if (w.size() != 2 + kAccountsPerCountry) {
                     *why = "a budget is TAG budget army production government stability treasury (percents)";
@@ -95,7 +107,7 @@ namespace mc::headless
             }
             if (w.size() != 4 || w[1] != "move") {
                 *why = "a command is TAG move slot:generation province, TAG war TAG, TAG peace TAG [province ...], "
-                       "or TAG budget army production government stability treasury";
+                       "TAG budget army production government stability treasury, or TAG maintenance percent";
                 return false;
             }
             const std::size_t colon = w[2].find(':');

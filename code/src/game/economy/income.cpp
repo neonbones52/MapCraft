@@ -19,7 +19,7 @@ namespace mc
     double province_volume(const WorldState& state, const EconomyDefines& defines, std::uint32_t p)
     {
         const Provinces& provinces = state.provinces;
-        return fx_to_double(defines.production_base) +
+        return defines.production_base +
                static_cast<double>(provinces.population[p]) / static_cast<double>(defines.population_per_unit) +
                static_cast<double>(provinces.base_tax[p]) / static_cast<double>(defines.base_tax_per_unit);
     }
@@ -35,9 +35,9 @@ namespace mc
         const EconomyDefines& defines = content.economy;
         const auto months = static_cast<double>(kMonthsPerYear);
         const double base = static_cast<double>(provinces.base_tax[p]) +
-                            (p == seat ? fx_to_double(defines.capital_tax) : 0.0);
-        const Fixed census = provinces.has_core(p, owner) ? defines.census_core : defines.census_no_core;
-        ProvinceIncome income{ base / months, 0.0, 0.0, base * fx_to_double(census) };
+                            (p == seat ? defines.capital_tax : 0.0);
+        const double census = provinces.has_core(p, owner) ? defines.census_core : defines.census_no_core;
+        ProvinceIncome income{ base / months, 0.0, 0.0, base * census };
         const std::uint8_t good = provinces.good[p];
         if (good != 0) {
             const double units = province_volume(state, defines, p) / months;

@@ -25,6 +25,7 @@ namespace mc::headless
     //     day 0 = DUM budget 20 20 20 20 20
     //                                      DUM sets its budget sliders, whole percents: Army, Production,
     //                                      Government, stability, Treasury (game/economy/budget.h)
+    //     day 0 = DUM maintenance 50       DUM sets its land maintenance slider, a whole percent (game/economy/upkeep.h)
     // years and seed are required; an unknown key, a repeated key or change, a command past the run's days, or a
     // malformed line fails with its line. The command's country is checked once the data is loaded (main.cpp).
     struct ScenarioCommand

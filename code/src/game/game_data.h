@@ -191,7 +191,10 @@ namespace mc
     X(countries, std::uint8_t, budget_stability, derived)                                                       \
     X(countries, std::uint8_t, budget_treasury, derived)                                                        \
     /* EU3's inflation, in percent (4 = everything 4% dearer), >= 0: grows with the Treasury share */           \
-    X(countries, float, inflation, runtime)
+    X(countries, float, inflation, runtime)                                                                     \
+    /* the land maintenance slider, whole percent maintenance_min..100 (game/economy/upkeep.h); at the start */ \
+    /* defines.csv's maintenance_start */                                                                       \
+    X(countries, std::uint8_t, maintenance, derived)
 
     // Saved. Country state (data/setup/countries.csv at the start: tag by hand), one column per field, indexed like
     // CountryDefinitions, padded(count) long.
@@ -595,7 +598,7 @@ namespace mc
 
     // Content. The battle's constants (data/common/defines.csv: key, value; EU4's NDefines::NMilitary), every one
     // required: X(kind, name), whole a whole number >= 1 (int), count a whole number >= 0 (int), fixed a decimal
-    // number (Fixed).
+    // number (Fixed), real a decimal number (double: the economy's rates and shares, worked out in floating point).
 #define MC_COMBAT_DEFINES(X)                                                                                    \
     /* days a fire or shock phase lasts; the dice are rolled anew with each phase */                            \
     X(whole, days_per_phase)                                                                                    \
@@ -673,19 +676,16 @@ namespace mc
     X(fixed, province_value_cap)                                                                                \
     X(fixed, capital_value_mult)                                                                                \
     X(fixed, fort_per_dev_ratio)                                                                                \
-    /* a stand-in for the land force limit until M8: the base + this × the development (base_tax) */            \
-    X(fixed, land_forcelimit_base)                                                                              \
-    X(fixed, land_forcelimit_per_development)                                                                   \
     /* the years of a truce after a peace (EU4's TRUCE_YEARS) */                                                \
     X(whole, truce_years)
     // Content. The economy's constants (data/common/defines.csv too; EU3's, docs/ECONOMY.md), the same kinds, every
     // one required (game/economy/income.h, budget.h).
 #define MC_ECONOMY_DEFINES(X)                                                                                   \
     /* what a capital adds to its base_tax, in the tax and the census (EU3 2) */                                \
-    X(fixed, capital_tax)                                                                                       \
+    X(real, capital_tax)                                                                                        \
     /* the census's share of a province with its owner's core (EU3 100%) and of one without (10%) */            \
-    X(fixed, census_core)                                                                                       \
-    X(fixed, census_no_core)                                                                                    \
+    X(real, census_core)                                                                                        \
+    X(real, census_no_core)                                                                                     \
     /* the budget sliders at the start, whole percents adding up to 100 (the user's decision: 25 each, */       \
     /* Treasury 0) */                                                                                           \
     X(count, budget_army)                                                                                       \
@@ -695,16 +695,31 @@ namespace mc
     X(count, budget_treasury)                                                                                   \
     /* the inflation a year of the whole monthly income in the Treasury gives, in percent (EU3 1:100: 60% */    \
     /* in the Treasury, +0.6 a year) */                                                                         \
-    X(fixed, treasury_inflation)                                                                                \
+    X(real, treasury_inflation)                                                                                 \
     /* a province's volume of its good a year (EU3 In Nomine): production_base + population / */                \
     /* population_per_unit + base_tax / base_tax_per_unit (0.99, 100 000, 20) */                                \
-    X(fixed, production_base)                                                                                   \
+    X(real, production_base)                                                                                    \
     X(whole, population_per_unit)                                                                               \
-    X(whole, base_tax_per_unit)
+    X(whole, base_tax_per_unit)                                                                                 \
+    /* the land force limit (game/economy/upkeep.h; the user's decision): force_limit_base for every country */ \
+    /* + force_limit_per_base_tax × (its provinces' base_tax + capital_tax at its seat) (6, EU3's 0.25) */      \
+    X(real, force_limit_base)                                                                                   \
+    X(real, force_limit_per_base_tax)                                                                           \
+    /* a regiment's upkeep a month: its type's cost × this × its strength / 1000 (EU3 2.5%); over the force */  \
+    /* limit × (1 + force_limit_extra_cost × (regiments - limit) / limit) (EU3 1: in proportion; EU4 2) */      \
+    X(real, land_maintenance)                                                                                   \
+    X(real, force_limit_extra_cost)                                                                             \
+    /* the land maintenance slider, whole percents: its lowest (the upkeep × it) and its start; at the lowest */ \
+    /* the regiments' morale ceiling is min_maintenance_morale of the maximum, at 100 the maximum, linear */     \
+    /* between (the user's decision: 50, 100, 0.2) */                                                           \
+    X(whole, maintenance_min)                                                                                   \
+    X(whole, maintenance_start)                                                                                 \
+    X(fixed, min_maintenance_morale)
 
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_count int
 #define MC_DEFINE_TYPE_fixed Fixed
+#define MC_DEFINE_TYPE_real double
 #define MC_DECLARE_DEFINE(kind, name) MC_DEFINE_TYPE_##kind name = 0;
     struct CombatDefines
     {
@@ -741,6 +756,9 @@ namespace mc
         DefinitionList regiment_types;    // data/common/regiment_types.csv: the units (EU4's Latin Knights...)
         std::vector<RegimentCategory> regiment_category;   // per type
         RegimentTypeNumbers regiment_numbers;              // per type: maneuver and pips
+        std::vector<float> regiment_cost;                  // per type (regiment_types.csv `cost`): what a regiment
+                                                           // costs to raise, emeralds (EU3 9, 21, 30); its upkeep
+                                                           // follows (game/economy/upkeep.h); [0] 0
         CombatDefines combat;             // data/common/defines.csv
         WarDefines war;                   // data/common/defines.csv too
         EconomyDefines economy;           // and these

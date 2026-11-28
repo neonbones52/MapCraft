@@ -1,0 +1,25 @@
+# The army's upkeep, the force limit and the maintenance slider (M8, step 3): treasury.csv and armies.csv of the run.
+# A regiment costs its type's cost × 2.5% a month: DUM's 3 cavalry (21) and 2 artillery (30) 3.075, NBR's 3 cavalry
+# 1.575, out of the treasury on each month's 1st, × (1 + inflation / 100); below 0 if need be.
+# The force limit is force_limit_base + 0.25 × (Σ base_tax + 2 at the capital), rounded down to whole regiments; here
+# force_limit_base is 0 so that DUM is over it: 0.25 × 17 = 4.25, so 4, for its 5 regiments, its upkeep × (1 + 1 / 4)
+# = 3.84375 (× inflation), while NBR's 3 regiments are within its 3 (0.25 × 15 = 3.75).
+# DUM puts its whole income into the Treasury (3.369583 a month, inflation +1 a year), less than its upkeep: its
+# treasury falls between the censuses. NBR keeps its sliders: its treasury goes below 0 by its upkeep each month until the census.
+# The maintenance slider (DUM's armies stand at Golemtor, their maximum morale 3): DUM sets 50% on day 395 and back to
+# 100% on day 410, before 1 March 2 (day 420): its morale stays 3. 75% on day 430: on 1 April 2 (day 450) the morale is
+# cut to the ceiling 1.8 (20% + half of the way to 100%) and the upkeep is × 0.75; 50% on day 460: on 1 May 2 cut to
+# 0.6, upkeep × 0.5; 100% on day 490: from 1 June 2 it recovers 0.6 a month (20% on its own land) up to 3. NBR's 40% on
+# day 10 is refused (below the slider's 50).
+years = 2
+seed = 1
+
+common/defines.csv: force_limit_base.value = 0
+
+day 0 = DUM budget 0 0 0 0 100
+day 10 = NBR maintenance 40
+day 395 = DUM maintenance 50
+day 410 = DUM maintenance 100
+day 430 = DUM maintenance 75
+day 460 = DUM maintenance 50
+day 490 = DUM maintenance 100

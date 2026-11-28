@@ -49,5 +49,6 @@ namespace mc
         std::vector<std::uint16_t> peace_provinces;   // of it, taken by that peace; none: a white peace
         bool set_budget = false;   // the player sets their budget sliders to `budget` (the Dev window)
         BudgetShares budget{};
+        int set_maintenance = 0;   // the player sets their army maintenance to this percent (the Dev window); 0 = leave
     };
 }

@@ -25,8 +25,8 @@
 | `common/countries.csv` | tag, name, adjective, color | определения стран; `adjective` — для частей, отрезанных от столицы, по умолчанию = name |
 | `common/goods.csv` | key, name, color, price, icon | товары (набор — пользователя, растёт строками: без фабрик и рецептов, cattle — и мясо, и кожа); `price` — базовая цена товара (base price EU3/EU4) в изумрудах за единицу производства, > 0 (у изумруда всегда 1); по ней продаётся производство («Казна»), потом от неё — мировая цена, которую будут менять модификаторы и события; `icon` — предмет Майнкрафта для UI (M13), пока не читается |
 | `common/trade_nodes.csv` | key, name, color | торговые узлы; узел — из целых регионов (`setup/regions.csv`); необязателен; правил узлов пока нет (M14) |
-| `common/regiment_types.csv` | key, name, category, maneuver, off_fire, def_fire, off_shock, def_shock, off_morale, def_morale | типы полков — юниты (как Latin Knights в EU4); `category` — infantry, cavalry или artillery; `maneuver` — манёвр юнита EU4, дальность удара вбок (фланг; пехота 1, конница 2); пипсы атаки и защиты огня, натиска и морали — целые 0–255 («Бой»); необязателен (без него — без полков) |
-| `common/defines.csv` | key, value | константы боя (`NDefines::NMilitary` EU4), каждая обязательна, по строке: `days_per_phase`, `dice_sides`, `cannot_retreat_days`, `overrun_factor`, `overrun_factor_cannot_leave`, `max_combat_width` (≤ 40) — целые ≥ 1; `leader_max_pips` (EU4 6), `back_line_reinforce_speed` (EU4 2), `river_crossing_penalty` (минус к кубику атакующего за переправу через реку, 1) — целые ≥ 1; `recovery_own_land`, `recovery_neutral_land`, `recovery_enemy_land`, `recovery_retreating` (доли макс. морали за месяц вне боя: 0.2, 0.15, 0.1, 0.05; «Восстановление») — десятичные; `war_length_damage`, `daily_morale_damage`, `reserve_daily_morale_damage`, `front_line_modifier`, `back_line_modifier` (EU4 0.5), `back_line_morale_damage_taken` (0.4), `back_line_strength_damage_taken` (0) — десятичные («Бой»); осада (`NMilitary` EU4, «Осада и оккупация»): целые ≥ 1 — `days_per_siege_phase` 30, `siege_dice_sides` 14, `siege_win` 20, `max_breach` 3, `siege_memory` 11, `siege_bonus_supplies_shortage` 1, `siege_bonus_food_shortage` 2, `siege_bonus_water_shortage` 3, `siege_bonus_defenders_desert` 2, `siege_garrison_surrender` 100, `garrison_size` 1000, `siege_min_men` 1000 (решение пользователя); целые ≥ 0 — `capital_fort_level` 1, `siege_unblockaded_penalty` 2, `garrison_after_capture` 100; десятичные — `siege_memory_scaled` 0.5, `siege_disease_impact` 0.05, `siege_force_needed_multiplier` 3, `garrison_growth` 0.05; война и мир (`NDiplomacy`/`NMilitary` EU4, «Война», `WarDefines`): целые ≥ 1 — `max_warscore` 100, `warscore_max_from_battles` 40, `truce_years` 5; десятичные — `province_value_base` 5, `province_value_cap` 30 (`AE_PROVINCE_CAP`), `capital_value_mult` 1.2, `fort_per_dev_ratio` 50, `land_forcelimit_base` 6 и `land_forcelimit_per_development` 0.3 (заглушка лимита армии до M8); экономика (EU3, «Казна», `EconomyDefines`): десятичные — `capital_tax` 2, `census_core` 1, `census_no_core` 0.1, `treasury_inflation` 1; целые ≥ 0 — стартовые доли ползунков бюджета `budget_army`, `budget_production`, `budget_government`, `budget_stability` 25 и `budget_treasury` 0 (решение пользователя), в сумме ровно 100; объём производства — `production_base` 0.99 (десятичное), `population_per_unit` 100000 и `base_tax_per_unit` 20 (целые ≥ 1) |
+| `common/regiment_types.csv` | key, name, category, maneuver, off_fire, def_fire, off_shock, def_shock, off_morale, def_morale, cost | типы полков — юниты (как Latin Knights в EU4); `category` — infantry, cavalry или artillery; `maneuver` — манёвр юнита EU4, дальность удара вбок (фланг; пехота 1, конница 2); пипсы атаки и защиты огня, натиска и морали — целые 0–255 («Бой»); `cost` — цена найма полка в изумрудах, > 0 (EU3: пехота 9, конница 21, артиллерия 30), от неё содержание («Содержание армии»); необязателен (без него — без полков) |
+| `common/defines.csv` | key, value | константы боя (`NDefines::NMilitary` EU4), каждая обязательна, по строке: `days_per_phase`, `dice_sides`, `cannot_retreat_days`, `overrun_factor`, `overrun_factor_cannot_leave`, `max_combat_width` (≤ 40) — целые ≥ 1; `leader_max_pips` (EU4 6), `back_line_reinforce_speed` (EU4 2), `river_crossing_penalty` (минус к кубику атакующего за переправу через реку, 1) — целые ≥ 1; `recovery_own_land`, `recovery_neutral_land`, `recovery_enemy_land`, `recovery_retreating` (доли макс. морали за месяц вне боя: 0.2, 0.15, 0.1, 0.05; «Восстановление») — десятичные; `war_length_damage`, `daily_morale_damage`, `reserve_daily_morale_damage`, `front_line_modifier`, `back_line_modifier` (EU4 0.5), `back_line_morale_damage_taken` (0.4), `back_line_strength_damage_taken` (0) — десятичные («Бой»); осада (`NMilitary` EU4, «Осада и оккупация»): целые ≥ 1 — `days_per_siege_phase` 30, `siege_dice_sides` 14, `siege_win` 20, `max_breach` 3, `siege_memory` 11, `siege_bonus_supplies_shortage` 1, `siege_bonus_food_shortage` 2, `siege_bonus_water_shortage` 3, `siege_bonus_defenders_desert` 2, `siege_garrison_surrender` 100, `garrison_size` 1000, `siege_min_men` 1000 (решение пользователя); целые ≥ 0 — `capital_fort_level` 1, `siege_unblockaded_penalty` 2, `garrison_after_capture` 100; десятичные — `siege_memory_scaled` 0.5, `siege_disease_impact` 0.05, `siege_force_needed_multiplier` 3, `garrison_growth` 0.05; война и мир (`NDiplomacy`/`NMilitary` EU4, «Война», `WarDefines`): целые ≥ 1 — `max_warscore` 100, `warscore_max_from_battles` 40, `truce_years` 5; десятичные — `province_value_base` 5, `province_value_cap` 30 (`AE_PROVINCE_CAP`), `capital_value_mult` 1.2, `fort_per_dev_ratio` 50; экономика (EU3, «Казна», «Содержание армии», `EconomyDefines`; вид `real` — десятичное в `double`, для ставок и долей, которые экономика считает во `float`): `real` — `capital_tax` 2, `census_core` 1, `census_no_core` 0.1, `treasury_inflation` 1, `production_base` 0.99, `force_limit_base` 6, `force_limit_per_base_tax` 0.25, `land_maintenance` 0.025, `force_limit_extra_cost` 1; целые ≥ 0 — стартовые доли ползунков бюджета `budget_army`, `budget_production`, `budget_government`, `budget_stability` 25 и `budget_treasury` 0 (решение пользователя), в сумме ровно 100; целые ≥ 1 — `population_per_unit` 100000, `base_tax_per_unit` 20, `maintenance_min` 50 и `maintenance_start` 100 (`maintenance_min` ≤ `maintenance_start` ≤ 100); десятичное `Fixed` — `min_maintenance_morale` 0.2 |
 | `common/modifiers.csv` | key, name, modifier, value | наборы модификаторов — источники («Модификаторы» ниже): строка на пару «набор — модификатор»; `key` — набор, `name` — имя для людей (на любой строке набора, где есть — одинаковое; по умолчанию key), `modifier` — модификатор из списка кода, в наборе один раз, `value` — число (может быть отрицательным); набор `base` есть у каждой страны (base_values EU4); необязателен |
 | `setup/provinces.csv` | id, name, owner, controller, cores, terrain, good, base_tax, population, fort | провинции суши на старте (docs/ECONOMY.md, «Провинция») |
 | `setup/regions.csv` | region, name, trade_node | регион карты (номер из `regions.csv` карты) → торговый узел; пусто — без узла |
@@ -98,7 +98,8 @@
   - `Content` — справочники и `CountryDefinitions` (тег упакован в `u32`, имя, прилагательное, цвет). Все строки
     живут только здесь; после загрузки не меняется.
   - `WorldState` — столбцы: `Provinces`, `Regions` (торговый узел региона), `Balances` (деньги: счета стран,
-    «Деньги»), `CountryStates` (столица, наборы модификаторов, ползунки бюджета, инфляция) с тем же индексом, что у стран, и таблицы сущностей `Armies`,
+    «Деньги»), `CountryStates` (столица, наборы модификаторов, ползунки бюджета, инфляция,
+    ползунок содержания) с тем же индексом, что у стран, и таблицы сущностей `Armies`,
     `Regiments` (ниже); бои `Battles` — слоты структур `Battle`, не столбцы («Бой»); войны `Wars` и осады `Sieges` —
     слоты столбцов («Война», «Осада и оккупация»). Симуляция меняет только его.
     Столбцы заданы списками (ниже).
@@ -119,7 +120,7 @@
   - `by_hand` — из `data/setup`, но читает и пишет свой код `GameData` (столица и провинция армии — провинция суши,
     армия полка — номер из `armies.csv`);
   - `derived` — не в `data/setup`: `GameData` ставит при загрузке из других столбцов (мораль полка — полная,
-    гарнизон провинции — полный; ползунки бюджета — из `defines.csv`).
+    гарнизон провинции — полный; ползунки бюджета и содержания — из `defines.csv`).
   Вне списков, явно: размеры (`count`, `core_words`, `modifier_words`), битовые матрицы коров и наборов
   модификаторов стран, маски живых слотов, маска отступающих армий (`armies.retreating`) и бои (`battles.list`). Ключ строки (`id`, `region`, `tag`) и
   `name` для людей — тоже свой код каждого файла. Метки «сохраняется / контент / кэш» — у типа, не у столбца; у кэша
@@ -300,7 +301,8 @@ ability и модификаторы урона (все 0), прорыв (`*_BREA
 ## Восстановление (`game/recovery.h`)
 Вне боя армии восстанавливаются раз в месяц, на месячном тике («Время»; решение пользователя 28.11.2026: только
 месячный тик, как в EU4). Полк армии не в бою получает долю макс. морали своей страны (`game/modifiers.h`), не
-выше максимума; мораль выше максимума не срезается. Доля — по тому, где стоит армия (решение пользователя;
+выше максимума; мораль выше максимума не срезается. Ползунок содержания ниже 100% ставит потолок ниже максимума
+(«Содержание армии»): сначала мораль каждого полка страны срезается до него, потом восстанавливается только до него. Доля — по тому, где стоит армия (решение пользователя;
 `defines.csv`):
 - своя земля (страна армии владеет провинцией) — `recovery_own_land`, 0.2;
 - ничья земля (нет владельца) или оккупированная (страна армии контролирует, но не владеет) — `recovery_neutral_land`,
@@ -338,9 +340,7 @@ ability и модификаторы урона (все 0), прорыв (`*_BREA
     (`CalculateBattleScore`) — `max(0.1, ⌊потери/1000⌋ / max(2·FL, 2·⌊потери/1000⌋) × warscore_max_from_battles/2)`, не
     больше 10 за бой; потери проигравшего — люди, с которыми он вступил (`Battle::joined`), минус стоящие в конце (при
     уничтожении — все). Начисляет `Combat::finish`;
-  - **лимит армии FL** — заглушка до M8 (решение пользователя): `land_forcelimit_base` + `land_forcelimit_per_development`
-    × развитие (Σ `base_tax` страны) — формула EU4 без модификаторов, доля за развитие поднята до 0.3, раз развитие у
-    нас — только налог;
+  - **лимит армии FL** — лимит сил страны, целый («Содержание армии»);
   - **оккупация** (`GetOccupiedScore`): по каждой провинции врага, которую сторона контролирует, `ценность / сумма
     ценностей всех провинций врага × 100` (Fixed, сумма — целыми очками, как `_nTotalWarWorth`), итог усекается до
     целого;
@@ -483,21 +483,47 @@ ability и модификаторы урона (все 0), прорыв (`*_BREA
   `World`), потом по странам.
 - В `mapcraft_sim` — сценарии `treasury` и `production` (docs/SIMULATION.md), помесячный ряд `treasury.csv`.
 
+## Содержание армии (`game/economy/upkeep.h`)
+Решения пользователя 28.11.2026 — числа EU3, способы EU4 (archeologyEU4 `UtilityAI/research/CAVALRY.md`):
+- **Лимит сил** — `force_limit_base` (6, у каждой страны) + `force_limit_per_base_tax` (0.25) × (Σ `base_tax` провинций,
+  которыми страна владеет, оккупированных тоже, + `capital_tax` за столицу), округлённое вниз до целых полков (1.8 —
+  это 1; решение пользователя), не меньше 0: целое и в правилах, и в военном счёте, и в UI. Полк идёт в лимит
+  единицей при любой силе. Его же читает военный счёт («Война»).
+- **Содержание за месяц** — база × `maintenance` / 100 × (1 + max(0, `force_limit_extra_cost` × (полков − лимит) /
+  лимит)) × (1 + инфляция / 100) (при лимите 0 — × (1 + `force_limit_extra_cost` × полков)); база — Σ по полкам: сила / 1000 × `cost` типа × `land_maintenance` (2.5%): полк
+  платит за людей, которые в нём есть (EU4). Сверх лимита — пропорционально (`force_limit_extra_cost` 1, как EU3; в
+  EU4 — 2). Списывается из казны 1-го числа после месячного дохода (`ledger::spend`); казна может уйти в минус —
+  заглушка до займов и банкротства.
+- **Ползунок содержания** (`countries.maintenance`, целые проценты `maintenance_min`..100, на старте
+  `maintenance_start`): множит цену и ставит потолок морали полков — `min_maintenance_morale` (0.2) макс. морали страны
+  при 50%, линейно до максимума при 100% (`morale_ceiling`; при 100% потолка нет, мораль выше максимума остаётся).
+  Хранимая мораль ползунком не меняется: UI (плашка, подсказка) показывает меньшее из морали и потолка, поэтому
+  опущенный ползунок виден сразу, а возвращённый до 1-го числа мораль возвращает. Срезается мораль до потолка на
+  месячном тике (у всех полков страны, в бою тоже; «Восстановление» потом набирает только до потолка) и когда армия
+  вступает в бой. Пополнений при 50% нет — придут с подкреплением.
+- **Команда `maintenance`** — процент; вне `maintenance_min`..100 или нет такой страны — отказ. В игре — ползунок
+  «Army maintenance» в окне «Dev» (применяется, когда отпущен), там же содержание, полки и лимит.
+- Раскладка: раз в месяц — проход по провинциям (лимит) и по полкам (база, число), суммы в рабочие столбцы
+  `WorldUpkeep` (`Budget`); `army_upkeep` — то же для одной страны (UI, ряд).
+- В `mapcraft_sim` — сценарий `upkeep`, ряды `treasury.csv` (полки, лимит, ползунок, содержание) и `armies.csv`
+  (потолок морали).
+
 ## Команды (`game/commands.h`)
 - **Команда** — обычные данные: вид (`move_army` — идти в провинцию, `declare_war` — объявить войну, `peace` —
-  предложить мир, `budget` — поставить ползунки бюджета), страна, которая её отдаёт, армия — `ArmyRef` (слот +
-  поколение), провинция, страна-цель (кому объявлена война или предложен мир), доли ползунков и список провинций мира — вид на список, пока команду ставят или исполняют;
+  предложить мир, `budget` — поставить ползунки бюджета, `maintenance` — ползунок содержания), страна, которая её отдаёт, армия — `ArmyRef` (слот +
+  поколение), провинция, страна-цель (кому объявлена война или предложен мир), доли ползунков, процент содержания и список провинций мира — вид на список, пока команду ставят или исполняют;
   очередь хранит свою копию (столбец списков, у команды — начало и длина).
 - **Одна очередь** для игры и `mapcraft_sim` (потом и сети): `World::post` ставит команду на сегодня, место на шкале
   времени — (день, номер), номер считает посты по порядку (в сети его будет выдавать хост). Очередь — столбцы по
-  полям команды.
+  полям команды: простые поля — список `MC_COMMAND_FIELDS` (X-macro: из него раскрываются поля `Command`, столбцы
+  очереди, пост, исполнение и сдвиг; новое поле — одна строка), список провинций мира — свой код.
 - **Исполняются между днями**, по (день, номер): `World::run_commands` — в начале каждого дня `advance_days` и сразу
   после поста в игре (`Shell`), поэтому приказ в паузе действует мгновенно. Это второй, кроме дня, путь, которым
   меняется `WorldState`, — тоже правила самого `World`. Очередь — не состояние: в игре команды исполняются, как только
   поставлены, `mapcraft_sim` ставит команды дня в его начале, так что между днями очередь пуста.
 - **Проверка при исполнении**: армия разрешается по ссылке (погибшей армии или старому поколению приказ не доходит),
   она должна быть страны, отдавшей приказ, а до цели должен быть путь по суше; война — между двумя разными
-  существующими странами, которые ещё не воюют и без перемирия, и есть свободный слот; мир — «Война»; бюджет — «Казна».
+  существующими странами, которые ещё не воюют и без перемирия, и есть свободный слот; мир — «Война»; бюджет — «Казна»; содержание — «Содержание армии».
   Иначе ничего не меняется, в лог — предупреждение с причиной.
 
 ## Движение армий (`game/movement.h`)

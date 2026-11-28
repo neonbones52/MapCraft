@@ -44,8 +44,6 @@ province_value_base,5
 province_value_cap,30
 capital_value_mult,1.2
 fort_per_dev_ratio,50
-land_forcelimit_base,6
-land_forcelimit_per_development,0.3
 truce_years,5
 capital_tax,2
 census_core,1
@@ -59,3 +57,10 @@ treasury_inflation,1
 production_base,0.99
 population_per_unit,100000
 base_tax_per_unit,20
+force_limit_base,6
+force_limit_per_base_tax,0.25
+land_maintenance,0.025
+force_limit_extra_cost,1
+maintenance_min,50
+maintenance_start,100
+min_maintenance_morale,0.2

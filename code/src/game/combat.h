@@ -67,8 +67,10 @@ namespace mc
         // The day's indices: live armies by province (CSR, slot order), regiments per army.
         void index(const WorldState& state);
         // Battles begin and armies join them.
-        void meet(WorldState& state, const Content& content, Movement& movement, std::uint32_t day);
-        void join(WorldState& state, Movement& movement, std::uint32_t battle, std::uint16_t army);
+        void meet(WorldState& state, const Content& content, const CountryModifiers& sums, Movement& movement,
+                  std::uint32_t day);
+        // `ceiling`: the army's country's maintenance ceiling on its regiments' morale (game/economy/upkeep.h).
+        void join(WorldState& state, Movement& movement, std::uint32_t battle, std::uint16_t army, Fixed ceiling);
         // The sides' numbers of their countries and the width, for the day.
         void prepare(const WorldState& state, const Content& content, const CountryModifiers& sums);
         // The sides' men and morale over their regiments, after the day's damage.

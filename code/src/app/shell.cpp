@@ -177,6 +177,13 @@ namespace mc
                 war.target = commands.declare_war;
                 world_.post(war);
             }
+            if (commands.set_maintenance != 0) {
+                Command maintenance;
+                maintenance.kind = CommandKind::maintenance;
+                maintenance.country = session_.player();
+                maintenance.level = static_cast<std::uint8_t>(commands.set_maintenance);
+                world_.post(maintenance);
+            }
             if (commands.set_budget) {
                 Command budget;
                 budget.kind = CommandKind::budget;

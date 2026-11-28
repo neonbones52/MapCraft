@@ -125,6 +125,17 @@ namespace mc
             log::info("day {}: {} sets its budget to {}/{}/{}/{}/{}", day_, tag, s[0], s[1], s[2], s[3], s[4]);
             return;
         }
+        case CommandKind::maintenance: {
+            const CountryDefinitions& countries = data_.content.countries;
+            const std::string tag = command.country < countries.size() ? countries.tag_text(command.country) : "?";
+            if (const char* why = why_no_maintenance(state, data_.content.economy, command.country, command.level)) {
+                log::warn("day {}: {} sets its army maintenance to {}%: {}", day_, tag, command.level, why);
+                return;
+            }
+            state.countries.maintenance[command.country] = command.level;
+            log::info("day {}: {} sets its army maintenance to {}%", day_, tag, command.level);
+            return;
+        }
         case CommandKind::none:
             break;
         }

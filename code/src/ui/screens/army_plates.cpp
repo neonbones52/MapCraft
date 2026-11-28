@@ -9,6 +9,7 @@
 #include <imgui.h>
 
 #include "game/armies.h"
+#include "game/economy/upkeep.h"
 #include "game/game_data.h"
 #include "game/modifiers.h"
 #include "game/session.h"
@@ -90,8 +91,11 @@ namespace mc
             const ArmyTotals totals = army_totals(ui.state.regiments, marker.army);
             const CountryModifiers& sums = ui.cache.country_modifiers;
             const Fixed full = owner < sums.count ? max_morale(sums, owner) : 0;
+            // Below full maintenance, no more than its ceiling (game/economy/upkeep.h).
+            const Fixed shown =
+                std::min(totals.morale, morale_ceiling(sums, ui.state.countries, ui.content.economy, owner));
             const float morale =
-                full > 0 ? std::clamp(static_cast<float>(totals.morale) / static_cast<float>(full), 0.0f, 1.0f) : 0.0f;
+                full > 0 ? std::clamp(static_cast<float>(shown) / static_cast<float>(full), 0.0f, 1.0f) : 0.0f;
             const Relation relation = owner != 0 && owner == me          ? Relation::own
                                       : at_war(ui.cache.at_war, owner, me) ? Relation::enemy
                                                                          : Relation::neutral;

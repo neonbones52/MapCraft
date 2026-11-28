@@ -7,6 +7,7 @@
 #include <imgui.h>
 
 #include "game/armies.h"
+#include "game/economy/upkeep.h"
 #include "game/game_data.h"
 #include "game/modifiers.h"
 #include "game/occupation.h"
@@ -136,7 +137,10 @@ namespace mc
                 ImGui::TextDisabled("(%s)", countries.name[army_owner].c_str());
             }
             ImGui::Text("%u regiments, %lld men", totals.regiments, static_cast<long long>(totals.men));
-            ImGui::Text("Morale %.2f / %.2f", fx_to_double(totals.morale),
+            // Below full maintenance, no more than its ceiling (game/economy/upkeep.h).
+            const Fixed ceiling =
+                morale_ceiling(ui.cache.country_modifiers, ui.state.countries, ui.content.economy, army_owner);
+            ImGui::Text("Morale %.2f / %.2f", fx_to_double(std::min(totals.morale, ceiling)),
                         fx_to_double(max_morale(ui.cache.country_modifiers, army_owner)));
             if (const std::uint16_t leader = armies.leader[army]; leader != 0) {
                 const Leaders& leaders = ui.state.leaders;

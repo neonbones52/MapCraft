@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "game/economy/income.h"
+#include "game/economy/upkeep.h"
 #include "game/game_data.h"
 
 // The treasury and the budget sliders (docs/GAMEDATA.md, "Казна"; EU3's two systems of money, docs/ECONOMY.md):
@@ -12,7 +13,8 @@
 //               Government, stability, Treasury), exactly (ledger::mint_shares); the Treasury share raises the
 //               inflation by
 //               budget_treasury / 100 × treasury_inflation / 12 a month, if it brought anything. The investments
-//               only pile up: what they buy is M9's.
+//               only pile up: what they buy is M9's. Then the army's upkeep (game/economy/upkeep.h) goes out of
+//               the treasury.
 // Owned by World, which calls census and then month on 1 January (World::tick_month); its data is the working columns.
 
 namespace mc
@@ -27,6 +29,7 @@ namespace mc
 
     private:
         WorldIncome income_;
+        WorldUpkeep upkeep_;
     };
 
     // One country's sliders.

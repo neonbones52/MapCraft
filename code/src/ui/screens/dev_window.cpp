@@ -11,6 +11,7 @@
 #include "game/armies.h"
 #include "game/economy/budget.h"
 #include "game/economy/income.h"
+#include "game/economy/upkeep.h"
 #include "game/game_data.h"
 #include "game/peace.h"
 #include "game/session.h"
@@ -141,6 +142,9 @@ namespace mc
             ImGui::TextDisabled("  taxes %.3f, production %.3f, emeralds %.3f", income.tax, income.production,
                                 income.gold);
             ImGui::Text("Census on 1 January %.2f", income.census);
+            const ArmyUpkeep army = army_upkeep(world, ui.content, me);
+            ImGui::Text("Army upkeep %.3f a month", army.upkeep);
+            ImGui::TextDisabled("  %u regiments of a force limit of %u", army.regiments, army.limit);
             ImGui::Text("Inflation %.2f%%", static_cast<double>(world.countries.inflation[me]));
 
             // The sliders, as in EU3: moving one moves the others in proportion, so they always add up to 100; the
@@ -172,6 +176,25 @@ namespace mc
                     ImGui::SameLine();
                     ImGui::TextDisabled("%.2f invested", cash(a));
                 }
+            }
+            // The army maintenance (game/economy/upkeep.h), set when let go.
+            int maintenance = state->maintenance_edited ? state->maintenance : world.countries.maintenance[me];
+            if (ImGui::SliderInt("Army maintenance", &maintenance, ui.content.economy.maintenance_min, 100, "%d%%")) {
+                state->maintenance = maintenance;
+            }
+            if (ImGui::IsItemActivated()) {
+                state->maintenance = maintenance;
+                state->maintenance_edited = true;
+            }
+            if (ImGui::IsItemDeactivated()) {
+                if (state->maintenance != world.countries.maintenance[me]) {
+                    commands->set_maintenance = state->maintenance;
+                }
+                state->maintenance_edited = false;
+            }
+            const Fixed ceiling = morale_ceiling(ui.cache.country_modifiers, world.countries, ui.content.economy, me);
+            if (ceiling != kNoMoraleCeiling) {
+                ImGui::TextDisabled("  morale up to %.2f", fx_to_double(ceiling));
             }
             ImGui::PopItemWidth();
         }

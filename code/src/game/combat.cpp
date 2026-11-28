@@ -10,6 +10,7 @@
 #include "core/map_data.h"
 #include "core/random.h"
 #include "game/armies.h"
+#include "game/economy/upkeep.h"
 #include "game/modifiers.h"
 #include "game/movement.h"
 #include "game/war.h"
@@ -384,7 +385,7 @@ namespace mc
             }
         }
         index(state);
-        meet(state, content, movement, day);
+        meet(state, content, sums, movement, day);
         if (used_slots(state.battles.alive) == 0) {
             return;
         }
@@ -467,7 +468,8 @@ namespace mc
         for_each_alive(regiments.alive, [&](std::uint32_t r) { ++army_regiments_[regiments.army[r]]; });
     }
 
-    void Combat::meet(WorldState& state, const Content& content, Movement& movement, std::uint32_t day)
+    void Combat::meet(WorldState& state, const Content& content, const CountryModifiers& sums, Movement& movement,
+                      std::uint32_t day)
     {
         Armies& armies = state.armies;
         Battles& battles = state.battles;
@@ -561,13 +563,13 @@ namespace mc
                 const std::uint16_t owner = armies.owner[a];
                 if (fighting(a) && armies.battle[a] == 0 &&
                     (owner == battle.sides[0].country || owner == battle.sides[1].country)) {
-                    join(state, movement, b, a);
+                    join(state, movement, b, a, morale_ceiling(sums, state.countries, content.economy, owner));
                 }
             }
         }
     }
 
-    void Combat::join(WorldState& state, Movement& movement, std::uint32_t battle, std::uint16_t army)
+    void Combat::join(WorldState& state, Movement& movement, std::uint32_t battle, std::uint16_t army, Fixed ceiling)
     {
         Battle& b = state.battles.list[battle];
         Regiments& regiments = state.regiments;
@@ -576,9 +578,11 @@ namespace mc
         state.armies.side[army] = static_cast<std::uint8_t>(side);
         state.armies.joined[army] = b.duration;
         movement.halt(state, army);
-        // Its regiments go to the end of its side's reserve, in slot order (EU4's AddUnit), with the morale they have.
+        // Its regiments go to the end of its side's reserve, in slot order (EU4's AddUnit), with the morale they have,
+        // down to its country's maintenance ceiling (game/economy/upkeep.h).
         for_each_alive(regiments.alive, [&](std::uint32_t r) {
             if (regiments.army[r] == army) {
+                regiments.morale[r] = std::min(regiments.morale[r], ceiling);
                 reserve_push(regiments, b.sides[side], static_cast<std::uint16_t>(r));
                 b.joined[side] += regiments.strength[r];
             }

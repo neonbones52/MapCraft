@@ -4,6 +4,7 @@
 
 #include "game/armies.h"
 #include "game/countries.h"
+#include "game/economy/upkeep.h"
 #include "game/occupation.h"
 #include "game/war.h"
 
@@ -117,11 +118,6 @@ namespace mc
         return std::clamp(value, kLowestValue, kHighestValue);
     }
 
-    Fixed land_force_limit(const WarDefines& defines, const CountryWarFacts& country)
-    {
-        return defines.land_forcelimit_base + fx_mul(defines.land_forcelimit_per_development, country.development);
-    }
-
     Fixed battle_score(const WarDefines& defines, Fixed loser_force_limit, std::int64_t losses)
     {
         const std::int64_t regiments = losses / 1000;
@@ -141,7 +137,7 @@ namespace mc
         if (war < 0) {
             return 0;
         }
-        const Fixed limit = land_force_limit(content.war, country_war_facts(state, content, loser));
+        const Fixed limit = fx_from_int(static_cast<std::int32_t>(force_limit(state, content, loser)));
         const Fixed score = battle_score(content.war, limit, losses);
         const auto w = static_cast<std::size_t>(war);
         state.wars.battle_score[w] += state.wars.attacker[w] == winner ? score : -score;

@@ -36,13 +36,8 @@ namespace mc
     [[nodiscard]] Fixed province_value(const WorldState& state, const Content& content, std::uint16_t province,
                                        const CountryWarFacts& owner);
 
-    // A stand-in for the country's land force limit until the real one (M8): land_forcelimit_base +
-    // land_forcelimit_per_development × its development (EU4's base 6 and 0.1 a development, the per-development
-    // share raised as base_tax is all our development is).
-    [[nodiscard]] Fixed land_force_limit(const WarDefines& defines, const CountryWarFacts& country);
-
     // A land battle's score for its winner (EU4's CalculateBattleScore): the loser's losses in whole regiments (1000
-    // men) over max(2 × its force limit, 2 × those regiments), × warscore_max_from_battles / 2, at least 0.1.
+    // men) over max(2 × its land force limit, game/economy/upkeep.h, 2 × those regiments), × warscore_max_from_battles / 2, at least 0.1.
     [[nodiscard]] Fixed battle_score(const WarDefines& defines, Fixed loser_force_limit, std::int64_t losses);
     // A battle won by `winner` over `loser`, who lost `losses` men: its score goes to their war (Wars::battle_score;
     // nothing if they are not at war). Returns the score (0 for no war). Combat's, at a battle's end.

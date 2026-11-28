@@ -8,13 +8,9 @@ namespace mc
     {
         day_.push_back(day);
         number_.push_back(next_number_++);
-        kind_.push_back(command.kind);
-        country_.push_back(command.country);
-        army_slot_.push_back(command.army.slot);
-        army_generation_.push_back(command.army.generation);
-        province_.push_back(command.province);
-        target_.push_back(command.target);
-        shares_.push_back(command.shares);
+#define MC_POST_COMMAND_FIELD(type, name, init) name##_.push_back(command.name);
+        MC_COMMAND_FIELDS(MC_POST_COMMAND_FIELD)
+#undef MC_POST_COMMAND_FIELD
         list_first_.push_back(static_cast<std::uint32_t>(list_.size()));
         list_count_.push_back(static_cast<std::uint32_t>(command.provinces.size()));
         list_.insert(list_.end(), command.provinces.begin(), command.provinces.end());
@@ -37,13 +33,9 @@ namespace mc
             if (day_[i] > today) {
                 day_[kept] = day_[i];
                 number_[kept] = number_[i];
-                kind_[kept] = kind_[i];
-                country_[kept] = country_[i];
-                army_slot_[kept] = army_slot_[i];
-                army_generation_[kept] = army_generation_[i];
-                province_[kept] = province_[i];
-                target_[kept] = target_[i];
-                shares_[kept] = shares_[i];
+#define MC_KEEP_COMMAND_FIELD(type, name, init) name##_[kept] = name##_[i];
+                MC_COMMAND_FIELDS(MC_KEEP_COMMAND_FIELD)
+#undef MC_KEEP_COMMAND_FIELD
                 // A kept list moves down to the end of the kept ones (never up: the lists are in post order).
                 std::copy_n(list_.begin() + list_first_[i], list_count_[i], list_.begin() + kept_list);
                 list_first_[kept] = static_cast<std::uint32_t>(kept_list);
@@ -54,13 +46,9 @@ namespace mc
         }
         day_.resize(kept);
         number_.resize(kept);
-        kind_.resize(kept);
-        country_.resize(kept);
-        army_slot_.resize(kept);
-        army_generation_.resize(kept);
-        province_.resize(kept);
-        target_.resize(kept);
-        shares_.resize(kept);
+#define MC_RESIZE_COMMAND_FIELD(type, name, init) name##_.resize(kept);
+        MC_COMMAND_FIELDS(MC_RESIZE_COMMAND_FIELD)
+#undef MC_RESIZE_COMMAND_FIELD
         list_first_.resize(kept);
         list_count_.resize(kept);
         list_.resize(kept_list);
