@@ -28,7 +28,7 @@ namespace mc
     //                when a step begins, so the map's figure walks on through a province without a stop, and
     //                taken as the next step when the army arrives (the graph does not change, so it is exactly the
     //                step a search would find then)
-    //   the search   the working columns of the path search, reused (no allocation in a day)
+    //   the search   the working columns of the path search, sized once and reused
     // An army on a step stays in its province until the step's progress reaches its cost; then it is in the next
     // province, the rest of the progress carried into the following step (EU4's ProgressMovementOneDay), or 0 where
     // the march ends. Up to half of the step (kMoveLock) a new order takes effect from the province it is in: the

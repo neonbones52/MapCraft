@@ -271,9 +271,10 @@ namespace mc
         AtWar at_war;
     };
 
-    // Entities that are born and die (armies, regiments, leaders, battles) live in slots: a fixed number per table, so
-    // the tick never allocates; a mask of the slots in use; a new entity takes the lowest free slot (game/armies.h). A
-    // freed slot's columns are back to 0. The numbers are the limits: regiments fill the u16 slot index but for the
+    // Entities that are born and die (armies, regiments, leaders, battles, wars, sieges) live in slots: a fixed number
+    // per table, so a birth allocates nothing and the order is deterministic (CLAUDE.md lets the tick allocate, but
+    // not per entity of a daily pass); a mask of the slots in use; a new entity takes the lowest free slot
+    // (game/armies.h). A freed slot's columns are back to 0. The numbers are the limits: regiments fill the u16 slot index but for the
     // last word (a battle names a regiment by its slot + 1 in a u16, 0 = none: Battle, Regiments::reserve_prev and
     // reserve_next; more needs u32 slots), which is far above what EU4 fields on a map six times ours; a battle is one
     // per province at most; EU4's countries keep a few leaders each.

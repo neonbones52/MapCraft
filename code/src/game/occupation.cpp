@@ -152,7 +152,7 @@ namespace mc
         const int highest = highest_fort(sums, country);
         n.progress_cap = d.siege_memory + fx_to_int(fx_mul(fx_from_int(highest), d.siege_memory_scaled));
         // GetDaysPerSiegePhase: days_per_siege_phase × max(0.1, 1 + the defender's fort defence - the besieger's
-        // siege ability - the tactics' difference / 4, at most ±0.5; wiki: 6.25% a 0.25 of base tactics).
+        // siege ability - the tactics' difference / 4, at most ±0.5; CalcTacticsDiff: × 250 / 1000, base tactics).
         {
             const Fixed tactics = fx_mul(sums.military_tactics[country] - sums.military_tactics[controller], 250);
             const Fixed factor = std::max<Fixed>(kFixedOne + fort_defence(sums, controller) -

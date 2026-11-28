@@ -19,7 +19,7 @@ namespace mc
     // (Armies::battle, side and joined, the retreating mask) and their generals (Armies::leader, Leaders), its
     // regiments (Regiments::place and the reserve's links). This
     // class holds the day's working data only, rebuilt each day from that state (so a load, a restart or a save change
-    // nothing), sized once in build: no allocation in the tick.
+    // nothing), sized once in build and reused.
     class Combat
     {
     public:

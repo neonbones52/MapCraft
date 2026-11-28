@@ -8,8 +8,8 @@
 namespace mc
 {
     // Armies, regiments and generals as entities that are born and die (docs/SIMULATION.md, "Раскладка данных"):
-    // slots handed out deterministically (the lowest free one), freed slots cleared, no allocation. The tables are
-    // game_data.h's Armies, Regiments and Leaders; these are the only functions that take or free a slot.
+    // slots handed out deterministically (the lowest free one), freed slots cleared, nothing allocated per entity. The
+    // tables are game_data.h's Armies, Regiments and Leaders; these are the only functions that take or free a slot.
 
     // An army as the outside (a command, the bot, the UI) names it: its slot and the slot's generation then. Once the
     // army dies its slot's generation grows, so the reference no longer resolves, even after another army takes the

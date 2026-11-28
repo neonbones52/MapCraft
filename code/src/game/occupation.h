@@ -30,8 +30,7 @@ namespace mc
     // Garrisons: full at the start, each month out of a siege up by garrison_growth of the maximum (month()).
     //
     // The state is WorldState's: Sieges (the slots), Provinces::controller, fort, garrison and siege_progress. This
-    // class holds the day's working data only, rebuilt each day from that state, sized once in build: no allocation
-    // in the tick.
+    // class holds the day's working data only, rebuilt each day from that state, sized once in build and reused.
 
     // The province's fort level: its fort, + capital_fort_level if it is its owner's seat (game/countries.h).
     [[nodiscard]] int fort_level(const WorldState& state, const Content& content, std::uint16_t province);

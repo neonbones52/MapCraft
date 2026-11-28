@@ -145,6 +145,10 @@ Victoria 2) — только для изучения, не копировать.
   строках — такие правки инструментом Edit, потом проверить файл.
 - Справочные проекты — только изучать, код не копировать:
   - **EU4** (`C:\Games\EUIV`) и реверс eu4.exe с pdb `C:\Dev\Projects\eu4\archeologyEU4\` (`Render`, `Labels`, `UtilityAI`).
+    Живая Ghidra с eu4.exe и pdb, когда пользователь её открыл, — HTTP `http://127.0.0.1:8089` (не MCP-инструменты
+    сессии; `curl`, ответ JSON): `list_functions`, `search_functions_by_name?name_pattern=<имя>` (→ «имя @ адрес»),
+    `decompile_function?address=<адрес>` (поле `decompiled`; длинное — в файл scratchpad). Только чтение; брать
+    точечно нужную функцию и её вызовы.
   - **Project Alice** (`C:\Dev\Projects\ProjectAlice`) — образец только детерминизма, lockstep и headless, не
     экономики; код GPL-3, идеи и числа — можно.
   - **Вики EU3** (eu3.paradoxwikis.com) — правила экономики и войны; читать во встроенном браузере по одной статье
