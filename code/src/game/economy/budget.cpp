@@ -12,7 +12,7 @@ namespace mc
     {
         world_income(state, content, &income_);
         for (std::size_t c = 1; c < state.countries.count; ++c) {
-            ledger::mint(&state.money, account(c, Account::treasury), to_grains(income_.census[c]));
+            ledger::mint(&state.money, account(c, Account::treasury), to_grains(income_.sum[c].census));
         }
     }
 
@@ -22,7 +22,7 @@ namespace mc
         CountryStates& countries = state.countries;
         const double per_month = fx_to_double(content.economy.treasury_inflation) / static_cast<double>(kMonthsPerYear);
         for (std::size_t c = 1; c < countries.count; ++c) {
-            const Money income = to_grains(income_.tax[c]);
+            const Money income = to_grains(income_.sum[c].monthly());
             if (income <= 0) {
                 continue;
             }

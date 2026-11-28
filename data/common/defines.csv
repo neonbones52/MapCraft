@@ -56,3 +56,6 @@ budget_government,25
 budget_stability,25
 budget_treasury,0
 treasury_inflation,1
+production_base,0.99
+population_per_unit,100000
+base_tax_per_unit,20

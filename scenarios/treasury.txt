@@ -1,12 +1,13 @@
 # The treasury and the budget sliders (M8, step 1), treasury.csv of the run. base_tax is 1 in every province: DUM's 15
 # provinces and its capital Golemtor (+2) pay 17/12 a month and a census of 17 a year, NBR's 13 and Tulip Pass 15/12
-# and 15. Oaktop (472) loses DUM's core: its census is 10%, so DUM's is 16.1.
+# and 15, in taxes; their production comes on top (production.txt). Oaktop (472) loses DUM's core: its census is
+# 10%, so DUM's is 16.1.
 # The monthly income goes through the sliders: 25/25/25/25 and Treasury 0 at the start, so the treasuries only grow by
 # the census on 1 January and the four investments pile up. DUM moves Treasury to 20% on day 0 (+0.2 inflation a
 # year) and to 60% on day 400 (+0.6 a year); NBR keeps its sliders (its 50/50/50/0/0 on day 10 does not add up to 100
 # and is refused): its inflation stays 0.
 # DUM declares war and takes Azalea Heath (473, no fort) on 16 March: occupied, it pays NBR nothing, so from 1 April
-# NBR's tax is 14/12 a month and its census 14.
+# NBR's taxes are 14/12 a month, its production that of 12 wheat provinces, and its census 14.
 years = 3
 seed = 1
 

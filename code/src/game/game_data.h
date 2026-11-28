@@ -679,7 +679,7 @@ namespace mc
     /* the years of a truce after a peace (EU4's TRUCE_YEARS) */                                                \
     X(whole, truce_years)
     // Content. The economy's constants (data/common/defines.csv too; EU3's, docs/ECONOMY.md), the same kinds, every
-    // one required (game/economy/taxes.h, budget.h).
+    // one required (game/economy/income.h, budget.h).
 #define MC_ECONOMY_DEFINES(X)                                                                                   \
     /* what a capital adds to its base_tax, in the tax and the census (EU3 2) */                                \
     X(fixed, capital_tax)                                                                                       \
@@ -695,7 +695,12 @@ namespace mc
     X(count, budget_treasury)                                                                                   \
     /* the inflation a year of the whole monthly income in the Treasury gives, in percent (EU3 1:100: 60% */    \
     /* in the Treasury, +0.6 a year) */                                                                         \
-    X(fixed, treasury_inflation)
+    X(fixed, treasury_inflation)                                                                                \
+    /* a province's volume of its good a year (EU3 In Nomine): production_base + population / */                \
+    /* population_per_unit + base_tax / base_tax_per_unit (0.99, 100 000, 20) */                                \
+    X(fixed, production_base)                                                                                   \
+    X(whole, population_per_unit)                                                                               \
+    X(whole, base_tax_per_unit)
 
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_count int
@@ -729,7 +734,9 @@ namespace mc
                                                               // an attacker into it (game/combat.h); [0] 0
         DefinitionList goods;
         std::vector<float> goods_price;   // goods.csv `price`: the base price, emeralds per unit produced (the money
-                                          // good: 1); no rule reads it yet
+                                          // good: 1); production sells at it (game/economy/income.h)
+        std::uint8_t money_good = 0;      // the good kMoneyGood (EU3's gold: no price, straight into the income),
+                                          // 0 = none
         DefinitionList trade_nodes;       // data/common/trade_nodes.csv: a node is made of whole regions (M11 rules)
         DefinitionList regiment_types;    // data/common/regiment_types.csv: the units (EU4's Latin Knights...)
         std::vector<RegimentCategory> regiment_category;   // per type

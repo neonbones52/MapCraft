@@ -2,14 +2,15 @@
 
 #include <cstdint>
 
-#include "game/economy/taxes.h"
+#include "game/economy/income.h"
 #include "game/game_data.h"
 
 // The treasury and the budget sliders (docs/GAMEDATA.md, "Казна"; EU3's two systems of money, docs/ECONOMY.md):
-//   the year    on 1 January the census (game/economy/taxes.h) goes into the treasury
-//   the month   the monthly income (the tax a month; production and trade later) is not the treasury's: the budget
-//               sliders share it among the five accounts (Account: Army, Production, Government, stability,
-//               Treasury), exactly (ledger::mint_shares); the Treasury share raises the inflation by
+//   the year    on 1 January the census (game/economy/income.h) goes into the treasury
+//   the month   the monthly income (tax, production and gold, game/economy/income.h; trade later) is not the
+//               treasury's: the budget sliders share it among the five accounts (Account: Army, Production,
+//               Government, stability, Treasury), exactly (ledger::mint_shares); the Treasury share raises the
+//               inflation by
 //               budget_treasury / 100 × treasury_inflation / 12 a month, if it brought anything. The investments
 //               only pile up: what they buy is M9's.
 // Owned by World, which calls census and then month on 1 January (World::tick_month); its data is the working columns.

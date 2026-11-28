@@ -551,13 +551,14 @@ namespace mc
         // goods.csv (required: every land province has a good): key, name, color, price (the base price, emeralds per
         // unit produced, > 0; the money good is worth 1 whatever it says).
         bool read_goods(Source& src, const std::filesystem::path& path, DefinitionList* goods,
-                        std::vector<float>* price, std::string* error)
+                        std::vector<float>* price, std::uint8_t* money_good, std::string* error)
         {
             csv::Table table;
             if (!read_list(src, path, true, true, goods, error, &table)) {
                 return false;
             }
             price->assign(goods->size(), 0.0f);
+            *money_good = 0;
             const Context ctx{ path, &table, error };
             int column = 0;
             if (!need_column(path, table, "price", &column, error)) {
@@ -566,6 +567,7 @@ namespace mc
             for (std::size_t r = 0; r < table.rows.size(); ++r) {
                 if (goods->key[r + 1] == kMoneyGood) {
                     (*price)[r + 1] = 1.0f;
+                    *money_good = static_cast<std::uint8_t>(r + 1);
                 } else if (!parse_number(table.rows[r][column], &(*price)[r + 1], false, true)) {
                     return ctx.fail(r, std::format("price \"{}\": emeralds per unit, > 0", table.rows[r][column]));
                 }
@@ -951,7 +953,8 @@ namespace mc
         const auto setup = dir / "setup";
         if (!read_terrain(src, common / "terrain.csv", &content.terrain, &content.terrain_movement_cost,
                           &content.terrain_attacker_penalty, error) ||
-            !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, error) ||
+            !read_goods(src, common / "goods.csv", &content.goods, &content.goods_price, &content.money_good,
+                        error) ||
             !read_list(src, common / "trade_nodes.csv", false, true, &content.trade_nodes, error) ||
             !read_regiment_types(src, common / "regiment_types.csv", &content.regiment_types,
                                  &content.regiment_category, &content.regiment_numbers, error) ||

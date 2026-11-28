@@ -23,10 +23,10 @@
 | `common/terrain.csv` | key, name, color, movement_cost, attacker_penalty | логический terrain провинций (не вид карты); ставится руками в редакторе; `movement_cost` — во сколько раз дольше шаг в провинцию с ним, чем на равнину (1), > 0 («Движение армий»); `attacker_penalty` — минус к кубику атакующего в провинции с ним, целое 0..9 (защита местности EU4; решение пользователя: лес и холмы 1, горы 2; «Бой») |
 | `common/biomes.csv` | key, name, color, density, minecraft_biome, top, side, under, deep, shore, snow_top, snow_side, snow_line, trees, tree_density, tree_line, village | биомы вида карты (см. ниже); не игровые данные, редактор его не правит |
 | `common/countries.csv` | tag, name, adjective, color | определения стран; `adjective` — для частей, отрезанных от столицы, по умолчанию = name |
-| `common/goods.csv` | key, name, color, price, icon | товары (набор — пользователя, растёт строками: без фабрик и рецептов, cattle — и мясо, и кожа); `price` — базовая цена товара (base price EU3/EU4) в изумрудах за единицу производства, > 0 (у изумруда всегда 1); от неё мировая цена, которую будут менять модификаторы и события; правила её пока не читают; `icon` — предмет Майнкрафта для UI (M13), пока не читается |
+| `common/goods.csv` | key, name, color, price, icon | товары (набор — пользователя, растёт строками: без фабрик и рецептов, cattle — и мясо, и кожа); `price` — базовая цена товара (base price EU3/EU4) в изумрудах за единицу производства, > 0 (у изумруда всегда 1); по ней продаётся производство («Казна»), потом от неё — мировая цена, которую будут менять модификаторы и события; `icon` — предмет Майнкрафта для UI (M13), пока не читается |
 | `common/trade_nodes.csv` | key, name, color | торговые узлы; узел — из целых регионов (`setup/regions.csv`); необязателен; правил узлов пока нет (M14) |
 | `common/regiment_types.csv` | key, name, category, maneuver, off_fire, def_fire, off_shock, def_shock, off_morale, def_morale | типы полков — юниты (как Latin Knights в EU4); `category` — infantry, cavalry или artillery; `maneuver` — манёвр юнита EU4, дальность удара вбок (фланг; пехота 1, конница 2); пипсы атаки и защиты огня, натиска и морали — целые 0–255 («Бой»); необязателен (без него — без полков) |
-| `common/defines.csv` | key, value | константы боя (`NDefines::NMilitary` EU4), каждая обязательна, по строке: `days_per_phase`, `dice_sides`, `cannot_retreat_days`, `overrun_factor`, `overrun_factor_cannot_leave`, `max_combat_width` (≤ 40) — целые ≥ 1; `leader_max_pips` (EU4 6), `back_line_reinforce_speed` (EU4 2), `river_crossing_penalty` (минус к кубику атакующего за переправу через реку, 1) — целые ≥ 1; `recovery_own_land`, `recovery_neutral_land`, `recovery_enemy_land`, `recovery_retreating` (доли макс. морали за месяц вне боя: 0.2, 0.15, 0.1, 0.05; «Восстановление») — десятичные; `war_length_damage`, `daily_morale_damage`, `reserve_daily_morale_damage`, `front_line_modifier`, `back_line_modifier` (EU4 0.5), `back_line_morale_damage_taken` (0.4), `back_line_strength_damage_taken` (0) — десятичные («Бой»); осада (`NMilitary` EU4, «Осада и оккупация»): целые ≥ 1 — `days_per_siege_phase` 30, `siege_dice_sides` 14, `siege_win` 20, `max_breach` 3, `siege_memory` 11, `siege_bonus_supplies_shortage` 1, `siege_bonus_food_shortage` 2, `siege_bonus_water_shortage` 3, `siege_bonus_defenders_desert` 2, `siege_garrison_surrender` 100, `garrison_size` 1000, `siege_min_men` 1000 (решение пользователя); целые ≥ 0 — `capital_fort_level` 1, `siege_unblockaded_penalty` 2, `garrison_after_capture` 100; десятичные — `siege_memory_scaled` 0.5, `siege_disease_impact` 0.05, `siege_force_needed_multiplier` 3, `garrison_growth` 0.05; война и мир (`NDiplomacy`/`NMilitary` EU4, «Война», `WarDefines`): целые ≥ 1 — `max_warscore` 100, `warscore_max_from_battles` 40, `truce_years` 5; десятичные — `province_value_base` 5, `province_value_cap` 30 (`AE_PROVINCE_CAP`), `capital_value_mult` 1.2, `fort_per_dev_ratio` 50, `land_forcelimit_base` 6 и `land_forcelimit_per_development` 0.3 (заглушка лимита армии до M8); экономика (EU3, «Казна», `EconomyDefines`): десятичные — `capital_tax` 2, `census_core` 1, `census_no_core` 0.1, `treasury_inflation` 1; целые ≥ 0 — стартовые доли ползунков бюджета `budget_army`, `budget_production`, `budget_government`, `budget_stability` 25 и `budget_treasury` 0 (решение пользователя), в сумме ровно 100 |
+| `common/defines.csv` | key, value | константы боя (`NDefines::NMilitary` EU4), каждая обязательна, по строке: `days_per_phase`, `dice_sides`, `cannot_retreat_days`, `overrun_factor`, `overrun_factor_cannot_leave`, `max_combat_width` (≤ 40) — целые ≥ 1; `leader_max_pips` (EU4 6), `back_line_reinforce_speed` (EU4 2), `river_crossing_penalty` (минус к кубику атакующего за переправу через реку, 1) — целые ≥ 1; `recovery_own_land`, `recovery_neutral_land`, `recovery_enemy_land`, `recovery_retreating` (доли макс. морали за месяц вне боя: 0.2, 0.15, 0.1, 0.05; «Восстановление») — десятичные; `war_length_damage`, `daily_morale_damage`, `reserve_daily_morale_damage`, `front_line_modifier`, `back_line_modifier` (EU4 0.5), `back_line_morale_damage_taken` (0.4), `back_line_strength_damage_taken` (0) — десятичные («Бой»); осада (`NMilitary` EU4, «Осада и оккупация»): целые ≥ 1 — `days_per_siege_phase` 30, `siege_dice_sides` 14, `siege_win` 20, `max_breach` 3, `siege_memory` 11, `siege_bonus_supplies_shortage` 1, `siege_bonus_food_shortage` 2, `siege_bonus_water_shortage` 3, `siege_bonus_defenders_desert` 2, `siege_garrison_surrender` 100, `garrison_size` 1000, `siege_min_men` 1000 (решение пользователя); целые ≥ 0 — `capital_fort_level` 1, `siege_unblockaded_penalty` 2, `garrison_after_capture` 100; десятичные — `siege_memory_scaled` 0.5, `siege_disease_impact` 0.05, `siege_force_needed_multiplier` 3, `garrison_growth` 0.05; война и мир (`NDiplomacy`/`NMilitary` EU4, «Война», `WarDefines`): целые ≥ 1 — `max_warscore` 100, `warscore_max_from_battles` 40, `truce_years` 5; десятичные — `province_value_base` 5, `province_value_cap` 30 (`AE_PROVINCE_CAP`), `capital_value_mult` 1.2, `fort_per_dev_ratio` 50, `land_forcelimit_base` 6 и `land_forcelimit_per_development` 0.3 (заглушка лимита армии до M8); экономика (EU3, «Казна», `EconomyDefines`): десятичные — `capital_tax` 2, `census_core` 1, `census_no_core` 0.1, `treasury_inflation` 1; целые ≥ 0 — стартовые доли ползунков бюджета `budget_army`, `budget_production`, `budget_government`, `budget_stability` 25 и `budget_treasury` 0 (решение пользователя), в сумме ровно 100; объём производства — `production_base` 0.99 (десятичное), `population_per_unit` 100000 и `base_tax_per_unit` 20 (целые ≥ 1) |
 | `common/modifiers.csv` | key, name, modifier, value | наборы модификаторов — источники («Модификаторы» ниже): строка на пару «набор — модификатор»; `key` — набор, `name` — имя для людей (на любой строке набора, где есть — одинаковое; по умолчанию key), `modifier` — модификатор из списка кода, в наборе один раз, `value` — число (может быть отрицательным); набор `base` есть у каждой страны (base_values EU4); необязателен |
 | `setup/provinces.csv` | id, name, owner, controller, cores, terrain, good, base_tax, population, fort | провинции суши на старте (docs/ECONOMY.md, «Провинция») |
 | `setup/regions.csv` | region, name, trade_node | регион карты (номер из `regions.csv` карты) → торговый узел; пусто — без узла |
@@ -452,16 +452,23 @@ ability и модификаторы урона (все 0), прорыв (`*_BREA
   `transfer` и `settle` — пока никто. Деньги не замкнуты: проверки «сумма балансов = старт + добыто» нет. Счётчиков
   потоков по видам (`Flow`) пока нет: читать их некому, доход в окне считается той же формулой, что в тике.
 
-## Казна (`game/economy/taxes.h`, `budget.h`)
+## Казна (`game/economy/income.h`, `budget.h`)
 Две системы денег EU3 (docs/ECONOMY.md, «Казна: две системы»; решения пользователя 28.11.2026):
-- **Налог провинции** (`taxes.h`, формулы — общие для тика и UI): провинция платит владельцу, только пока он её
-  контролирует (оккупированная не платит никому). База — `base_tax` + `capital_tax` (2), если это столица владельца
-  (`seat`, `game/countries.h`). Налог за месяц — база / 12; перепись — база × `census_core` (1) с кором владельца,
-  × `census_no_core` (0.1) без. Модификаторов пока нет (стабильность и ползунки внутренней политики — M9),
-  производства тоже (следующий шаг M8). Сумма страны — `double`, по провинциям в порядке id (`world_income` — один
-  проход для тика, `country_income` — для одной страны в UI, те же суммы), до крупинок округляется один раз.
+- **Доход провинции** (`income.h`, формулы — общие для тика и UI): провинция платит владельцу, только пока он её
+  контролирует (оккупированная не даёт никому ни налога, ни производства). База — `base_tax` + `capital_tax` (2),
+  если это столица владельца (`seat`, `game/countries.h`). Налог за месяц — база / 12; перепись — база ×
+  `census_core` (1) с кором владельца, × `census_no_core` (0.1) без.
+- **Производство** (решения пользователя 28.11.2026): объём товара за год — EU3 In Nomine, `production_base` +
+  население / `population_per_unit` + `base_tax` / `base_tax_per_unit` (0.99, 100 000, 20; при 5000 людей и
+  `base_tax` 1 — 1.09). За месяц — объём / 12 × цена товара; цена — пока базовая `price` из `goods.csv` (мировой
+  цены от предложения и спроса нет: без модификаторов она была бы постоянной; придёт с ними). Изумруд (товар
+  `emerald`, золото EU3) — объём / 12 прямо деньгами, без цены; инфляции от золота пока нет. Эффективности
+  производства и модификаторов пока нет (технологии, стабильность, ползунки внутренней политики — M9).
+- Сумма страны — `double`, по провинциям в порядке id, отдельно налог, производство, золото и перепись
+  (`world_income` — один проход для тика, `country_income` — для одной страны в UI и ряда, те же суммы), до крупинок
+  округляется один раз.
 - **Перепись** — 1 January (годовой тик, «Время»; первая — в году 2): `mint` в казну.
-- **Месячный доход** (сейчас — налог за месяц) в казну не идёт: ползунки бюджета (`countries.budget_*`, целые
+- **Месячный доход** (налог за месяц + производство + золото) в казну не идёт: ползунки бюджета (`countries.budget_*`, целые
   проценты `u8`, в сумме 100; на старте — `budget_*` из `defines.csv`, у всех стран одни) делят его на пять счетов
   точно (`mint_shares`). Вложения в Army, Production, Government и стабильность только копятся (что они дают — M9);
   доля Treasury уходит в казну.
@@ -470,10 +477,11 @@ ability и модификаторы урона (все 0), прорыв (`*_BREA
   чего); множитель к расходам придёт с расходами.
 - **Команда `budget`** — пять процентов (Army, Production, Government, стабильность, Treasury); не в сумме 100 или нет
   такой страны — отказ с предупреждением («Команды»). В игре — окно «Dev» по F9 (docs/CODE.md, «Отладочное»): казна,
-  налог за месяц, перепись, инфляция, вложения и пять ползунков с «Apply».
+  месячный доход (налог, производство, изумруд), перепись, инфляция, вложения и пять ползунков (сдвиг одного пропорционально
+  двигает остальные; доли уходят командой, когда ползунок отпущен).
 - Раскладка: раз в месяц по провинциям — один проход, суммы в рабочие столбцы `WorldIncome` (`Budget`, владеет
   `World`), потом по странам.
-- В `mapcraft_sim` — сценарий `treasury` (docs/SIMULATION.md), помесячный ряд `treasury.csv`.
+- В `mapcraft_sim` — сценарии `treasury` и `production` (docs/SIMULATION.md), помесячный ряд `treasury.csv`.
 
 ## Команды (`game/commands.h`)
 - **Команда** — обычные данные: вид (`move_army` — идти в провинцию, `declare_war` — объявить войну, `peace` —

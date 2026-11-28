@@ -1,6 +1,7 @@
 #include "ui/screens/dev_window.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <string>
 
@@ -9,7 +10,7 @@
 #include "core/money.h"
 #include "game/armies.h"
 #include "game/economy/budget.h"
-#include "game/economy/taxes.h"
+#include "game/economy/income.h"
 #include "game/game_data.h"
 #include "game/peace.h"
 #include "game/session.h"
@@ -87,6 +88,45 @@ namespace mc
             ImGui::TextDisabled("%s", white.accepted ? "(would accept)" : "(would refuse)");
         }
 
+        // The sliders `start` with slider `moved` set to `value` (0..100): the others share the rest, 100 - value, in
+        // proportion to their shares in `start` (all of them 0: equally), each the floor of its part; the percents the
+        // floors leave go one each to the largest remainders (the first of equals), so the sum is 100.
+        BudgetShares rebalance(const BudgetShares& start, std::size_t moved, int value)
+        {
+            BudgetShares out{};
+            out[moved] = static_cast<std::uint8_t>(value);
+            const int rest = 100 - value;
+            int others = 0;
+            for (std::size_t a = 0; a < kAccountsPerCountry; ++a) {
+                others += a == moved ? 0 : start[a];
+            }
+            const int count = static_cast<int>(kAccountsPerCountry) - 1;
+            std::array<int, kAccountsPerCountry> remainder{};
+            int given = 0;
+            for (std::size_t a = 0; a < kAccountsPerCountry; ++a) {
+                if (a == moved) {
+                    remainder[a] = -1;
+                    continue;
+                }
+                const int weight = others == 0 ? 1 : start[a];
+                const int total = others == 0 ? count : others;
+                out[a] = static_cast<std::uint8_t>(rest * weight / total);
+                remainder[a] = rest * weight % total;
+                given += out[a];
+            }
+            for (int left = rest - given; left > 0; --left) {
+                std::size_t best = moved;
+                for (std::size_t a = 0; a < kAccountsPerCountry; ++a) {
+                    if (remainder[a] >= 0 && (best == moved || remainder[a] > remainder[best])) {
+                        best = a;
+                    }
+                }
+                ++out[best];
+                remainder[best] = -1;
+            }
+            return out;
+        }
+
         // The player's money (game/economy/budget.h): the treasury, the income, the inflation, the investments and
         // the budget sliders.
         void budget(const ScreenContext& ui, std::uint16_t me, DevWindowState* state, UiCommands* commands)
@@ -97,46 +137,43 @@ namespace mc
             };
             const ProvinceIncome income = country_income(world, ui.content, me);
             ImGui::Text("Treasury %.2f", cash(static_cast<std::size_t>(Account::treasury)));
-            ImGui::Text("Monthly income %.3f (taxes)", income.tax);
+            ImGui::Text("Monthly income %.3f", income.monthly());
+            ImGui::TextDisabled("  taxes %.3f, production %.3f, emeralds %.3f", income.tax, income.production,
+                                income.gold);
             ImGui::Text("Census on 1 January %.2f", income.census);
             ImGui::Text("Inflation %.2f%%", static_cast<double>(world.countries.inflation[me]));
 
-            const BudgetShares now = budget_shares(world.countries, me);
+            // The sliders, as in EU3: moving one moves the others in proportion, so they always add up to 100; the
+            // shares go to the world (the command budget) when the slider is let go.
             if (!state->budget_edited) {
-                state->budget = now;
+                state->budget = budget_shares(world.countries, me);
             }
             constexpr const char* kLabels[kAccountsPerCountry] = { "Army", "Production", "Government", "Stability",
                                                                    "Treasury" };
-            int sum = 0;
             ImGui::PushItemWidth(140.0f * ui.scale);
             for (std::size_t a = 0; a < kAccountsPerCountry; ++a) {
                 int share = state->budget[a];
-                if (ImGui::SliderInt(kLabels[a], &share, 0, 100, "%d%%")) {
-                    state->budget[a] = static_cast<std::uint8_t>(share);
+                const bool moved = ImGui::SliderInt(kLabels[a], &share, 0, 100, "%d%%");
+                if (ImGui::IsItemActivated()) {
+                    state->budget_start = state->budget;
                     state->budget_edited = true;
+                }
+                if (moved) {
+                    state->budget = rebalance(state->budget_start, a, share);
+                }
+                if (ImGui::IsItemDeactivated()) {
+                    if (state->budget != budget_shares(world.countries, me)) {
+                        commands->set_budget = true;
+                        commands->budget = state->budget;
+                    }
+                    state->budget_edited = false;
                 }
                 if (static_cast<Account>(a) != Account::treasury) {
                     ImGui::SameLine();
                     ImGui::TextDisabled("%.2f invested", cash(a));
                 }
-                sum += state->budget[a];
             }
             ImGui::PopItemWidth();
-            ImGui::BeginDisabled(sum != 100 || state->budget == now);
-            if (ImGui::SmallButton("Apply")) {
-                commands->set_budget = true;
-                commands->budget = state->budget;
-                state->budget_edited = false;
-            }
-            ImGui::EndDisabled();
-            ImGui::SameLine();
-            ImGui::BeginDisabled(!state->budget_edited);
-            if (ImGui::SmallButton("Reset")) {
-                state->budget_edited = false;
-            }
-            ImGui::EndDisabled();
-            ImGui::SameLine();
-            ImGui::TextDisabled(sum == 100 ? "(%d%%)" : "(%d%%: must be 100%%)", sum);
         }
     }
 

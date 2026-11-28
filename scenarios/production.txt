@@ -1,0 +1,16 @@
+# Production and the emerald (M8, step 2), treasury.csv of the run. Every province has base_tax 1 and population 5000:
+# its volume is 0.99 + 5000 / 100000 + 1 / 20 = 1.09 units a year. Golemtor (495, DUM's capital) gets 105000 people
+# (volume 2.09) and Oaktop (472) cattle instead of wheat.
+# DUM puts the whole monthly income into the Treasury on day 0, so its treasury grows by all of it each month and its
+# inflation by 1 a year: taxes 17/12 = 1.416667 (15 provinces, the capital +2); production 1.941667 (11 wheat
+# provinces 1.09 × 1.5 / 12 each, Golemtor 2.09 × 1.5 / 12, Oaktop's cattle 1.09 × 2 / 12); emeralds 0.181667
+# (Golemscar and Frostheath, 1.09 / 12 each, no price): 3.54 a month. On 1 January the census, 17, on top.
+# NBR keeps 25/25/25/25/0: taxes 15/12 and 13 wheat provinces 1.77125 into its four investments, nothing into its
+# treasury but the census, 15.
+years = 2
+seed = 1
+
+setup/provinces.csv: 495.population = 105000
+setup/provinces.csv: 472.good = cattle
+
+day 0 = DUM budget 0 0 0 0 100

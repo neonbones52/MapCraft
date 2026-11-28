@@ -26,7 +26,7 @@
 #include "game/armies.h"
 #include "game/calendar.h"
 #include "game/economy/budget.h"
-#include "game/economy/taxes.h"
+#include "game/economy/income.h"
 #include "game/modifiers.h"
 #include "game/occupation.h"
 #include "game/war_score.h"
@@ -66,9 +66,10 @@ namespace
         std::string wars = "day,date,war,attacker,defender,event,battles,attacker_occupation,defender_occupation,"
                            "complete,score\n";
         // treasury.csv: every country at the start and at each month's start (after the monthly tick): its
-        // accounts in emeralds, its inflation, its tax a month and census now (game/economy/taxes.h), its sliders
-        std::string treasury = "day,date,country,treasury,army,production,government,stability,inflation,tax,census,"
-                               "budget\n";
+        // accounts in emeralds, its inflation, its monthly income (tax, production, gold) and census now
+        // (game/economy/income.h), its sliders
+        std::string treasury = "day,date,country,treasury,army,production,government,stability,inflation,"
+                               "income_tax,income_production,income_gold,census,budget\n";
     };
 
     // Every country now, as rows of treasury.csv.
@@ -80,12 +81,13 @@ namespace
             auto cash = [&](mc::Account a) { return mc::to_emeralds(state.money.cash[mc::account(c, a)]); };
             const mc::ProvinceIncome income = mc::country_income(state, world.content(), c);
             const mc::BudgetShares s = mc::budget_shares(state.countries, c);
-            *rows += std::format("{},{},{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.4f},{:.6f},{:.6f},{}/{}/{}/{}/{}\n",
+            *rows += std::format("{},{},{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.4f},{:.6f},{:.6f},{:.6f},{:.6f},"
+                                 "{}/{}/{}/{}/{}\n",
                                  world.day(), date, world.content().countries.tag_text(c),
                                  cash(mc::Account::treasury), cash(mc::Account::army), cash(mc::Account::production),
                                  cash(mc::Account::government), cash(mc::Account::stability),
-                                 state.countries.inflation[c], income.tax, income.census, s[0], s[1], s[2], s[3],
-                                 s[4]);
+                                 state.countries.inflation[c], income.tax, income.production, income.gold,
+                                 income.census, s[0], s[1], s[2], s[3], s[4]);
         }
     }
 
