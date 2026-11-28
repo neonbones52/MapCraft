@@ -13,7 +13,7 @@ namespace mc
     // the simulation (mc_sim), in the view module beside the camera (the Shell keeps it, the UI reads it): it only
     // decides how many days pass and hands that count to the one function that runs them (World::advance_days, via
     // the callback it is given); it knows nothing of the world.
-    //   speeds 1..4  a month lasts 60, 30, 15 and 7 seconds
+    //   speeds 1..4  a month lasts 60, 30, 15 and 5 seconds
     //   speed 5      as fast as the CPU allows (EU4's top speed): ticks back to back until the frame's budget is
     //                spent, so the UI keeps its frames; at least one tick a frame
     // A new game starts paused at speed 3.
@@ -86,7 +86,7 @@ namespace mc
 
     private:
         // Real seconds per game month at speeds 1..4.
-        static constexpr std::array<float, 4> kSecondsPerMonth = { 60.0f, 30.0f, 15.0f, 7.0f };
+        static constexpr std::array<float, 4> kSecondsPerMonth = { 60.0f, 30.0f, 15.0f, 5.0f };
 
         int speed_ = 3;
         bool paused_ = true;
