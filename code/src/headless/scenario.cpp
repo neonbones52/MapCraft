@@ -52,8 +52,8 @@ namespace mc::headless
             return out;
         }
 
-        // "TAG move slot:generation province", "TAG war TAG", "TAG peace TAG [province ...]", "TAG budget a p g s t" or
-        // "TAG maintenance N".
+        // "TAG move slot:generation province", "TAG war TAG", "TAG peace TAG [province ...]", "TAG budget a p g s t",
+        // "TAG maintenance N" or "TAG recruit province type".
         bool parse_command(std::string_view text, ScenarioCommand* out, std::string* why)
         {
             const std::vector<std::string_view> w = words(text);
@@ -88,6 +88,16 @@ namespace mc::headless
                 out->command.kind = CommandKind::maintenance;
                 return true;
             }
+            if (w.size() == 4 && w[1] == "recruit") {
+                if (!parse_whole(w[2], &out->command.province) || out->command.province == 0) {
+                    *why = std::format("province \"{}\": an id of the map", w[2]);
+                    return false;
+                }
+                out->country = std::string(w[0]);
+                out->type = std::string(w[3]);
+                out->command.kind = CommandKind::recruit;
+                return true;
+            }
             if (w.size() >= 2 && w[1] == "budget") {
                 if (w.size() != 2 + kAccountsPerCountry) {
                     *why = "a budget is TAG budget army production government stability treasury (percents)";
@@ -107,7 +117,8 @@ namespace mc::headless
             }
             if (w.size() != 4 || w[1] != "move") {
                 *why = "a command is TAG move slot:generation province, TAG war TAG, TAG peace TAG [province ...], "
-                       "TAG budget army production government stability treasury, or TAG maintenance percent";
+                       "TAG budget army production government stability treasury, TAG maintenance percent, or TAG "
+                       "recruit province type";
                 return false;
             }
             const std::size_t colon = w[2].find(':');

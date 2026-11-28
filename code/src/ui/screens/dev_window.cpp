@@ -11,9 +11,12 @@
 #include "game/armies.h"
 #include "game/economy/budget.h"
 #include "game/economy/income.h"
+#include "game/economy/manpower.h"
 #include "game/economy/upkeep.h"
 #include "game/game_data.h"
+#include "game/countries.h"
 #include "game/peace.h"
+#include "game/recruitment.h"
 #include "game/session.h"
 #include "game/war.h"
 #include "game/war_score.h"
@@ -198,6 +201,93 @@ namespace mc
             }
             ImGui::PopItemWidth();
         }
+
+        // The manpower and the recruitment (game/economy/manpower.h, game/recruitment.h): the pool, a province and a
+        // type, "Recruit", the queues.
+        void recruitment(const ScreenContext& ui, std::uint16_t me, DevWindowState* state, UiCommands* commands)
+        {
+            const WorldState& world = ui.state;
+            const Content& content = ui.content;
+            const std::int32_t maximum = max_manpower(world, content, me);
+            ImGui::Text("Manpower %d / %d", world.countries.manpower[me], maximum);
+            ImGui::TextDisabled("  +%d a month", monthly_manpower(content.economy, maximum));
+            if (content.regiment_types.size() < 2) {
+                ImGui::TextDisabled("No regiment types");
+                return;
+            }
+
+            const Provinces& provinces = world.provinces;
+            std::uint16_t& where = state->recruit_province;
+            if (where == 0 || where >= provinces.count || provinces.owner[where] != me) {
+                where = static_cast<std::uint16_t>(seat(world, me));
+            }
+            if (where == 0) {
+                ImGui::TextDisabled("No provinces");
+                return;
+            }
+            ImGui::PushItemWidth(180.0f * ui.scale);
+            const std::string shown(ui.map.province_name(where));
+            if (ImGui::BeginCombo("Province", shown.c_str())) {
+                for (std::uint32_t id = 1; id < provinces.count; ++id) {
+                    if (provinces.owner[id] != me) {
+                        continue;
+                    }
+                    const std::string label = std::string(ui.map.province_name(id)) + "##" + std::to_string(id);
+                    if (ImGui::Selectable(label.c_str(), id == where)) {
+                        where = static_cast<std::uint16_t>(id);
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            std::uint8_t& type = state->recruit_type;
+            if (type == 0 || type >= content.regiment_types.size()) {
+                type = 1;
+            }
+            if (ImGui::BeginCombo("Type", content.regiment_types.name[type].c_str())) {
+                for (std::size_t t = 1; t < content.regiment_types.size(); ++t) {
+                    if (ImGui::Selectable(content.regiment_types.name[t].c_str(), t == type)) {
+                        type = static_cast<std::uint8_t>(t);
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::PopItemWidth();
+            ImGui::TextDisabled("  %.2f emeralds, %d men, %d days", to_emeralds(recruit_cost(world, content, me, type)),
+                                kFullRegiment, recruit_time(content, type));
+            const char* why = why_no_recruit(world, content, me, where, type);
+            ImGui::BeginDisabled(why != nullptr);
+            if (ImGui::SmallButton("Recruit")) {
+                commands->recruit_province = where;
+                commands->recruit_type = type;
+            }
+            ImGui::EndDisabled();
+            if (why != nullptr) {
+                ImGui::SameLine();
+                ImGui::TextDisabled("(%s)", why);
+            }
+
+            // The regiments ordered, by province in slot order: the first one's days left, the others waiting.
+            const Recruits& recruits = world.recruits;
+            bool any = false;
+            for_each_alive(recruits.alive, [&](std::uint32_t r) {
+                if (recruits.country[r] != me) {
+                    return;
+                }
+                any = true;
+                const std::string province(ui.map.province_name(recruits.province[r]));
+                const char* name = content.regiment_types.name[recruits.type[r]].c_str();
+                if (recruits.place[r] == 0) {
+                    ImGui::BulletText("%s in %s: %d days left%s", name, province.c_str(),
+                                      recruit_time(content, recruits.type[r]) - recruits.days[r],
+                                      recruitment_paused(world, recruits.province[r], me) ? ", held by a siege" : "");
+                } else {
+                    ImGui::BulletText("%s in %s: waiting, %d ahead", name, province.c_str(), recruits.place[r]);
+                }
+            });
+            if (!any) {
+                ImGui::TextDisabled("Nothing being raised");
+            }
+        }
     }
 
     void dev_window(const ScreenContext& ui, DevWindowState* state, UiCommands* commands, bool* open)
@@ -212,6 +302,10 @@ namespace mc
         const std::uint16_t me = ui.session.player();
         ImGui::TextUnformatted("Budget");
         budget(ui, me, state, commands);
+
+        ImGui::Separator();
+        ImGui::TextUnformatted("Recruitment");
+        recruitment(ui, me, state, commands);
 
         ImGui::Separator();
         ImGui::TextUnformatted("Wars");

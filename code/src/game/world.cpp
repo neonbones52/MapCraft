@@ -136,6 +136,20 @@ namespace mc
             log::info("day {}: {} sets its army maintenance to {}%", day_, tag, command.level);
             return;
         }
+        case CommandKind::recruit: {
+            const CountryDefinitions& countries = data_.content.countries;
+            const std::string tag = command.country < countries.size() ? countries.tag_text(command.country) : "?";
+            const DefinitionList& types = data_.content.regiment_types;
+            const std::string type = command.type < types.size() ? types.key[command.type] : "?";
+            if (const char* why = why_no_recruit(state, data_.content, command.country, command.province,
+                                                 command.type)) {
+                log::warn("day {}: {} recruits {} in province {}: {}", day_, tag, type, command.province, why);
+                return;
+            }
+            recruit(state, data_.content, command.country, command.province, command.type);
+            log::info("day {}: {} recruits {} in province {}", day_, tag, type, command.province);
+            return;
+        }
         case CommandKind::none:
             break;
         }
@@ -147,6 +161,7 @@ namespace mc
         movement_.day(data_.state);
         combat_.day(data_.state, data_.content, data_.cache, movement_, seed_, day_);
         occupation_.day(data_.state, data_.content, data_.cache, seed_, day_);
+        recruitment_.day(data_.state, data_.content, data_.cache, day_);
         ++day_;
         if (day_ % kDaysPerMonth == 0) {
             tick_month();
@@ -162,6 +177,7 @@ namespace mc
         occupation_.month(data_.state, data_.content);
         expire_truces(data_.state.truces, day_);
         budget_.month(data_.state, data_.content);
+        manpower_.month(data_.state, data_.content);
     }
 
     void World::tick_year()

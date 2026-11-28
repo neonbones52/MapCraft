@@ -16,11 +16,6 @@
 
 namespace mc
 {
-    namespace
-    {
-        constexpr std::int32_t kFullRegiment = 1000;   // men
-    }
-
     void Editor::army_section(std::uint32_t province)
     {
         GameData& game = game_;

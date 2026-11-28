@@ -41,6 +41,15 @@ namespace mc::ledger
         money->cash[account] -= amount;
     }
 
+    bool pay(Balances* money, std::size_t account, Money amount)
+    {
+        if (money->cash[account] < amount) {
+            return false;
+        }
+        money->cash[account] -= amount;
+        return true;
+    }
+
     bool transfer(Balances* money, std::size_t from, std::size_t to, Money amount)
     {
         if (money->cash[from] < amount) {

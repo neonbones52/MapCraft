@@ -50,5 +50,7 @@ namespace mc
         bool set_budget = false;   // the player sets their budget sliders to `budget` (the Dev window)
         BudgetShares budget{};
         int set_maintenance = 0;   // the player sets their army maintenance to this percent (the Dev window); 0 = leave
+        std::uint16_t recruit_province = 0;   // the player recruits a regiment of `recruit_type` here (the Dev
+        std::uint8_t recruit_type = 0;        // window); 0 = none
     };
 }

@@ -64,3 +64,12 @@ force_limit_extra_cost,1
 maintenance_min,50
 maintenance_start,100
 min_maintenance_morale,0.2
+manpower_base,10000
+manpower_core,0.05
+manpower_no_core,0.01
+manpower_recovery_years,10
+manpower_start,0.5
+infantry_time,60
+cavalry_time,90
+artillery_time,120
+recruit_morale,0.1

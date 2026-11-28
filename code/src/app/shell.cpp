@@ -184,6 +184,14 @@ namespace mc
                 maintenance.level = static_cast<std::uint8_t>(commands.set_maintenance);
                 world_.post(maintenance);
             }
+            if (commands.recruit_province != 0) {
+                Command recruit;
+                recruit.kind = CommandKind::recruit;
+                recruit.country = session_.player();
+                recruit.province = commands.recruit_province;
+                recruit.type = commands.recruit_type;
+                world_.post(recruit);
+            }
             if (commands.set_budget) {
                 Command budget;
                 budget.kind = CommandKind::budget;

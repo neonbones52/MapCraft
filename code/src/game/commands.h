@@ -21,6 +21,7 @@ namespace mc
         peace = 3,         // the giver offers `target` a peace taking `provinces`, none: a white peace (game/peace.h)
         budget = 4,        // the giver sets its budget sliders to `shares` (game/economy/budget.h)
         maintenance = 5,   // the giver sets its land maintenance slider to `level` (game/economy/upkeep.h)
+        recruit = 6,       // the giver recruits a regiment of `type` in `province` (game/recruitment.h)
     };
 
     // The fields of a command that are plain values, X(type, name, default), in Command's order: from the list
@@ -37,7 +38,9 @@ namespace mc
     /* the budget's, in Account's order */                                                                      \
     X(BudgetShares, shares, {})                                                                                 \
     /* the maintenance's, a percent */                                                                          \
-    X(std::uint8_t, level, 0)
+    X(std::uint8_t, level, 0)                                                                                   \
+    /* the regiment type recruited */                                                                           \
+    X(std::uint8_t, type, 0)
 
 #define MC_DECLARE_COMMAND_FIELD(type, name, init) type name = init;
     struct Command

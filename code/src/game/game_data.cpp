@@ -11,6 +11,7 @@
 #include "core/log.h"
 #include "core/map_data.h"
 #include "game/armies.h"
+#include "game/economy/manpower.h"
 #include "game/modifiers.h"
 #include "game/occupation.h"
 #include "game/war.h"
@@ -727,7 +728,8 @@ namespace mc
         }
 
         // defines.csv (required): key, value; a line for every define of MC_COMBAT_DEFINES, MC_WAR_DEFINES and
-        // MC_ECONOMY_DEFINES, once each (the budget_* adding up to 100, maintenance_min <= maintenance_start <= 100):
+        // MC_ECONOMY_DEFINES, once each (the budget_* adding up to 100, maintenance_min <= maintenance_start <= 100,
+        // manpower_start 0..1, the manpower shares >= 0):
         // a whole one a whole number >= 1 (max_combat_width at most kMaxCombatWidth), a count one >= 0, a fixed one a
         // decimal number with at most 3 digits after the point, a real one a decimal number.
         bool parse_define_whole(std::string_view text, int* out)
@@ -837,6 +839,14 @@ namespace mc
                 *error = std::format("{}: maintenance_min {} and maintenance_start {}: maintenance_min <= "
                                      "maintenance_start <= 100, maintenance_min below 100",
                                      path.string(), economy->maintenance_min, economy->maintenance_start);
+                return false;
+            }
+            if (!(economy->manpower_start >= 0.0 && economy->manpower_start <= 1.0) ||
+                !(economy->manpower_core >= 0.0) || !(economy->manpower_no_core >= 0.0)) {
+                *error = std::format("{}: manpower_start {}, manpower_core {}, manpower_no_core {}: shares >= 0, "
+                                     "manpower_start at most 1",
+                                     path.string(), economy->manpower_start, economy->manpower_core,
+                                     economy->manpower_no_core);
                 return false;
             }
             return true;
@@ -968,6 +978,13 @@ namespace mc
         MC_TRUCE_COLUMNS(MC_FILL_COLUMN)
         alive.assign(kTruceSlots / 64, 0);
     }
+
+    void Recruits::resize()
+    {
+        const std::size_t n = kRecruitSlots;
+        MC_RECRUIT_COLUMNS(MC_FILL_COLUMN)
+        alive.assign(kRecruitSlots / 64, 0);
+    }
 #undef MC_FILL_COLUMN
 
     bool GameData::load(const std::filesystem::path& dir, const MapData& map, std::string* error,
@@ -1058,6 +1075,7 @@ namespace mc
         state.wars.resize();
         state.sieges.resize();
         state.truces.resize();
+        state.recruits.resize();
 
         auto country_of = [&](const Context& ctx, std::size_t r, std::string_view text, std::uint16_t* out) {
             const int c = content.countries.find(text);
@@ -1359,6 +1377,8 @@ namespace mc
         }
         // The garrisons are full at the start (derived: the forts and the capitals).
         fill_garrisons(state, content);
+        // The manpower pools too (game/economy/manpower.h): manpower_start of their maximum.
+        fill_manpower(state, content);
         warnings = check(map);
         loaded = true;
         return true;

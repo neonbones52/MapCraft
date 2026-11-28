@@ -26,14 +26,18 @@ namespace mc::headless
     //                                      DUM sets its budget sliders, whole percents: Army, Production,
     //                                      Government, stability, Treasury (game/economy/budget.h)
     //     day 0 = DUM maintenance 50       DUM sets its land maintenance slider, a whole percent (game/economy/upkeep.h)
+    //     day 0 = DUM recruit 476 infantry DUM recruits a regiment of the type infantry (regiment_types.csv) in
+    //                                      province 476 (game/recruitment.h)
     // years and seed are required; an unknown key, a repeated key or change, a command past the run's days, or a
-    // malformed line fails with its line. The command's country is checked once the data is loaded (main.cpp).
+    // malformed line fails with its line. The command's countries and regiment type are checked once the data is
+    // loaded (main.cpp).
     struct ScenarioCommand
     {
         std::uint32_t day = 0;     // of the run: 0 = the start
         std::string country;       // its tag
         std::string target;        // the tag of the country war is declared on or peace offered to, else empty
         std::vector<std::uint16_t> provinces;   // the peace's (Command::provinces is set to them when posted)
+        std::string type;          // the key of the regiment type recruited, else empty
         Command command;           // the country still 0
         std::string origin;        // file:line
     };

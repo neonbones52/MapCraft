@@ -27,6 +27,7 @@
 #include "game/calendar.h"
 #include "game/economy/budget.h"
 #include "game/economy/income.h"
+#include "game/economy/manpower.h"
 #include "game/economy/upkeep.h"
 #include "game/modifiers.h"
 #include "game/occupation.h"
@@ -68,10 +69,11 @@ namespace
                            "complete,score\n";
         // treasury.csv: every country at the start and at each month's start (after the monthly tick): its
         // accounts in emeralds, its inflation, its monthly income (tax, production, gold) and census now
-        // (game/economy/income.h), its sliders
+        // (game/economy/income.h), its sliders, its army's upkeep, its manpower pool and maximum
+        // (game/economy/manpower.h) and the regiments it has ordered and not raised yet (game/recruitment.h)
         std::string treasury = "day,date,country,treasury,army,production,government,stability,inflation,"
                                "income_tax,income_production,income_gold,census,budget,regiments,force_limit,"
-                               "maintenance,upkeep\n";
+                               "maintenance,upkeep,manpower,max_manpower,recruiting\n";
     };
 
     // Every country now, as rows of treasury.csv.
@@ -84,14 +86,18 @@ namespace
             const mc::ProvinceIncome income = mc::country_income(state, world.content(), c);
             const mc::BudgetShares s = mc::budget_shares(state.countries, c);
             const mc::ArmyUpkeep army = mc::army_upkeep(state, world.content(), c);
+            std::uint32_t recruiting = 0;
+            mc::for_each_alive(state.recruits.alive,
+                               [&](std::uint32_t r) { recruiting += state.recruits.country[r] == c ? 1u : 0u; });
             *rows += std::format("{},{},{},{:.6f},{:.6f},{:.6f},{:.6f},{:.6f},{:.4f},{:.6f},{:.6f},{:.6f},{:.6f},"
-                                 "{}/{}/{}/{}/{},{},{},{},{:.6f}\n",
+                                 "{}/{}/{}/{}/{},{},{},{},{:.6f},{},{},{}\n",
                                  world.day(), date, world.content().countries.tag_text(c),
                                  cash(mc::Account::treasury), cash(mc::Account::army), cash(mc::Account::production),
                                  cash(mc::Account::government), cash(mc::Account::stability),
                                  state.countries.inflation[c], income.tax, income.production, income.gold,
                                  income.census, s[0], s[1], s[2], s[3], s[4], army.regiments, army.limit,
-                                 state.countries.maintenance[c], army.upkeep);
+                                 state.countries.maintenance[c], army.upkeep, state.countries.manpower[c],
+                                 mc::max_manpower(state, world.content(), c), recruiting);
         }
     }
 
@@ -255,7 +261,7 @@ namespace
     }
 
     // The armies whose province changed over the day just passed, as rows of moves.csv (`before`: their provinces
-    // before it, per slot); with `log`, each arrival where a march ends also to stderr.
+    // before it, per slot, 0 for an empty one); with `log`, each arrival where a march ends also to stderr.
     void record_moves(const mc::MapData& map, const mc::World& world, const std::vector<std::uint16_t>& before,
                       bool log, std::string* rows)
     {
@@ -263,7 +269,8 @@ namespace
         const std::string date = mc::format(world.date());
         mc::for_each_alive(armies.alive, [&](std::uint32_t a) {
             const std::uint16_t province = armies.province[a];
-            if (province == before[a]) {
+            // Not a step: it stays, or it was raised today in an empty slot (game/recruitment.h).
+            if (province == before[a] || before[a] == 0) {
                 return;
             }
             *rows += std::format("{},{},{},{},{},{}\n", world.day(), date, a, armies.generation[a], province,
@@ -304,6 +311,14 @@ namespace
                     return false;
                 }
                 commands.back().target = static_cast<std::uint16_t>(target);
+            }
+            if (!c.type.empty()) {
+                const int type = world.content().regiment_types.find(c.type);
+                if (type <= 0) {
+                    mc::log::error("{}: unknown regiment type \"{}\"", c.origin, c.type);
+                    return false;
+                }
+                commands.back().type = static_cast<std::uint8_t>(type);
             }
         }
         const std::uint32_t days = scenario.years * mc::kDaysPerYear;

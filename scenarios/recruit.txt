@@ -1,0 +1,42 @@
+# Manpower and recruitment (M8, step 4): treasury.csv (manpower, max_manpower, recruiting) and armies.csv of the run.
+# NBR's maximum manpower is 10000 + 5% of the population of its 13 provinces with its core (13 × 5000 × 0.05):
+# 13250; its pool starts at half of it, 6625, and grows by 13250 / 120 = 110 men on each month's 1st; an occupied
+# province gives none (13000 once Azalea Heath is DUM's).
+# Infantry costs 1 here (so that money is not what stops NBR), × (1 + inflation / 100); NBR puts its whole income into
+# the Treasury.
+# Day 0: refused for money (the treasury is empty) and in DUM's Golemtor (495), not NBR's.
+# Day 150: four infantry in Tulip Pass (476), one at a time, 60 days each (raised on days 209, 269, 329, 389), and
+# two in Anvilwick (475) at the same time (209, 269): 6000 men out of the pool. Artillery (30) is refused for money.
+# Each regiment raised stands as a new army of 1000 men at 10% of the maximum morale (0.3; 0.9 after its first month's
+# recovery on its own land).
+# Day 300: at peace, DUM's army (slot 0, 3000 men) marches to NBR's Dripstonebarrow (480) and its artillery (slot 2,
+# 2000) to Azalea Heath (473): no battle, no siege. Day 390: NBR orders one in each (2000 men); a third is refused for
+# manpower. Day 391: DUM declares war; both provinces are besieged (no fort: one phase of 30 days), and their queues
+# wait. Azalea Heath falls on day 421: NBR's order there is lost (an order there on day 400 is refused: besieged).
+# In Dripstonebarrow NBR's army (slot 1) attacks the besiegers on day 404: while the battle lasts the queue goes on;
+# NBR loses, the siege goes on, the queue waits again; DUM's army leaves on day 440 (the siege is lifted) and the
+# regiment is raised on day 476: 60 days with the 27 it waited (391-403, 426-439).
+years = 2
+seed = 1
+
+common/regiment_types.csv: infantry.cost = 1
+
+day 0 = NBR budget 0 0 0 0 100
+day 0 = NBR recruit 476 infantry
+day 0 = NBR recruit 495 infantry
+day 150 = NBR recruit 476 infantry
+day 150 = NBR recruit 476 infantry
+day 150 = NBR recruit 476 infantry
+day 150 = NBR recruit 476 infantry
+day 150 = NBR recruit 475 infantry
+day 150 = NBR recruit 475 infantry
+day 150 = NBR recruit 475 artillery
+day 300 = DUM move 0:0 480
+day 300 = DUM move 2:0 473
+day 390 = NBR recruit 480 infantry
+day 390 = NBR recruit 473 infantry
+day 390 = NBR recruit 475 infantry
+day 391 = DUM war NBR
+day 391 = NBR move 1:0 480
+day 400 = NBR recruit 473 infantry
+day 440 = DUM move 0:0 496

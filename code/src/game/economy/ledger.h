@@ -11,7 +11,7 @@
 // makes income out of nothing; everything else moves an exact Money between two accounts. The accounts are the
 // countries' (game/game_data.h, account()): the census mints into the treasury, the monthly income is minted into
 // the five accounts by the budget sliders (mint_shares; game/economy/budget.h), the army's upkeep is spent out of the
-// treasury.
+// treasury, a regiment recruited is paid for out of it (pay).
 
 namespace mc::ledger
 {
@@ -25,6 +25,9 @@ namespace mc::ledger
     // `amount` >= 0 out of `account` into nothing (the army's upkeep; later the costs): it may go below 0 (until loans
     // and bankruptcy come, the user's decision).
     void spend(Balances* money, std::size_t account, Money amount);
+    // `amount` >= 0 out of `account` into nothing, only if it holds that much (a purchase: the recruitment); false
+    // (and nothing moves) if it holds less.
+    bool pay(Balances* money, std::size_t account, Money amount);
     // Moves `amount` >= 0 from one account to another; false (and nothing moves) if `from` has less.
     bool transfer(Balances* money, std::size_t from, std::size_t to, Money amount);
 

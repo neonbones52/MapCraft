@@ -28,12 +28,14 @@ add_library(mc_sim STATIC
     src/game/economy/ledger.cpp
     src/game/economy/upkeep.cpp
     src/game/economy/income.cpp
+    src/game/economy/manpower.cpp
     src/game/game_data.cpp
     src/game/modifiers.cpp
     src/game/movement.cpp
     src/game/occupation.cpp
     src/game/peace.cpp
     src/game/recovery.cpp
+    src/game/recruitment.cpp
     src/game/war.cpp
     src/game/war_score.cpp
     src/game/session.cpp

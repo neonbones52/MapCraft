@@ -7,11 +7,13 @@
 #include "game/calendar.h"
 #include "game/combat.h"
 #include "game/economy/budget.h"
+#include "game/economy/manpower.h"
 #include "game/commands.h"
 #include "game/game_data.h"
 #include "game/movement.h"
 #include "game/occupation.h"
 #include "game/recovery.h"
+#include "game/recruitment.h"
 
 namespace mc
 {
@@ -24,7 +26,8 @@ namespace mc
     //   the day     the date, as a day count (game/calendar.h): one number, so it lives here and not among the columns
     //   the seed    the world's randomness (core/random.h): chosen when a game begins (the host's, then the save's)
     //   the rules   their cache (the modifier sums in GameData, the armies' march, game/movement.h, the battles,
-    //               game/combat.h, the sieges, game/occupation.h, the recovery, game/recovery.h), rebuilt after a
+    //               game/combat.h, the sieges, game/occupation.h, the recovery, game/recovery.h, the recruitment,
+    //               game/recruitment.h, the manpower, game/economy/manpower.h), rebuilt after a
     //               load and a restart
     //   commands    the queue (game/commands.h): what the players ask, run between days
     // Everyone else reads: the map (App) through a const GameData pointer to colour its modes, the UI and the
@@ -41,7 +44,8 @@ namespace mc
         // `days` days pass, one after another: the only way the date changes (the game's Shell, at the pace the
         // player set, view/pace.h; mapcraft_sim). Sets the simulation's floating-point environment first
         // (core/det_math.h). Each day first runs the commands due (run_commands), then the day's rules over the
-        // columns: the armies' march, then the battles, then the sieges; a day that ends a month (the next is the
+        // columns: the armies' march, then the battles, then the sieges, then the recruitment's queues; a day that
+        // ends a month (the next is the
         // 1st) then runs the month's rules (tick_month).
         void advance_days(std::uint32_t days);
         // Queues a command for today (game/commands.h); it runs at run_commands or before the next day.
@@ -49,7 +53,8 @@ namespace mc
         // Runs the commands due today, in their order: the other way the state changes, between days and in the
         // pause (the game calls it right after posting, so the player's orders take effect at once). A command that
         // cannot be carried out (an army that is gone or not the giver's, in a battle or retreating from one, no way
-        // there; a war that cannot be declared, game/war.h; a peace that cannot be offered, game/peace.h) changes
+        // there; a war that cannot be declared, game/war.h; a peace that cannot be offered, game/peace.h; a regiment
+        // that cannot be recruited, game/recruitment.h) changes
         // nothing; it is logged. A peace offered is accepted or refused at once (game/peace.h), and logged.
         void run_commands();
         // Back to the start: the start date and the state as loaded, with a new seed (a new game).
@@ -73,7 +78,8 @@ namespace mc
         // The monthly tick, at the start of each month's 1st day (never at the game's start): the main one of the
         // rules that are not about moving and fighting, in this order: on 1 January first the yearly tick; then the
         // armies' recovery, the garrisons' growth, the truces that ran out (game/war.h) and the monthly income
-        // through the budget sliders (game/economy/budget.h); later production, the upkeep (M8).
+        // through the budget sliders with the upkeep after it (game/economy/budget.h), then the manpower pools
+        // (game/economy/manpower.h).
         void tick_month();
         // The yearly tick, on 1 January (the first in year 2): the census into the treasuries (game/economy/budget.h).
         void tick_year();
@@ -88,6 +94,8 @@ namespace mc
         Occupation occupation_;
         Recovery recovery_;
         Budget budget_;
+        Manpower manpower_;
+        Recruitment recruitment_;
         CommandQueue commands_;
     };
 }

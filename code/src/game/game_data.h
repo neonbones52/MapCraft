@@ -194,7 +194,9 @@ namespace mc
     X(countries, float, inflation, runtime)                                                                     \
     /* the land maintenance slider, whole percent maintenance_min..100 (game/economy/upkeep.h); at the start */ \
     /* defines.csv's maintenance_start */                                                                       \
-    X(countries, std::uint8_t, maintenance, derived)
+    X(countries, std::uint8_t, maintenance, derived)                                                            \
+    /* the manpower pool, men (game/economy/manpower.h): at the start manpower_start of its maximum */          \
+    X(countries, std::int32_t, manpower, derived)
 
     // Saved. Country state (data/setup/countries.csv at the start: tag by hand), one column per field, indexed like
     // CountryDefinitions, padded(count) long.
@@ -328,10 +330,13 @@ namespace mc
     inline constexpr std::uint32_t kWarSlots = 256;
     inline constexpr std::uint32_t kSiegeSlots = 1024;   // one a province at most, like the battles
     inline constexpr std::uint32_t kTruceSlots = 256;    // like the wars: a truce follows a war
+    inline constexpr std::uint32_t kRecruitSlots = 1024; // the regiments being raised and waiting, the whole world
     static_assert(kArmySlots % 64 == 0 && kRegimentSlots % 64 == 0 && kLeaderSlots % 64 == 0 &&
                       kBattleSlots % 64 == 0 && kWarSlots % 64 == 0 && kSiegeSlots % 64 == 0 &&
-                      kTruceSlots % 64 == 0,
+                      kTruceSlots % 64 == 0 && kRecruitSlots % 64 == 0,
                   "whole words of the slot masks");
+    // A full regiment's men (EU4's strength 1.0): what a regiment raised has and takes from the manpower pool.
+    inline constexpr std::int32_t kFullRegiment = 1000;
     static_assert(kLeaderSlots < 65536, "an army names its leader by slot + 1 in a u16");
     static_assert(kArmySlots <= 65536 && kRegimentSlots < 65536, "u16 slots, a regiment's slot + 1 too");
 
@@ -528,6 +533,26 @@ namespace mc
         void resize();
     };
 
+#define MC_RECRUIT_COLUMNS(X)                                                                                   \
+    /* the province it is raised in and the country raising it (the province's owner and controller) */         \
+    X(recruits, std::uint16_t, province, runtime)                                                               \
+    X(recruits, std::uint16_t, country, runtime)                                                                \
+    X(recruits, std::uint8_t, type, runtime)                                                                    \
+    /* its place in the province's queue: 0 is being raised, the others wait in this order */                  \
+    X(recruits, std::uint8_t, place, runtime)                                                                   \
+    /* the days it has been raised so far */                                                                    \
+    X(recruits, std::uint16_t, days, runtime)
+
+    // Saved. The regiments ordered and not raised yet (game/recruitment.h), in slots, kRecruitSlots long; runtime
+    // only (no setup file). Paid for when ordered.
+    struct Recruits
+    {
+        MC_RECRUIT_COLUMNS(MC_DECLARE_COLUMN)
+        Column<std::uint64_t> alive;   // by hand, like Armies::alive
+
+        void resize();
+    };
+
     // What the last phase of a siege came to (Sieges::result; EU4's ESiegeStatus, game/occupation.h).
     enum class SiegeResult : std::uint8_t
     {
@@ -714,7 +739,23 @@ namespace mc
     /* between (the user's decision: 50, 100, 0.2) */                                                           \
     X(whole, maintenance_min)                                                                                   \
     X(whole, maintenance_start)                                                                                 \
-    X(fixed, min_maintenance_morale)
+    X(fixed, min_maintenance_morale)                                                                            \
+    /* the manpower (game/economy/manpower.h; the user's decision): the most a pool holds is manpower_base + */ \
+    /* manpower_core × the population of the provinces with its core it owns and controls + manpower_no_core */ \
+    /* × of those without (10000, 0.05, 0.01); the pool fills up to it in manpower_recovery_years (EU4's */     \
+    /* MAX_MANPOWER 10), at the start it is manpower_start of it (0.5, 0..1) */                                 \
+    X(whole, manpower_base)                                                                                     \
+    X(real, manpower_core)                                                                                      \
+    X(real, manpower_no_core)                                                                                   \
+    X(whole, manpower_recovery_years)                                                                           \
+    X(real, manpower_start)                                                                                     \
+    /* the days a regiment takes to raise, by its category (game/recruitment.h; EU4's INFANTRY_TIME, */         \
+    /* CAVALRY_TIME, ARTILLERY_TIME: 60, 90, 120) */                                                            \
+    X(whole, infantry_time)                                                                                     \
+    X(whole, cavalry_time)                                                                                      \
+    X(whole, artillery_time)                                                                                    \
+    /* a regiment raised starts at this share of its country's maximum morale (the user's decision: 0.1) */    \
+    X(fixed, recruit_morale)
 
 #define MC_DEFINE_TYPE_whole int
 #define MC_DEFINE_TYPE_count int
@@ -782,6 +823,7 @@ namespace mc
         Wars wars;
         Sieges sieges;
         Truces truces;
+        Recruits recruits;
     };
 
     // Loads Content and the start's WorldState from data/ (docs/GAMEDATA.md) and writes the start back (editor). In
